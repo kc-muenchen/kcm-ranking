@@ -1,0 +1,81 @@
+═══════════════════════════════════════════════════════════════
+   KCM RANKING - KICKERTOOL EXPORTER
+   Quick Start Guide
+═══════════════════════════════════════════════════════════════
+
+📋 SETUP (One-Time, 5 Minutes)
+
+1. Generate Icons
+   ☐ Open generate-icons.html in browser
+   ☐ Click "Download All Icons"
+   ☐ Icons saved to this folder
+
+2. Install Extension
+   ☐ Chrome → chrome://extensions/
+   ☐ Enable "Developer mode" (top right)
+   ☐ Click "Load unpacked"
+   ☐ Select browser-extension folder
+
+3. GitHub Token (Admin Only)
+   ☐ Right-click extension → Options
+   ☐ Or: Click extension → Settings link
+   ☐ Click "Create a new token" link
+   ☐ Scopes: Check "repo"
+   ☐ Generate & copy token
+
+4. Configure Extension (Admin Only)
+   ☐ In settings page, paste GitHub token
+   ☐ Verify repo: mgaesslein/kcm-ranking
+   ☐ Path: dummy_data
+   ☐ Save settings
+   ☐ Test connection
+
+═══════════════════════════════════════════════════════════════
+
+🚀 USAGE - METHOD 1: AUTOMATIC (Every Time)
+
+1. app.kickertool.de → Login
+2. Find tournament → Click "Export"
+3. Select "JSON" format
+4. Extension captures automatically ✓
+5. Click extension icon (will show badge)
+6. Review filename
+7. Click "📤 Push to GitHub"
+8. Done! ✅
+
+🚀 USAGE - METHOD 2: MANUAL (If automatic fails)
+
+1. Download JSON from Kickertool
+2. Open .json file in Chrome (drag into browser)
+3. Click extension icon
+4. Click "🔍 Capture from Current Tab"
+5. Review filename
+6. Click "📤 Push to GitHub"
+7. Done! ✅
+
+═══════════════════════════════════════════════════════════════
+
+🔧 TROUBLESHOOTING
+
+Extension doesn't capture:
+  → TRY MANUAL METHOD (see above)
+  → Refresh Kickertool page
+  → Check F12 console for errors
+  → Reload extension
+  → See TROUBLESHOOTING.md for details
+
+Push to GitHub fails:
+  → Check token expiration
+  → Verify repo name
+  → Ensure token has "repo" scope
+
+═══════════════════════════════════════════════════════════════
+
+📚 MORE HELP
+
+• Detailed setup: SETUP.md
+• Full documentation: README.md
+• Icons info: ICONS_NEEDED.md
+
+═══════════════════════════════════════════════════════════════
+

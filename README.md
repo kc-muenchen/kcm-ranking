@@ -12,13 +12,15 @@ A modern React application for displaying and analyzing table soccer (foosball) 
 - 🎨 **Modern UI** - Beautiful dark theme with smooth animations
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
 - 🏅 **TrueSkill Rating** - Advanced skill rating system that updates based on match outcomes
+- 🏆 **Season Points** - Championship-style ranking system (1st: 25pts, 2nd: 20pts, etc.)
 - 👤 **Individual Player Pages** - Detailed player statistics, match history, and TrueSkill evolution
 - 🤝 **Partner Statistics** - See which partners you win the most with
 - ⚔️ **Opponent Statistics** - Track your best and worst matchups
-- 🥇 **Tournament Wins** - View best tournament placements and achievements
+- 🥇 **Tournament History** - View all tournaments participated in with placements
 - 🎭 **Player Aliases** - Merge duplicate players with different name variations
 - 🔄 **Dynamic Data Loading** - Automatically loads all tournament files
 - 🏆 **Elimination Brackets** - Visualize knockout rounds and finals
+- 🔌 **Browser Extension** - Auto-export tournaments from Kickertool to GitHub
 
 ## Getting Started
 
@@ -160,6 +162,26 @@ Then run:
 ```bash
 docker-compose up -d
 ```
+
+## Browser Extension - Auto-Export from Kickertool
+
+We've built a Chrome extension that automatically exports tournament data from Kickertool directly to this GitHub repository!
+
+### Quick Start
+
+1. Navigate to `/browser-extension/` folder
+2. Open `generate-icons.html` in your browser
+3. Download all icons
+4. Follow the complete guide in `/browser-extension/SETUP.md`
+
+### What it Does
+
+- 🎯 Monitors Kickertool for tournament exports
+- 📥 Automatically captures JSON data
+- 🚀 One-click push directly to GitHub
+- ✅ No manual file copying needed!
+
+See [browser-extension/README.md](browser-extension/README.md) for full documentation.
 
 ## Player Aliases Configuration
 

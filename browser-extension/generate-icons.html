@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Extension Icons</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .upload-section {
+      border: 3px dashed #ddd;
+      padding: 40px;
+      text-align: center;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .upload-section:hover {
+      border-color: #667eea;
+      background: #f8f9ff;
+    }
+    .upload-section.dragover {
+      border-color: #667eea;
+      background: #e8ebff;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    canvas {
+      border: 2px solid #ddd;
+      margin: 10px;
+      border-radius: 4px;
+      background: #f9f9f9;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 5px;
+      transition: all 0.2s;
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+    }
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    .icons {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+      gap: 20px;
+    }
+    .icon-preview {
+      text-align: center;
+    }
+    .icon-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+    .preview-section {
+      display: none;
+    }
+    .preview-section.active {
+      display: block;
+    }
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .success-message {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      display: none;
+    }
+    .success-message.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 Generate Extension Icons</h1>
+    <p class="subtitle">Upload your PNG image and generate all required icon sizes</p>
+    
+    <div class="upload-section" id="uploadSection" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📁</div>
+      <h3>Click or drag & drop your PNG image here</h3>
+      <p style="color: #999; font-size: 14px;">Recommended: Square image, at least 128x128 pixels</p>
+      <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml" onchange="handleFileSelect(event)">
+    </div>
+    
+    <div class="preview-section" id="previewSection">
+      <h3>Preview & Download</h3>
+      <div class="icons">
+        <div class="icon-preview">
+          <canvas id="canvas16" width="16" height="16"></canvas>
+          <div class="icon-label">16x16</div>
+        </div>
+        <div class="icon-preview">
+          <canvas id="canvas48" width="48" height="48"></canvas>
+          <div class="icon-label">48x48</div>
+        </div>
+        <div class="icon-preview">
+          <canvas id="canvas128" width="128" height="128"></canvas>
+          <div class="icon-label">128x128</div>
+        </div>
+      </div>
+      
+      <div style="text-align: center;">
+        <button onclick="downloadIcon(16)">Download icon16.png</button>
+        <button onclick="downloadIcon(48)">Download icon48.png</button>
+        <button onclick="downloadIcon(128)">Download icon128.png</button>
+      </div>
+      
+      <div style="margin-top: 20px; text-align: center;">
+        <button onclick="downloadAll()" style="background: #4CAF50; font-size: 18px; padding: 15px 30px;">
+          ⬇️ Download All Icons
+        </button>
+      </div>
+      
+      <div style="margin-top: 20px; text-align: center;">
+        <button onclick="reset()" class="btn-secondary">
+          🔄 Upload Different Image
+        </button>
+      </div>
+      
+      <div class="success-message" id="successMessage">
+        ✅ Icons downloaded! Move them to the browser-extension folder.
+      </div>
+    </div>
+    
+    <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px; text-align: center;">
+      💡 <strong>Tip:</strong> After downloading, move all three icon files (icon16.png, icon48.png, icon128.png) to the browser-extension folder
+    </p>
+  </div>
+  
+  <script>
+    let uploadedImage = null;
+    
+    // Drag and drop handlers
+    const uploadSection = document.getElementById('uploadSection');
+    
+    uploadSection.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadSection.classList.add('dragover');
+    });
+    
+    uploadSection.addEventListener('dragleave', () => {
+      uploadSection.classList.remove('dragover');
+    });
+    
+    uploadSection.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadSection.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadImage(file);
+      }
+    });
+    
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        loadImage(file);
+      }
+    }
+    
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          uploadedImage = img;
+          generateIcons();
+          document.getElementById('previewSection').classList.add('active');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function generateIcons() {
+      [16, 48, 128].forEach(size => drawIcon(size));
+    }
+    
+    function drawIcon(size) {
+      const canvas = document.getElementById(`canvas${size}`);
+      const ctx = canvas.getContext('2d');
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, size, size);
+      
+      if (uploadedImage) {
+        // Calculate scaling to fit and center the image
+        const scale = Math.min(size / uploadedImage.width, size / uploadedImage.height);
+        const x = (size - uploadedImage.width * scale) / 2;
+        const y = (size - uploadedImage.height * scale) / 2;
+        
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Draw image centered and scaled
+        ctx.drawImage(uploadedImage, x, y, uploadedImage.width * scale, uploadedImage.height * scale);
+      }
+    }
+    
+    function downloadIcon(size) {
+      const canvas = document.getElementById(`canvas${size}`);
+      const link = document.createElement('a');
+      link.download = `icon${size}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      // Show success message briefly
+      const msg = document.getElementById('successMessage');
+      msg.classList.add('active');
+      setTimeout(() => {
+        msg.classList.remove('active');
+      }, 3000);
+    }
+    
+    function downloadAll() {
+      [16, 48, 128].forEach((size, index) => {
+        setTimeout(() => downloadIcon(size), index * 200);
+      });
+    }
+    
+    function reset() {
+      uploadedImage = null;
+      document.getElementById('previewSection').classList.remove('active');
+      document.getElementById('fileInput').value = '';
+    }
+  </script>
+</body>
+</html>
+
