@@ -2,7 +2,12 @@ version: '3.8'
 
 services:
   kcm-ranking:
+    # Option 1: Build locally from source
     build: .
+    
+    # Option 2: Use pre-built image from Docker Hub (comment out 'build' and uncomment 'image')
+    # image: mfreitag1/kcm-ranking:latest
+    
     container_name: kcm-ranking
     ports:
       - "8080:80"
