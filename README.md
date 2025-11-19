@@ -51,7 +51,50 @@ The built files will be in the `dist` directory.
 
 ## Docker Deployment
 
-### Building the Docker Image
+### Automated Builds (GitHub Actions)
+
+This repository includes a GitHub Actions workflow that automatically builds and pushes Docker images to:
+- **Docker Hub**: `yourusername/kcm-ranking`
+- **GitHub Container Registry**: `ghcr.io/mgaesslein/kcm-ranking`
+
+Images are automatically built when:
+- You push to the `main` branch (tagged as `latest`)
+- You create a version tag (e.g., `v1.0.0`)
+- You create a pull request (build only, no push)
+
+#### Setting Up Automated Builds
+
+1. **Create a Docker Hub account** at https://hub.docker.com
+
+2. **Generate a Docker Hub Access Token**:
+   - Go to Account Settings → Security → New Access Token
+   - Give it a name (e.g., "GitHub Actions")
+   - Copy the token
+
+3. **Add GitHub Secrets**:
+   - Go to your GitHub repository → Settings → Secrets and variables → Actions
+   - Click "New repository secret" and add:
+     - `DOCKERHUB_USERNAME`: Your Docker Hub username
+     - `DOCKERHUB_TOKEN`: Your Docker Hub access token
+
+4. **Push your code** and the workflow will automatically build and push the image!
+
+#### Pulling Pre-built Images
+
+Your friend can pull the latest image:
+
+```bash
+# From Docker Hub
+docker pull yourusername/kcm-ranking:latest
+
+# Or from GitHub Container Registry
+docker pull ghcr.io/mgaesslein/kcm-ranking:latest
+
+# Run it
+docker run -d -p 8080:80 --name kcm-ranking yourusername/kcm-ranking:latest
+```
+
+### Building the Docker Image Manually
 
 Build the Docker image using the following command:
 
