@@ -9,6 +9,7 @@ import ScrollToTop from './components/ScrollToTop'
 import { calculateTrueSkillRatings, getConservativeRating } from './utils/trueskill'
 import { normalizePlayerNameSync, preloadAliases } from './config/playerAliases'
 import { API_ENDPOINTS, apiFetch } from './config/api'
+import logo from './Logo-kcm.png'
 import './App.css'
 
 function App() {
@@ -425,7 +426,7 @@ function App() {
         <header className="header">
           <div className="container">
             <h1 className="title">
-              <span className="icon">🏆</span>
+              <img src={logo} alt="KCM Logo" className="logo" />
               KCM Ranking
             </h1>
             <p className="subtitle">Table Soccer Tournament Rankings</p>
@@ -460,7 +461,7 @@ function App() {
       <header className="header">
         <div className="container">
           <h1 className="title">
-            <span className="icon">🏆</span>
+            <img src={logo} alt="KCM Logo" className="logo" />
             KCM Ranking
           </h1>
           <p className="subtitle">Table Soccer Tournament Rankings</p>

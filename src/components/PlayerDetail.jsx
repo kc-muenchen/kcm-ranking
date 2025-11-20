@@ -3,6 +3,8 @@ import { normalizePlayerNameSync } from '../config/playerAliases'
 import './PlayerDetail.css'
 
 function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayers, onBack }) {
+  const [selectedComparePlayer, setSelectedComparePlayer] = useState('')
+  
   const history = playerHistory.get(playerName) || []
   
   // Filter out the initial rating entry and reverse to show most recent first
@@ -31,6 +33,21 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
   
   // Calculate tournament participation list
   const tournamentList = calculateTournamentList(playerName, tournaments)
+  
+  // Calculate head-to-head comparison if a player is selected
+  const headToHeadStats = selectedComparePlayer 
+    ? calculateHeadToHead(matchHistory, playerName, selectedComparePlayer)
+    : null
+  
+  // Calculate teammate statistics if a player is selected
+  const teammateStats = selectedComparePlayer
+    ? calculateTeammateStats(matchHistory, playerName, selectedComparePlayer)
+    : null
+  
+  // Get list of all players for comparison dropdown
+  const allPlayers = aggregatedPlayers
+    .filter(p => p.name !== playerName)
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="player-detail">
@@ -171,6 +188,116 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
             <div className="no-data-small">No opponent data available</div>
           )}
         </div>
+      </div>
+
+      {/* Player Comparison Section */}
+      <div className="player-comparison-section">
+        <h2>🔀 Compare with Another Player</h2>
+        <div className="comparison-selector">
+          <select 
+            value={selectedComparePlayer} 
+            onChange={(e) => setSelectedComparePlayer(e.target.value)}
+            className="player-select"
+          >
+            <option value="">Select a player to compare...</option>
+            {allPlayers.map(player => (
+              <option key={player.name} value={player.name}>
+                {player.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {headToHeadStats && (
+          <div className="comparison-results">
+            <div className="comparison-header">
+              <h3>{playerName} vs {selectedComparePlayer}</h3>
+            </div>
+            
+            <div className="comparison-stats-grid">
+              <div className="comparison-stat-card">
+                <div className="comparison-stat-label">Matches Played</div>
+                <div className="comparison-stat-value">{headToHeadStats.totalMatches}</div>
+              </div>
+              
+              <div className="comparison-stat-card player1-wins">
+                <div className="comparison-stat-label">{playerName} Wins</div>
+                <div className="comparison-stat-value">{headToHeadStats.player1Wins}</div>
+                <div className="comparison-stat-percentage">
+                  {headToHeadStats.totalMatches > 0 
+                    ? ((headToHeadStats.player1Wins / headToHeadStats.totalMatches) * 100).toFixed(1)
+                    : 0}%
+                </div>
+              </div>
+              
+              <div className="comparison-stat-card player2-wins">
+                <div className="comparison-stat-label">{selectedComparePlayer} Wins</div>
+                <div className="comparison-stat-value">{headToHeadStats.player2Wins}</div>
+                <div className="comparison-stat-percentage">
+                  {headToHeadStats.totalMatches > 0 
+                    ? ((headToHeadStats.player2Wins / headToHeadStats.totalMatches) * 100).toFixed(1)
+                    : 0}%
+                </div>
+              </div>
+            </div>
+
+            {headToHeadStats.totalMatches > 0 && (
+              <div className="comparison-details">
+                <div className="comparison-winner">
+                  {headToHeadStats.player1Wins > headToHeadStats.player2Wins ? (
+                    <span className="winner-badge">🏆 {playerName} leads</span>
+                  ) : headToHeadStats.player2Wins > headToHeadStats.player1Wins ? (
+                    <span className="winner-badge">🏆 {selectedComparePlayer} leads</span>
+                  ) : (
+                    <span className="winner-badge">🤝 Tied</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {headToHeadStats.totalMatches === 0 && (
+              <div className="no-comparison-data">
+                No matches found between {playerName} and {selectedComparePlayer}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Teammate Statistics */}
+        {teammateStats && teammateStats.totalMatches > 0 && (
+          <div className="teammate-stats-results">
+            <div className="teammate-stats-header">
+              <h3>🤝 Playing Together</h3>
+            </div>
+            
+            <div className="teammate-stats-grid">
+              <div className="teammate-stat-card">
+                <div className="teammate-stat-label">Matches Played</div>
+                <div className="teammate-stat-value">{teammateStats.totalMatches}</div>
+              </div>
+              
+              <div className="teammate-stat-card wins">
+                <div className="teammate-stat-label">Wins</div>
+                <div className="teammate-stat-value">{teammateStats.wins}</div>
+                <div className="teammate-stat-percentage">
+                  {teammateStats.totalMatches > 0 
+                    ? ((teammateStats.wins / teammateStats.totalMatches) * 100).toFixed(1)
+                    : 0}%
+                </div>
+              </div>
+              
+              <div className="teammate-stat-card losses">
+                <div className="teammate-stat-label">Losses</div>
+                <div className="teammate-stat-value">{teammateStats.losses}</div>
+                <div className="teammate-stat-percentage">
+                  {teammateStats.totalMatches > 0 
+                    ? ((teammateStats.losses / teammateStats.totalMatches) * 100).toFixed(1)
+                    : 0}%
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* TrueSkill Evolution Chart */}
@@ -658,6 +785,116 @@ function calculateTournamentList(playerName, tournaments) {
   tournamentList.sort((a, b) => new Date(b.date) - new Date(a.date))
   
   return tournamentList
+}
+
+// Helper function to calculate head-to-head statistics between two players
+// Only counts matches where they played AGAINST each other (as opponents)
+function calculateHeadToHead(matchHistory, player1Name, player2Name) {
+  const normalizedPlayer1 = normalizePlayerNameSync(player1Name)
+  const normalizedPlayer2 = normalizePlayerNameSync(player2Name)
+  
+  let totalMatches = 0
+  let player1Wins = 0
+  let player2Wins = 0
+  
+  matchHistory.forEach(entry => {
+    const { match } = entry
+    const allPlayers = [...match.team1Players, ...match.team2Players]
+    
+    // Check if both players were in this match
+    const player1InMatch = allPlayers.some(p => normalizePlayerNameSync(p) === normalizedPlayer1)
+    const player2InMatch = allPlayers.some(p => normalizePlayerNameSync(p) === normalizedPlayer2)
+    
+    if (player1InMatch && player2InMatch) {
+      // Determine which team each player was on
+      const player1InTeam1 = match.team1Players.some(p => normalizePlayerNameSync(p) === normalizedPlayer1)
+      const player2InTeam1 = match.team1Players.some(p => normalizePlayerNameSync(p) === normalizedPlayer2)
+      
+      // Only count matches where they were OPPONENTS (not teammates)
+      if (player1InTeam1 !== player2InTeam1) {
+        totalMatches++
+        
+        // Determine which team won based on scores
+        const team1Won = match.team1Score > match.team2Score
+        const team2Won = match.team2Score > match.team1Score
+        
+        if (player1InTeam1) {
+          // Player1 on team1, Player2 on team2
+          if (team1Won) {
+            player1Wins++
+          } else if (team2Won) {
+            player2Wins++
+          }
+          // If draw, neither wins
+        } else {
+          // Player1 on team2, Player2 on team1
+          if (team2Won) {
+            player1Wins++
+          } else if (team1Won) {
+            player2Wins++
+          }
+          // If draw, neither wins
+        }
+      }
+      // Skip matches where they were teammates
+    }
+  })
+  
+  return {
+    totalMatches,
+    player1Wins,
+    player2Wins
+  }
+}
+
+// Helper function to calculate teammate statistics between two players
+// Only counts matches where they played TOGETHER (as teammates)
+function calculateTeammateStats(matchHistory, player1Name, player2Name) {
+  const normalizedPlayer1 = normalizePlayerNameSync(player1Name)
+  const normalizedPlayer2 = normalizePlayerNameSync(player2Name)
+  
+  let totalMatches = 0
+  let wins = 0
+  let losses = 0
+  
+  matchHistory.forEach(entry => {
+    const { match } = entry
+    const allPlayers = [...match.team1Players, ...match.team2Players]
+    
+    // Check if both players were in this match
+    const player1InMatch = allPlayers.some(p => normalizePlayerNameSync(p) === normalizedPlayer1)
+    const player2InMatch = allPlayers.some(p => normalizePlayerNameSync(p) === normalizedPlayer2)
+    
+    if (player1InMatch && player2InMatch) {
+      // Determine which team each player was on
+      const player1InTeam1 = match.team1Players.some(p => normalizePlayerNameSync(p) === normalizedPlayer1)
+      const player2InTeam1 = match.team1Players.some(p => normalizePlayerNameSync(p) === normalizedPlayer2)
+      
+      // Only count matches where they were TEAMMATES (on the same team)
+      if (player1InTeam1 === player2InTeam1) {
+        totalMatches++
+        
+        // Determine if their team won
+        const theirTeam = player1InTeam1 ? 'team1' : 'team2'
+        const theirScore = theirTeam === 'team1' ? match.team1Score : match.team2Score
+        const opponentScore = theirTeam === 'team1' ? match.team2Score : match.team1Score
+        
+        if (theirScore > opponentScore) {
+          wins++
+        } else if (opponentScore > theirScore) {
+          losses++
+        }
+        // If draw, neither wins nor loses (not counted in wins/losses)
+      }
+      // Skip matches where they were opponents
+    }
+  })
+  
+  return {
+    totalMatches,
+    wins,
+    losses
+  }
 }
 
 export default PlayerDetail

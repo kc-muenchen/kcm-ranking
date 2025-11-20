@@ -489,6 +489,235 @@
   color: #fbbf24;
 }
 
+/* Player Comparison Section */
+.player-comparison-section {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.player-comparison-section h2 {
+  font-size: 1.75rem;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+}
+
+.comparison-selector {
+  margin-bottom: 2rem;
+}
+
+.player-select {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.875rem 1rem;
+  background: var(--background);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.player-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
+}
+
+.comparison-results {
+  margin-top: 2rem;
+}
+
+.comparison-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.comparison-header h3 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.comparison-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.comparison-stat-card {
+  background: var(--background);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 2px solid var(--border);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.comparison-stat-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.comparison-stat-card.player1-wins {
+  border-left: 4px solid var(--success);
+}
+
+.comparison-stat-card.player2-wins {
+  border-left: 4px solid var(--primary-color);
+}
+
+.comparison-stat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.comparison-stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.comparison-stat-percentage {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.comparison-details {
+  text-align: center;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--border);
+}
+
+.comparison-winner {
+  margin-bottom: 1rem;
+}
+
+.winner-badge {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+  border-radius: 8px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.comparison-record {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.no-comparison-data {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  background: var(--background);
+  border-radius: 8px;
+  border: 2px dashed var(--border);
+}
+
+/* Teammate Statistics */
+.teammate-stats-results {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border);
+}
+
+.teammate-stats-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.teammate-stats-header h3 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.teammate-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.teammate-stat-card {
+  background: var(--background);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 2px solid var(--border);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.teammate-stat-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.teammate-stat-card.wins {
+  border-left: 4px solid var(--success);
+}
+
+.teammate-stat-card.losses {
+  border-left: 4px solid var(--danger);
+}
+
+.teammate-stat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.teammate-stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.teammate-stat-percentage {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.teammate-win-rate {
+  text-align: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border-radius: 8px;
+  border: 2px solid rgba(129, 140, 248, 0.3);
+}
+
+.win-rate-label {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.win-rate-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #818cf8;
+}
+
 .trueskill-chart-section {
   background: var(--surface);
   border-radius: 12px;
@@ -726,8 +955,17 @@
   }
 
   .trueskill-chart-section,
-  .match-history-section {
+  .match-history-section,
+  .player-comparison-section {
     padding: 1.5rem;
+  }
+
+  .comparison-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .teammate-stats-grid {
+    grid-template-columns: 1fr;
   }
 
   .team-info {
