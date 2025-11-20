@@ -1,0 +1,32 @@
+{
+  "name": "kcm-ranking-backend",
+  "version": "1.0.0",
+  "description": "Backend API for KCM Table Soccer Rankings",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "migrate:data": "node src/scripts/migrate-json-data.js",
+    "migrate:aliases": "node src/scripts/migrate-aliases.js"
+  },
+  "keywords": ["api", "table-soccer", "rankings"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.7.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "compression": "^1.7.4",
+    "helmet": "^7.1.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.7.0",
+    "nodemon": "^3.0.2"
+  }
+}
+

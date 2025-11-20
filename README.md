@@ -26,22 +26,46 @@ A modern React application for displaying and analyzing table soccer (foosball) 
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js (v20 or higher)
 - npm or yarn
+- Docker (for PostgreSQL database)
 
-### Installation
+### Quick Start (Recommended)
 
-1. Install dependencies:
+The application now uses a **backend API with PostgreSQL** for data storage. See [BACKEND_SETUP.md](./BACKEND_SETUP.md) for detailed instructions.
+
+**1. Start PostgreSQL:**
 ```bash
-npm install
+docker-compose up -d database
 ```
 
-2. Start the development server:
+**2. Setup backend:**
 ```bash
+cd backend
+npm install
+cp env.example .env  # Edit if needed
+npm run prisma:migrate
+npm run migrate:data  # Import existing tournament data
 npm run dev
 ```
 
-3. Open your browser and navigate to `http://localhost:5173`
+**3. Setup frontend (new terminal):**
+```bash
+# From project root
+npm install
+npm run dev
+```
+
+**4. Access the app:**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001
+- Health check: http://localhost:3001/health
+
+> **Note**: The frontend automatically falls back to loading JSON files if the backend is unavailable.
+
+### Migration Guide
+
+If you're upgrading from the JSON-based version, see [MIGRATION_TO_API.md](./MIGRATION_TO_API.md) for step-by-step instructions.
 
 ### Building for Production
 
@@ -255,13 +279,25 @@ The application expects JSON files in the `/dummy_data` directory with the follo
 
 ## Technologies Used
 
+### Frontend
 - **React** - UI framework
 - **Vite** - Build tool and dev server
 - **CSS3** - Styling with CSS variables
 - **JavaScript (ES6+)** - Modern JavaScript features
 - **ts-trueskill** - TrueSkill rating algorithm implementation
+
+### Backend
+- **Node.js** - JavaScript runtime
+- **Express** - Web framework
+- **PostgreSQL** - Relational database
+- **Prisma** - ORM (Object-Relational Mapping)
+- **CORS** - Cross-origin resource sharing
+
+### DevOps
 - **Docker** - Containerization for easy deployment
+- **Docker Compose** - Multi-container orchestration
 - **Nginx** - Web server for production deployment
+- **GitHub Actions** - CI/CD pipeline
 
 ## License
 

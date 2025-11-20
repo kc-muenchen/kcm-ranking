@@ -1,5 +1,5 @@
 import { rate, Rating } from 'ts-trueskill'
-import { normalizePlayerName } from '../config/playerAliases'
+import { normalizePlayerNameSync } from '../config/playerAliases'
 
 /**
  * Calculate TrueSkill ratings for all players across all tournaments
@@ -28,8 +28,8 @@ export function calculateTrueSkillRatings(tournaments) {
               if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
                 allMatches.push({
                   date: match.timeStart || tournamentDate.getTime(),
-                  team1Players: match.team1.players.map(p => normalizePlayerName(p.name)).filter(name => name),
-                  team2Players: match.team2.players.map(p => normalizePlayerName(p.name)).filter(name => name),
+                  team1Players: match.team1.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
+                  team2Players: match.team2.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
                   team1Score: match.result[0],
                   team2Score: match.result[1]
                 })
@@ -51,8 +51,8 @@ export function calculateTrueSkillRatings(tournaments) {
                 if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
                   allMatches.push({
                     date: match.timeStart || tournamentDate.getTime(),
-                    team1Players: match.team1.players.map(p => normalizePlayerName(p.name)).filter(name => name),
-                    team2Players: match.team2.players.map(p => normalizePlayerName(p.name)).filter(name => name),
+                    team1Players: match.team1.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
+                    team2Players: match.team2.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
                     team1Score: match.result[0],
                     team2Score: match.result[1]
                   })
@@ -68,8 +68,8 @@ export function calculateTrueSkillRatings(tournaments) {
             if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
               allMatches.push({
                 date: match.timeStart || tournamentDate.getTime(),
-                team1Players: match.team1.players.map(p => normalizePlayerName(p.name)).filter(name => name),
-                team2Players: match.team2.players.map(p => normalizePlayerName(p.name)).filter(name => name),
+                team1Players: match.team1.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
+                team2Players: match.team2.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
                 team1Score: match.result[0],
                 team2Score: match.result[1]
               })

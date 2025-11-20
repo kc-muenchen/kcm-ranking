@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { normalizePlayerName } from '../config/playerAliases'
+import { normalizePlayerNameSync } from '../config/playerAliases'
 import './PlayerDetail.css'
 
 function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayers, onBack }) {
@@ -426,20 +426,32 @@ function TrueSkillChart({ history, playerName }) {
 // Only counts final tournament placements from elimination rounds
 function calculateBestRanking(playerName, tournaments) {
   const rankings = []
-  const normalizedPlayerName = normalizePlayerName(playerName)
+  const normalizedPlayerName = normalizePlayerNameSync(playerName)
+  
+  if (!tournaments || tournaments.length === 0) {
+    return []
+  }
   
   tournaments.forEach(tournament => {
+    // Skip if tournament data is missing
+    if (!tournament || !tournament.data) {
+      return
+    }
+    
     // Only check elimination standings (actual tournament placement)
     // Qualifying standings are NOT counted as tournament wins
-    if (tournament.data.eliminations && tournament.data.eliminations.length > 0) {
+    if (tournament.data.eliminations && Array.isArray(tournament.data.eliminations) && tournament.data.eliminations.length > 0) {
       const eliminationStandings = tournament.data.eliminations[0].standings || []
-      const eliminationStanding = eliminationStandings.find(p => normalizePlayerName(p.name) === normalizedPlayerName && !p.removed)
+      const eliminationStanding = eliminationStandings.find(p => {
+        if (!p || !p.name || p.removed) return false
+        return normalizePlayerNameSync(p.name) === normalizedPlayerName
+      })
       
-      if (eliminationStanding) {
+      if (eliminationStanding && eliminationStanding.stats && eliminationStanding.stats.place) {
         rankings.push({
           place: eliminationStanding.stats.place,
-          tournament: tournament.name,
-          date: tournament.date
+          tournament: tournament.name || 'Unknown Tournament',
+          date: tournament.date || tournament.data.createdAt
         })
       }
     }
@@ -577,7 +589,7 @@ function calculateOpponentStats(matchHistory, playerName) {
 
 // Helper function to calculate tournament participation list
 function calculateTournamentList(playerName, tournaments) {
-  const normalizedPlayerName = normalizePlayerName(playerName)
+  const normalizedPlayerName = normalizePlayerNameSync(playerName)
   const tournamentList = []
   
   // Season points distribution (same as in App.jsx)
@@ -587,6 +599,11 @@ function calculateTournamentList(playerName, tournaments) {
   }
   
   tournaments.forEach(tournament => {
+    // Skip if tournament data is missing
+    if (!tournament || !tournament.data) {
+      return
+    }
+    
     let qualifyingPlace = null
     let eliminationPlace = null
     let finalPlace = null
@@ -594,13 +611,13 @@ function calculateTournamentList(playerName, tournaments) {
     let foundInElimination = false
     
     // Check qualifying standings
-    if (tournament.data.qualifying && tournament.data.qualifying.length > 0) {
+    if (tournament.data.qualifying && Array.isArray(tournament.data.qualifying) && tournament.data.qualifying.length > 0) {
       const qualifyingStandings = tournament.data.qualifying[0].standings || []
       const qualifyingStanding = qualifyingStandings.find(
-        p => normalizePlayerName(p.name) === normalizedPlayerName && !p.removed
+        p => p && p.name && !p.removed && normalizePlayerNameSync(p.name) === normalizedPlayerName
       )
       
-      if (qualifyingStanding && qualifyingStanding.stats.matches > 0) {
+      if (qualifyingStanding && qualifyingStanding.stats && qualifyingStanding.stats.matches > 0) {
         qualifyingPlace = qualifyingStanding.stats.place
         finalPlace = qualifyingPlace
         foundInQualifying = true
@@ -608,10 +625,10 @@ function calculateTournamentList(playerName, tournaments) {
     }
     
     // Check elimination standings (overrides qualifying place)
-    if (tournament.data.eliminations && tournament.data.eliminations.length > 0) {
+    if (tournament.data.eliminations && Array.isArray(tournament.data.eliminations) && tournament.data.eliminations.length > 0) {
       const eliminationStandings = tournament.data.eliminations[0].standings || []
       const eliminationStanding = eliminationStandings.find(
-        p => normalizePlayerName(p.name) === normalizedPlayerName && !p.removed
+        p => p && p.name && !p.removed && normalizePlayerNameSync(p.name) === normalizedPlayerName
       )
       
       if (eliminationStanding) {

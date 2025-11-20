@@ -1,3 +1,9 @@
+# Production Docker Compose configuration
+# Uses pre-built images from Docker Hub
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+
 version: '3.8'
 
 services:
@@ -8,11 +14,11 @@ services:
     environment:
       POSTGRES_DB: kcm_ranking
       POSTGRES_USER: kcmranking
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme123}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  # Set this in .env file!
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5444:5432"
+      - "5432:5432"  # Only expose if needed for external access
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kcmranking"]
       interval: 10s
@@ -20,35 +26,34 @@ services:
       retries: 5
     networks:
       - kcm-network
+    restart: unless-stopped
 
-  # Backend API
+  # Backend API (Pre-built image from Docker Hub)
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: mfreitag1/kcm-ranking-backend:latest
     container_name: kcm-ranking-backend
     environment:
-      DATABASE_URL: postgresql://kcmranking:${DB_PASSWORD:-changeme123}@database:5432/kcm_ranking?schema=public
+      DATABASE_URL: postgresql://kcmranking:${DB_PASSWORD}@database:5432/kcm_ranking?schema=public
       PORT: 3001
       NODE_ENV: production
-      CORS_ORIGIN: http://localhost:8080
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://yourdomain.com}
     ports:
       - "3001:3001"
     depends_on:
       database:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     networks:
       - kcm-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Frontend (Nginx)
+  # Frontend (Pre-built image from Docker Hub)
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: mfreitag1/kcm-ranking-frontend:latest
     container_name: kcm-ranking-frontend
     ports:
       - "8080:80"
@@ -65,3 +70,4 @@ volumes:
 networks:
   kcm-network:
     driver: bridge
+

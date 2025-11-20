@@ -7,7 +7,8 @@ import EliminationBracket from './components/EliminationBracket'
 import PlayerDetail from './components/PlayerDetail'
 import ScrollToTop from './components/ScrollToTop'
 import { calculateTrueSkillRatings, getConservativeRating } from './utils/trueskill'
-import { normalizePlayerName } from './config/playerAliases'
+import { normalizePlayerNameSync, preloadAliases } from './config/playerAliases'
+import { API_ENDPOINTS, apiFetch } from './config/api'
 import './App.css'
 
 function App() {
@@ -21,7 +22,10 @@ function App() {
   const [playerHistory, setPlayerHistory] = useState(new Map()) // TrueSkill history per player
 
   useEffect(() => {
-    loadTournaments()
+    // Preload aliases from API, then load tournaments
+    preloadAliases().then(() => {
+      loadTournaments()
+    })
   }, [])
 
   // Handle browser back/forward buttons
@@ -61,6 +65,42 @@ function App() {
     try {
       setLoading(true)
       
+      // Fetch tournaments from backend API
+      const tournamentsData = await apiFetch(API_ENDPOINTS.tournaments)
+      
+      // Transform API response to match the expected format
+      const loadedTournaments = tournamentsData
+        .map(tournament => ({
+          id: tournament.externalId || tournament.id,
+          name: tournament.name,
+          date: tournament.createdAt,
+          fileName: `${tournament.name}.json`, // For display purposes
+          data: tournament.rawData // Backend should return the full tournament data
+        }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+
+      console.log(`Loaded ${loadedTournaments.length} tournaments from API`)
+      
+      setTournaments(loadedTournaments)
+      if (loadedTournaments.length > 0) {
+        setSelectedTournament(loadedTournaments[0])
+        processPlayers(loadedTournaments[0].data)
+        processAggregatedPlayers(loadedTournaments)
+      }
+    } catch (error) {
+      console.error('Error loading tournaments from API:', error)
+      
+      // Fallback to JSON files if API is not available (for development)
+      console.warn('Falling back to local JSON files...')
+      await loadTournamentsFromFiles()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fallback method: load from JSON files (for development when API is down)
+  const loadTournamentsFromFiles = async () => {
+    try {
       // Use Vite's glob import to automatically load all JSON files
       const tournamentModules = import.meta.glob('../dummy_data/*.json')
       
@@ -90,7 +130,7 @@ function App() {
         .filter(t => t !== null)
         .sort((a, b) => new Date(b.date) - new Date(a.date))
 
-      console.log(`Loaded ${validTournaments.length} tournaments`)
+      console.log(`Loaded ${validTournaments.length} tournaments from files`)
       
       setTournaments(validTournaments)
       if (validTournaments.length > 0) {
@@ -99,9 +139,7 @@ function App() {
         processAggregatedPlayers(validTournaments)
       }
     } catch (error) {
-      console.error('Error loading tournaments:', error)
-    } finally {
-      setLoading(false)
+      console.error('Error loading tournaments from files:', error)
     }
   }
 
@@ -121,7 +159,7 @@ function App() {
     qualifyingStandings.forEach(player => {
       if (player.deactivated || player.removed) return
       
-      const normalizedName = normalizePlayerName(player.name)
+      const normalizedName = normalizePlayerNameSync(player.name)
       
       playerStatsMap.set(player._id, {
         id: player._id,
@@ -223,7 +261,7 @@ function App() {
       // First, add all qualifying placements
       qualifyingStandings.forEach(player => {
         if (!player.removed && player.stats.matches > 0) {
-          const normalizedName = normalizePlayerName(player.name)
+          const normalizedName = normalizePlayerNameSync(player.name)
           playerFinalPlacement.set(normalizedName, {
             place: player.stats.place,
             stats: player.stats,
@@ -235,7 +273,7 @@ function App() {
       // Override with elimination placements (these are the final tournament results)
       eliminationStandings.forEach(player => {
         if (!player.removed) {
-          const normalizedName = normalizePlayerName(player.name)
+          const normalizedName = normalizePlayerNameSync(player.name)
           const existing = playerFinalPlacement.get(normalizedName)
           if (existing) {
             playerFinalPlacement.set(normalizedName, {

@@ -1,0 +1,164 @@
+// Prisma schema for KCM Ranking database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tournament model - represents a single tournament
+model Tournament {
+  id          String   @id @default(cuid())
+  externalId  String   @unique // Original _id from Kickertool
+  name        String
+  createdAt   DateTime
+  updatedAt   DateTime @updatedAt
+  mode        String?
+  sport       String?
+  version     Int      @default(14)
+  rawData     Json?    // Store original JSON data for backward compatibility
+  
+  // Relations
+  matches     Match[]
+  standings   Standing[]
+  
+  @@index([createdAt])
+  @@map("tournaments")
+}
+
+// Player model - represents individual players
+model Player {
+  id              String   @id @default(cuid())
+  externalId      String?  @unique // Original _id from Kickertool
+  name            String   @unique
+  firstName       String?
+  lastName        String?
+  nationalId      String?  // DTFB ID
+  internationalId String?
+  country         String?
+  club            String?
+  license         String?
+  isGuest         Boolean  @default(false)
+  isExternal      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  teamPlayers     TeamPlayer[]
+  standings       Standing[]
+  aliases         PlayerAlias[] // Aliases that map to this player
+  
+  @@index([name])
+  @@map("players")
+}
+
+// PlayerAlias model - maps name variations to canonical player names
+model PlayerAlias {
+  id            String   @id @default(cuid())
+  alias         String   @unique // The name variation (e.g., "Phi", "Andy")
+  canonicalName String   // The canonical player name (e.g., "Phi Nguyen-Thien")
+  playerId      String?  // Optional reference to Player if exists
+  player        Player?  @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([canonicalName])
+  @@index([alias])
+  @@map("player_aliases")
+}
+
+// Match model - represents a single match (from qualifying or elimination)
+model Match {
+  id              String    @id @default(cuid())
+  externalId      String    @unique // Original _id from Kickertool
+  tournamentId    String
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  
+  // Match metadata
+  roundId         String?
+  roundName       String?
+  groupId         String?
+  isElimination   Boolean   @default(false)
+  eliminationLevel String?  // e.g., "final", "semifinal", "quarterfinal"
+  
+  // Match details
+  timeStart       DateTime?
+  timeEnd         DateTime?
+  valid           Boolean   @default(true)
+  skipped         Boolean   @default(false)
+  
+  // Results
+  team1Score      Int
+  team2Score      Int
+  
+  // Relations
+  teams           Team[]
+  
+  @@index([tournamentId])
+  @@index([isElimination])
+  @@map("matches")
+}
+
+// Team model - represents a team in a match (team1 or team2)
+model Team {
+  id            String   @id @default(cuid())
+  matchId       String
+  match         Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamNumber    Int      // 1 or 2
+  name          String   // Combined team name
+  score         Int      // Team's score in this match
+  won           Boolean  // Did this team win?
+  
+  // Relations
+  players       TeamPlayer[]
+  
+  @@index([matchId])
+  @@map("teams")
+}
+
+// TeamPlayer model - junction table for teams and players
+model TeamPlayer {
+  id        String  @id @default(cuid())
+  teamId    String
+  team      Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, playerId])
+  @@index([playerId])
+  @@map("team_players")
+}
+
+// Standing model - represents player standings in a tournament
+model Standing {
+  id            String     @id @default(cuid())
+  tournamentId  String
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  playerId      String
+  player        Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  // Standing details
+  place         Int
+  type          String     // "qualifying" or "elimination"
+  points        Int        @default(0)
+  matchesWon    Int        @default(0)
+  matchesLost   Int        @default(0)
+  matchesDrawn  Int        @default(0)
+  setsWon       Int        @default(0)
+  setsLost      Int        @default(0)
+  ballsWon      Int        @default(0)
+  ballsLost     Int        @default(0)
+  
+  // Status flags
+  deactivated   Boolean    @default(false)
+  removed       Boolean    @default(false)
+  
+  @@unique([tournamentId, playerId, type])
+  @@index([tournamentId])
+  @@index([playerId])
+  @@map("standings")
+}
+

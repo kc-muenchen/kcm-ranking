@@ -168,7 +168,7 @@
 <body>
   <div class="container">
     <h1>🎯 KCM Ranking Exporter</h1>
-    <p class="subtitle">Export Kickertool tournaments to GitHub</p>
+    <p class="subtitle">Export Kickertool tournaments to backend</p>
     
     <div id="pendingSection" class="section" style="display: none;">
       <div class="section-title">Captured Tournament <span class="badge">NEW</span></div>
@@ -176,14 +176,14 @@
         <div class="pending-tournament-name" id="pendingName">Loading...</div>
         <div class="pending-tournament-date" id="pendingDate"></div>
       </div>
-      <input type="text" id="filename" placeholder="Filename (e.g., 20250101_export.json)">
-      <button class="btn-primary" id="exportBtn">📤 Push to GitHub</button>
+      <input type="text" id="filename" placeholder="Optional filename" style="display: none;">
+      <button class="btn-primary" id="exportBtn">📤 Upload to Backend</button>
     </div>
     
     <div id="status" class="status"></div>
     
     <div id="settingsRequired" class="status info" style="display: none;">
-      ⚙️ GitHub settings required. 
+      ⚙️ API URL required. 
       <a href="#" id="openSettingsLink" style="color: #1565c0; font-weight: 600;">Configure now</a>
     </div>
     

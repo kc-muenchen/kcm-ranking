@@ -1,21 +1,11 @@
 // Options page script
 document.addEventListener('DOMContentLoaded', async () => {
   // Load existing settings
-  const settings = await chrome.storage.local.get([
-    'githubToken',
-    'githubRepo',
-    'githubPath'
-  ]);
+  const settings = await chrome.storage.local.get(['apiUrl']);
   
   // Populate fields
-  if (settings.githubToken) {
-    document.getElementById('githubToken').value = settings.githubToken;
-  }
-  if (settings.githubRepo) {
-    document.getElementById('githubRepo').value = settings.githubRepo;
-  }
-  if (settings.githubPath) {
-    document.getElementById('githubPath').value = settings.githubPath;
+  if (settings.apiUrl) {
+    document.getElementById('apiUrl').value = settings.apiUrl;
   }
   
   // Save button
@@ -35,31 +25,30 @@ async function saveSettings() {
   saveBtn.textContent = '⏳ Saving...';
   
   try {
-    const token = document.getElementById('githubToken').value.trim();
-    const repo = document.getElementById('githubRepo').value.trim();
-    const path = document.getElementById('githubPath').value.trim();
+    const apiUrl = document.getElementById('apiUrl').value.trim();
     
-    if (!token || !repo) {
-      showStatus('Please fill in GitHub token and repository', 'error');
+    if (!apiUrl) {
+      showStatus('Please enter an API URL', 'error');
       return;
     }
     
-    // Validate token format
-    if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
-      showStatus('Warning: GitHub token should start with "ghp_" or "github_pat_"', 'error');
+    // Validate URL format
+    try {
+      const url = new URL(apiUrl);
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        showStatus('URL must start with http:// or https://', 'error');
+        return;
+      }
+    } catch (e) {
+      showStatus('Please enter a valid URL', 'error');
       return;
     }
     
-    // Validate repo format
-    if (!repo.includes('/')) {
-      showStatus('Repository must be in format: owner/repo', 'error');
-      return;
-    }
+    // Remove trailing slash
+    const cleanUrl = apiUrl.replace(/\/$/, '');
     
     await chrome.storage.local.set({
-      githubToken: token,
-      githubRepo: repo,
-      githubPath: path || 'dummy_data'
+      apiUrl: cleanUrl
     });
     
     showStatus('✅ Settings saved successfully!', 'success');
@@ -77,39 +66,32 @@ async function testConnection() {
   testBtn.textContent = '⏳ Testing...';
   
   try {
-    const token = document.getElementById('githubToken').value.trim();
-    const repo = document.getElementById('githubRepo').value.trim();
+    const apiUrl = document.getElementById('apiUrl').value.trim();
     
-    if (!token || !repo) {
+    if (!apiUrl) {
       showStatus('Please save settings first', 'error');
       return;
     }
     
-    const [owner, repoName] = repo.split('/');
+    // Remove trailing slash
+    const baseUrl = apiUrl.replace(/\/$/, '');
     
-    // Test by fetching repo info
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}`,
-      {
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
+    // Test by fetching health endpoint
+    const response = await fetch(`${baseUrl}/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    );
+    });
     
     if (response.ok) {
-      const repoData = await response.json();
-      showStatus(`✅ Connection successful! Found repository: ${repoData.full_name}`, 'success');
-    } else if (response.status === 401) {
-      showStatus('❌ Authentication failed. Check your token.', 'error');
-    } else if (response.status === 404) {
-      showStatus('❌ Repository not found. Check the repository name.', 'error');
+      const data = await response.json();
+      showStatus(`✅ Connection successful! Backend is running (${data.status})`, 'success');
     } else {
-      showStatus(`❌ Error: ${response.status} ${response.statusText}`, 'error');
+      showStatus(`❌ Backend returned error: ${response.status} ${response.statusText}`, 'error');
     }
   } catch (error) {
-    showStatus(`❌ Connection error: ${error.message}`, 'error');
+    showStatus(`❌ Connection error: ${error.message}. Make sure backend is running!`, 'error');
   } finally {
     testBtn.disabled = false;
     testBtn.textContent = '🧪 Test Connection';

@@ -1,6 +1,6 @@
 # KCM Ranking - Kickertool Exporter Chrome Extension
 
-Automatically export tournament data from Kickertool to your GitHub repository.
+Automatically export tournament data from Kickertool directly to your backend API!
 
 ## 🚀 Installation
 
@@ -12,124 +12,141 @@ Automatically export tournament data from Kickertool to your GitHub repository.
 4. Select the `browser-extension` folder
 5. The extension should now appear in your extensions list
 
-### 2. Configure GitHub Access (One-Time Setup by Admin)
+### 2. Configure API URL
 
-1. **Right-click** the extension icon → Click **"Options"**
-   - Or click the extension icon → Click "⚙️ Settings"
-   
-2. Click "🔑 Create a new token" link
-   - Or go to: https://github.com/settings/tokens/new
-   - Give it a name: "KCM Ranking Exporter"
-   - Select scope: `repo` (Full control of private repositories)
-   - Click "Generate token"
-   - **Copy the token immediately** (you won't see it again!)
+1. **Start your backend first**:
+   ```bash
+   cd backend
+   npm run dev
+   ```
 
-3. In the settings page, enter:
-   - **GitHub Token**: Paste your token
-   - **Repository**: `mgaesslein/kcm-ranking` (already filled)
-   - **Path**: `dummy_data` (already filled)
+2. **Configure extension**:
+   - Click the extension icon
+   - Click "⚙️ Settings"
+   - Enter your API URL (default: `http://localhost:3001`)
    - Click "💾 Save Settings"
    - Click "🧪 Test Connection" to verify
 
-**Note:** These settings are configured once by an administrator. Regular team members don't need to see or configure them.
+**Note:** Settings only need to be configured once! They're stored in your browser.
 
 ## 📖 How to Use
 
-### Method 1: Automatic Capture (Recommended)
+### Automatic Capture (Recommended)
 
 1. Log into https://app.kickertool.de
 2. Go to your tournaments list
 3. Click "Export" on any tournament
-4. Select "JSON" export option
-5. The extension will automatically:
+4. Select "Export as JSON"
+5. The extension will **automatically**:
    - ✅ Capture the tournament data
    - ✅ Show a notification
    - ✅ Display a badge on the extension icon
 
 6. Click the extension icon
-7. Review the tournament name and filename
-8. Click "📤 Push to GitHub"
-9. Done! ✨
+7. Review the tournament details
+8. Click "📤 Upload to Backend"
+9. Done! Check your database or frontend
 
-### Method 2: Manual Capture (If Automatic Fails)
+## 🔧 API Configuration
 
-1. Download the JSON from Kickertool normally
-2. Open the downloaded `.json` file in Chrome (drag into browser)
-3. Click the extension icon
-4. Click "🔍 Capture from Current Tab" button
-5. Review and push to GitHub
-6. Done! ✨
+### Local Development
+```
+http://localhost:3001
+```
 
-### Automatic Workflow
+### Production
+```
+https://api.yourdomain.com
+```
 
-Once installed:
-- 🎯 Extension monitors Kickertool exports
-- 📥 Captures JSON data automatically
-- 🔔 Notifies you when data is captured
-- 🚀 One-click push to GitHub
-- ✅ File appears in your repo's `dummy_data` folder
+## ✅ Verification
 
-## 🔧 Troubleshooting
+After uploading, verify the tournament is in the database:
 
-### Extension not capturing data automatically?
+```bash
+# Check backend logs
+cd backend
+npm run dev
 
-**Try the Manual Capture method** (see "Method 2" above)!
+# Check database (optional)
+npm run prisma:studio
 
-For detailed troubleshooting steps, see **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
+# Check frontend
+# Open http://localhost:5173 and look for the new tournament
+```
 
-### Quick Fixes:
+## 🐛 Troubleshooting
 
-**Extension not capturing data:**
-1. Use Manual Capture: Download JSON → Open in Chrome → Click "Capture from Current Tab"
-2. Make sure you're on `app.kickertool.de`
-3. Try refreshing the page and reloading the extension
-4. Check browser console (F12) for errors
+### "Please configure API URL in settings first"
 
-**GitHub push fails:**
-1. Verify your GitHub token is valid
-2. Make sure token has `repo` scope
-3. Check repository name is correct: `owner/repo`
-4. Ensure you have write access to the repository
+**Solution:** Click the extension icon → "⚙️ Settings" → Enter API URL → Save
 
-**Can't see the extension:**
-1. Go to `chrome://extensions/`
-2. Find "KCM Ranking - Kickertool Exporter"
-3. Make sure it's enabled
-4. Try reloading the extension
+### "Connection error: Failed to fetch"
 
-📖 **For more help, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
+**Problem:** Backend is not running
 
-## 🔐 Security
+**Solution:**
+```bash
+cd backend
+npm run dev
+```
 
-- GitHub token is stored locally in Chrome
-- Token is never sent anywhere except GitHub API
-- All communication is over HTTPS
-- Token is only stored on your computer
+### "Backend returned error: 500"
 
-## 📝 File Naming
+**Problem:** Database connection issue
 
-The extension auto-generates filenames based on:
-- Tournament date: `20250101_export.json`
-- Or tournament name: `tournament_name_export.json`
+**Solution:**
+```bash
+# Make sure PostgreSQL is running
+docker-compose up -d database
 
-You can edit the filename before pushing to GitHub.
+# Check backend logs for details
+cd backend
+npm run dev
+```
 
-## 🆘 Support
+### Capture Not Working
 
-If you encounter issues:
-1. Check browser console for errors
-2. Verify GitHub token permissions
-3. Try reloading the extension
-4. Contact the repository maintainer
+1. Make sure you're on `app.kickertool.de`
+2. Click "Export" → "Export as JSON"
+3. Check browser console (F12) for any errors
+4. Reload the page and try again
 
-## 🔄 Updates
+## 🎯 How It Works
 
-To update the extension:
-1. Pull latest changes from repository
-2. Go to `chrome://extensions/`
-3. Click reload icon on the extension card
+1. **Content Script** (`content.js`) runs on Kickertool pages
+2. **Injected Script** (`injected.js`) intercepts blob downloads
+3. **Background Script** (`background.js`) receives captured data
+4. **Popup** (`popup.html/js`) displays captured tournaments
+5. **Backend API** (`POST /api/tournaments`) stores in database
 
----
+## 📦 What Gets Uploaded
 
-Made with ❤️ for KC München Table Soccer
+The extension captures and uploads the **complete tournament JSON** including:
+- Tournament metadata (name, date, mode, sport)
+- Qualifying rounds (matches, standings, stats)
+- Elimination rounds (bracket, matches, results)
+- Player information (names, external IDs, stats)
 
+This is the exact same data format that Kickertool exports!
+
+## 🔐 Privacy & Security
+
+- API URL is stored locally in your browser
+- No data is sent to external services
+- All communication is between your browser and your backend
+- Data goes directly into your PostgreSQL database
+
+## 🎉 Benefits Over GitHub Method
+
+✅ **Instant updates** - Data appears immediately in your app
+✅ **No git commits** - Cleaner repository history  
+✅ **Simpler workflow** - No GitHub tokens needed
+✅ **Better scalability** - Database handles large datasets efficiently
+✅ **Real-time** - Frontend always shows latest data
+
+## 📚 Additional Resources
+
+- [Backend Setup Guide](../BACKEND_SETUP.md)
+- [Migration Guide](../MIGRATION_TO_API.md)
+- [Main README](../README.md)

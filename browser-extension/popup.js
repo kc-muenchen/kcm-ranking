@@ -2,15 +2,13 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Load settings
   const settings = await chrome.storage.local.get([
-    'githubToken',
-    'githubRepo',
-    'githubPath',
+    'apiUrl',
     'pendingTournament',
     'pendingFilename'
   ]);
   
-  // Check if GitHub is configured
-  const isConfigured = settings.githubToken && settings.githubRepo;
+  // Check if API is configured
+  const isConfigured = settings.apiUrl;
   
   if (!isConfigured) {
     document.getElementById('settingsRequired').style.display = 'block';
@@ -34,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Export button
   document.getElementById('exportBtn').addEventListener('click', async () => {
-    await exportToGitHub();
+    await exportToBackend();
   });
 });
 
@@ -76,7 +74,7 @@ function generateFilename(tournament) {
   return `tournament_${Date.now()}.json`;
 }
 
-async function exportToGitHub() {
+async function exportToBackend() {
   const exportBtn = document.getElementById('exportBtn');
   exportBtn.disabled = true;
   exportBtn.textContent = '⏳ Uploading...';
@@ -84,14 +82,12 @@ async function exportToGitHub() {
   try {
     // Get settings
     const settings = await chrome.storage.local.get([
-      'githubToken',
-      'githubRepo',
-      'githubPath',
+      'apiUrl',
       'pendingTournament'
     ]);
     
-    if (!settings.githubToken || !settings.githubRepo) {
-      showStatus('Please configure GitHub settings first', 'error');
+    if (!settings.apiUrl) {
+      showStatus('Please configure API URL in settings first', 'error');
       return;
     }
     
@@ -100,23 +96,14 @@ async function exportToGitHub() {
       return;
     }
     
-    const filename = document.getElementById('filename').value;
-    if (!filename) {
-      showStatus('Please enter a filename', 'error');
-      return;
-    }
-    
-    // Upload to GitHub
-    const result = await pushToGitHub(
-      settings.githubToken,
-      settings.githubRepo,
-      settings.githubPath || 'dummy_data',
-      filename,
+    // Upload to backend API
+    const result = await pushToBackend(
+      settings.apiUrl,
       settings.pendingTournament
     );
     
     if (result.success) {
-      showStatus(`✅ Successfully pushed to GitHub!`, 'success');
+      showStatus(`✅ Successfully uploaded to backend!`, 'success');
       
       // Clear pending tournament
       await chrome.storage.local.remove(['pendingTournament', 'pendingFilename']);
@@ -132,65 +119,39 @@ async function exportToGitHub() {
     showStatus(`❌ Error: ${error.message}`, 'error');
   } finally {
     exportBtn.disabled = false;
-    exportBtn.textContent = '📤 Push to GitHub';
+    exportBtn.textContent = '📤 Upload to Backend';
   }
 }
 
-async function pushToGitHub(token, repo, path, filename, data) {
+async function pushToBackend(apiUrl, data) {
   try {
-    const [owner, repoName] = repo.split('/');
-    const filePath = `${path}/${filename}`;
+    // Remove trailing slash if present
+    const baseUrl = apiUrl.replace(/\/$/, '');
+    const endpoint = `${baseUrl}/api/tournaments`;
     
-    // Encode content to base64
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-    
-    // Check if file exists
-    let sha = null;
-    try {
-      const checkResponse = await fetch(
-        `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`,
-        {
-          headers: {
-            'Authorization': `token ${token}`,
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        }
-      );
-      
-      if (checkResponse.ok) {
-        const existing = await checkResponse.json();
-        sha = existing.sha;
-      }
-    } catch (e) {
-      // File doesn't exist, that's fine
-    }
-    
-    // Create/update file
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: `Add tournament export: ${filename}`,
-          content: content,
-          ...(sha && { sha })
-        })
-      }
-    );
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'GitHub API error');
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch (e) {
+        // Could not parse error response
+      }
+      throw new Error(errorMessage);
     }
     
-    return { success: true };
+    const result = await response.json();
+    return { success: true, data: result };
   } catch (error) {
-    console.error('GitHub push error:', error);
+    console.error('Backend push error:', error);
     return { success: false, error: error.message };
   }
 }
