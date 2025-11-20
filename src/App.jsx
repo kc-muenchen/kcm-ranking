@@ -5,6 +5,7 @@ import StatsCards from './components/StatsCards'
 import ViewToggle from './components/ViewToggle'
 import EliminationBracket from './components/EliminationBracket'
 import PlayerDetail from './components/PlayerDetail'
+import ScrollToTop from './components/ScrollToTop'
 import { calculateTrueSkillRatings, getConservativeRating } from './utils/trueskill'
 import { normalizePlayerName } from './config/playerAliases'
 import './App.css'
@@ -15,13 +16,46 @@ function App() {
   const [players, setPlayers] = useState([])
   const [aggregatedPlayers, setAggregatedPlayers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState('tournament') // 'tournament' or 'overall'
+  const [viewMode, setViewMode] = useState('overall') // 'tournament' or 'overall'
   const [selectedPlayer, setSelectedPlayer] = useState(null) // For individual player view
   const [playerHistory, setPlayerHistory] = useState(new Map()) // TrueSkill history per player
 
   useEffect(() => {
     loadTournaments()
   }, [])
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (event.state) {
+        // Restore state from history
+        setViewMode(event.state.viewMode || 'tournament')
+        setSelectedTournament(event.state.tournamentId ? 
+          tournaments.find(t => t.id === event.state.tournamentId) : 
+          tournaments[0])
+        setSelectedPlayer(event.state.playerName || null)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    // Initialize state from URL on first load
+    const params = new URLSearchParams(window.location.search)
+    const view = params.get('view')
+    const player = params.get('player')
+    const tournamentId = params.get('tournament')
+
+    if (view) setViewMode(view)
+    if (player) setSelectedPlayer(player)
+    if (tournamentId && tournaments.length > 0) {
+      const tournament = tournaments.find(t => t.id === tournamentId)
+      if (tournament) setSelectedTournament(tournament)
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [tournaments])
 
   const loadTournaments = async () => {
     try {
@@ -299,14 +333,38 @@ function App() {
   const handleTournamentChange = (tournament) => {
     setSelectedTournament(tournament)
     processPlayers(tournament.data)
+    
+    // Update URL with tournament selection
+    const params = new URLSearchParams(window.location.search)
+    params.set('tournament', tournament.id)
+    params.delete('player') // Clear player selection when changing tournament
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    window.history.pushState(
+      { viewMode, tournamentId: tournament.id, playerName: null },
+      '',
+      newUrl
+    )
   }
 
   const handlePlayerSelect = (playerName) => {
     setSelectedPlayer(playerName)
+    
+    // Push state to browser history
+    const params = new URLSearchParams(window.location.search)
+    params.set('player', playerName)
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    window.history.pushState(
+      { viewMode, tournamentId: selectedTournament?.id, playerName },
+      '',
+      newUrl
+    )
   }
 
   const handleBackFromPlayer = () => {
     setSelectedPlayer(null)
+    
+    // Go back in history
+    window.history.back()
   }
 
   const currentPlayers = viewMode === 'overall' ? aggregatedPlayers : players
@@ -348,6 +406,8 @@ function App() {
           </div>
         </main>
 
+        <ScrollToTop />
+
         <footer className="footer">
           <div className="container">
             <p>KC München Table Soccer Rankings</p>
@@ -373,7 +433,20 @@ function App() {
         <div className="container">
           <ViewToggle 
             viewMode={viewMode} 
-            onViewModeChange={setViewMode}
+            onViewModeChange={(newViewMode) => {
+              setViewMode(newViewMode)
+              
+              // Update URL with view mode
+              const params = new URLSearchParams(window.location.search)
+              params.set('view', newViewMode)
+              params.delete('player') // Clear player selection when changing view
+              const newUrl = `${window.location.pathname}?${params.toString()}`
+              window.history.pushState(
+                { viewMode: newViewMode, tournamentId: selectedTournament?.id, playerName: null },
+                '',
+                newUrl
+              )
+            }}
           />
 
           {viewMode === 'tournament' && (
@@ -407,6 +480,8 @@ function App() {
           )}
         </div>
       </main>
+
+      <ScrollToTop />
 
       <footer className="footer">
         <div className="container">

@@ -19,6 +19,8 @@ export const playerAliases = {
   'Nik': 'Nicki Preisinger',
   'Nikki': 'Nicki Preisinger',
   'Nik Preisinger': 'Nicki Preisinger',
+  'David B.': 'David Brügger',
+  'David': 'David Brügger',
 }
 
 /**
