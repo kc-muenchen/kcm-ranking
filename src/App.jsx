@@ -96,6 +96,7 @@ function App() {
           name: tournament.name,
           date: tournament.createdAt,
           fileName: `${tournament.name}.json`, // For display purposes
+          isSeasonFinal: tournament.isSeasonFinal || false, // Include season final flag from database
           data: tournament.rawData // Backend should return the full tournament data
         }))
         .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -144,6 +145,7 @@ function App() {
               name: data.name,
               date: data.createdAt,
               fileName: fileName,
+              isSeasonFinal: false, // Default to false for file-based tournaments (can be updated later)
               data: data
             }
           } catch (error) {
@@ -413,12 +415,38 @@ function App() {
     return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)) // Most recent first
   }
 
+  // Get season final tournament for a given season
+  const getSeasonFinal = (seasonYear) => {
+    return tournaments.find(tournament => {
+      const tournamentYear = new Date(tournament.date).getFullYear()
+      return tournamentYear.toString() === seasonYear && tournament.isSeasonFinal === true
+    })
+  }
+
   // Process players for a specific season (year)
   const processSeasonPlayers = (loadedTournaments, seasonYear) => {
-    // Filter tournaments by year
+    // Find the season final for this season
+    const seasonFinal = loadedTournaments.find(tournament => {
+      const tournamentYear = new Date(tournament.date).getFullYear()
+      return tournamentYear.toString() === seasonYear && tournament.isSeasonFinal === true
+    })
+    
+    // Filter tournaments by year, exclude season finals, and exclude tournaments after season final date
     const seasonTournaments = loadedTournaments.filter(tournament => {
       const tournamentYear = new Date(tournament.date).getFullYear()
-      return tournamentYear.toString() === seasonYear
+      const isInSeason = tournamentYear.toString() === seasonYear
+      
+      // Exclude season finals
+      if (tournament.isSeasonFinal) return false
+      
+      // If season final exists, exclude tournaments after the season final date
+      if (seasonFinal) {
+        const tournamentDate = new Date(tournament.date)
+        const finalDate = new Date(seasonFinal.date)
+        if (tournamentDate > finalDate) return false
+      }
+      
+      return isInSeason
     })
 
     if (seasonTournaments.length === 0) {
@@ -758,6 +786,85 @@ function App() {
 
           {currentPlayers.length > 0 ? (
             <>
+              {viewMode === 'season' && selectedSeason && (() => {
+                const seasonFinal = getSeasonFinal(selectedSeason)
+                if (!seasonFinal) return null
+                
+                // Get top 3 from elimination standings
+                const topPlayers = []
+                if (seasonFinal.data?.eliminations && Array.isArray(seasonFinal.data.eliminations) && seasonFinal.data.eliminations.length > 0) {
+                  const eliminationStandings = seasonFinal.data.eliminations[0].standings || []
+                  eliminationStandings
+                    .filter(player => player && player.stats && !player.removed && player.stats.place <= 3)
+                    .sort((a, b) => a.stats.place - b.stats.place)
+                    .forEach(player => {
+                      topPlayers.push({
+                        name: player.name,
+                        place: player.stats.place
+                      })
+                    })
+                }
+                
+                const getMedalEmoji = (place) => {
+                  if (place === 1) return '🥇'
+                  if (place === 2) return '🥈'
+                  if (place === 3) return '🥉'
+                  return place
+                }
+                
+                return (
+                  <div className="season-final-section">
+                    <h2>🏆 Season Final</h2>
+                    <div className="season-final-card">
+                      <div className="season-final-header">
+                        <h3>{seasonFinal.name}</h3>
+                        <span className="season-final-date">
+                          {new Date(seasonFinal.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {topPlayers.length > 0 && (
+                        <div className="season-final-podium">
+                          {topPlayers.map(player => (
+                            <div key={player.name} className={`podium-item place-${player.place}`}>
+                              <span className="podium-medal">{getMedalEmoji(player.place)}</span>
+                              <span className="podium-name">{player.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="season-final-info">
+                        <p className="season-final-note">
+                          <strong>Season Closed:</strong> This season has concluded with the season final. 
+                          All tournaments after this date until the next year will not count toward season points.
+                        </p>
+                        <p className="season-final-note">
+                          This tournament is excluded from season ranking calculations.
+                        </p>
+                      </div>
+                      <button 
+                        className="view-final-button"
+                        onClick={() => {
+                          setViewMode('tournament')
+                          setSelectedTournament(seasonFinal)
+                          const params = new URLSearchParams(window.location.search)
+                          params.set('view', 'tournament')
+                          params.set('tournament', seasonFinal.id)
+                          params.delete('season')
+                          params.delete('finaleQualifiers')
+                          const newUrl = `${window.location.pathname}?${params.toString()}`
+                          window.history.pushState(
+                            { viewMode: 'tournament', tournamentId: seasonFinal.id, playerName: null },
+                            '',
+                            newUrl
+                          )
+                        }}
+                      >
+                        View Season Final Tournament →
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
               <StatsCards 
                 players={currentPlayers}
                 viewMode={viewMode}

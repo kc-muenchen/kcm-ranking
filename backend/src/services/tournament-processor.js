@@ -5,9 +5,22 @@ import prisma from '../utils/db.js';
  * @param {Object} data - Raw tournament data from Kickertool
  * @returns {Promise<Object>} - Saved tournament object
  */
+/**
+ * Helper function to check if a tournament is a season final based on name
+ */
+function isSeasonFinalByName(name) {
+  if (!name) return false
+  const lowerName = name.toLowerCase()
+  return lowerName.includes('season final') ||
+         lowerName.includes('saison finale')
+}
+
 export async function processTournamentData(data) {
   // Use a transaction to ensure data consistency
   return await prisma.$transaction(async (tx) => {
+    // Check if this is a season final based on name
+    const isSeasonFinal = isSeasonFinalByName(data.name)
+    
     // 1. Create or get tournament
     const tournament = await tx.tournament.upsert({
       where: { externalId: data._id },
@@ -16,6 +29,7 @@ export async function processTournamentData(data) {
         mode: data.mode,
         sport: data.sport,
         version: data.version || 14,
+        isSeasonFinal: isSeasonFinal,
         rawData: data // Store original JSON for frontend compatibility
       },
       create: {
@@ -25,6 +39,7 @@ export async function processTournamentData(data) {
         mode: data.mode,
         sport: data.sport,
         version: data.version || 14,
+        isSeasonFinal: isSeasonFinal,
         rawData: data // Store original JSON for frontend compatibility
       }
     });

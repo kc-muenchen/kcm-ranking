@@ -13,6 +13,7 @@ export async function getAllTournaments(req, res, next) {
         createdAt: true,
         mode: true,
         sport: true,
+        isSeasonFinal: true, // Include season final flag
         rawData: true, // Include raw JSON data for frontend
         _count: {
           select: {

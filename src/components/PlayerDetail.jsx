@@ -1240,11 +1240,34 @@ function calculateAchievements(playerName, matchHistory, tournaments, tournament
   // Calculate season rankings for each season to find the player's actual position
   const seasonStats = new Map()
   
-  // Group tournaments by season (year)
+  // Group tournaments by season (year), excluding season finals and tournaments after season final
   const tournamentsBySeason = new Map()
+  const seasonFinalsByYear = new Map()
+  
+  // First pass: find all season finals by year
   tournaments.forEach(tournament => {
     if (!tournament || !tournament.data) return
+    if (tournament.isSeasonFinal === true) {
+      const year = new Date(tournament.date).getFullYear().toString()
+      seasonFinalsByYear.set(year, tournament)
+    }
+  })
+  
+  // Second pass: group tournaments by season, excluding season finals and tournaments after season final date
+  tournaments.forEach(tournament => {
+    if (!tournament || !tournament.data) return
+    if (tournament.isSeasonFinal === true) return // Exclude season finals from achievement calculations
+    
     const year = new Date(tournament.date).getFullYear().toString()
+    const seasonFinal = seasonFinalsByYear.get(year)
+    
+    // If season final exists, exclude tournaments after the season final date
+    if (seasonFinal) {
+      const tournamentDate = new Date(tournament.date)
+      const finalDate = new Date(seasonFinal.date)
+      if (tournamentDate > finalDate) return // Exclude tournaments after season final
+    }
+    
     if (!tournamentsBySeason.has(year)) {
       tournamentsBySeason.set(year, [])
     }
