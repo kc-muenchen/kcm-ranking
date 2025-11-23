@@ -856,7 +856,7 @@ function calculateTournamentList(playerName, tournaments) {
     // Only add if player participated
     if (foundInQualifying || foundInElimination) {
       const placePoints = seasonPointsMap[finalPlace] || 0
-      const attendancePoint = placePoints === 0 ? 1 : 0
+      const attendancePoint = 1 // +1 for attending (everyone gets this)
       
       tournamentList.push({
         name: tournament.name,
@@ -1326,7 +1326,7 @@ function calculateAchievements(playerName, matchHistory, tournaments, tournament
         
         const stats = playerSeasonStats.get(normalizedName)
         const placePoints = seasonPointsMap[playerData.place] || 0
-        const attendancePoint = placePoints === 0 ? 1 : 0
+        const attendancePoint = 1 // +1 for attending (everyone gets this)
         stats.seasonPoints += placePoints + attendancePoint
       })
     })

@@ -25,6 +25,7 @@ function App() {
   const [selectedPlayer, setSelectedPlayer] = useState(null) // For individual player view
   const [playerHistory, setPlayerHistory] = useState(new Map()) // TrueSkill history per player
   const [showFinaleQualifiers, setShowFinaleQualifiers] = useState(false) // Filter for season finale qualifiers
+  const [isQualificationInfoExpanded, setIsQualificationInfoExpanded] = useState(false) // Expandable info box state
 
   useEffect(() => {
     // Preload aliases from API, then load tournaments
@@ -353,7 +354,7 @@ function App() {
         
         // Calculate season points based on final placement
         const placePoints = seasonPointsMap[playerData.place] || 0
-        const attendancePoint = placePoints === 0 ? 1 : 0 // +1 for attending if not in top 16
+        const attendancePoint = 1 // +1 for attending (everyone gets this)
         stats.seasonPoints += placePoints + attendancePoint
       })
     })
@@ -535,7 +536,7 @@ function App() {
         
         // Calculate season points based on final placement
         const placePoints = seasonPointsMap[playerData.place] || 0
-        const attendancePoint = placePoints === 0 ? 1 : 0 // +1 for attending if not in top 16
+        const attendancePoint = 1 // +1 for attending (everyone gets this)
         stats.seasonPoints += placePoints + attendancePoint
       })
     })
@@ -584,7 +585,28 @@ function App() {
         place: index + 1
       }))
 
-    setSeasonPlayers(aggregated)
+    // Calculate finale status for all players (based on eligibility and ranking)
+    // First, get eligible players (10+ tournaments) sorted by their current position
+    const eligiblePlayers = aggregated.filter(player => player.tournaments >= 10)
+    
+    // Add finale status to all players
+    const playersWithStatus = aggregated.map(player => {
+      let finaleStatus = null
+      if (player.tournaments >= 10) {
+        const eligibleIndex = eligiblePlayers.findIndex(p => p.name === player.name)
+        if (eligibleIndex < 20) {
+          finaleStatus = 'qualified'
+        } else if (eligibleIndex < 25) {
+          finaleStatus = 'successor'
+        }
+      }
+      return {
+        ...player,
+        finaleStatus: finaleStatus
+      }
+    })
+
+    setSeasonPlayers(playersWithStatus)
   }
 
   const handleSeasonChange = (season) => {
@@ -670,14 +692,9 @@ function App() {
       return seasonPlayers
     }
     
-    // Filter players with at least 10 games
-    const eligiblePlayers = seasonPlayers.filter(player => player.matches >= 10)
-    
-    // Mark top 20 as qualified, next 5 as successors
-    return eligiblePlayers.map((player, index) => ({
-      ...player,
-      finaleStatus: index < 20 ? 'qualified' : index < 25 ? 'successor' : null
-    })).slice(0, 25) // Only show top 25 (20 qualified + 5 successors)
+    // Filter players with at least 10 tournament attendances and show top 25
+    const eligiblePlayers = seasonPlayers.filter(player => player.tournaments >= 10)
+    return eligiblePlayers.slice(0, 25) // Only show top 25 (20 qualified + 5 successors)
   }
 
   const currentPlayers = viewMode === 'overall' 
@@ -786,6 +803,34 @@ function App() {
 
           {currentPlayers.length > 0 ? (
             <>
+              {viewMode === 'season' && (
+                <div className="qualification-info-box">
+                  <div 
+                    className="qualification-info-header"
+                    onClick={() => setIsQualificationInfoExpanded(!isQualificationInfoExpanded)}
+                  >
+                    <h3>🏆 Season Finale Qualification Requirements</h3>
+                    <button 
+                      className="qualification-info-toggle"
+                      aria-expanded={isQualificationInfoExpanded}
+                    >
+                      {isQualificationInfoExpanded ? '▼' : '▶'}
+                    </button>
+                  </div>
+                  {isQualificationInfoExpanded && (
+                    <div className="qualification-info-content">
+                      <ul>
+                        <li>Minimum <strong>10 tournament attendances</strong> required to qualify</li>
+                        <li>Top <strong>20 players</strong> are <span className="qualified-badge">qualified</span> for the season finale</li>
+                        <li>Next <strong>5 players</strong> are <span className="successor-badge">potential successors</span> if a spot becomes available</li>
+                      </ul>
+                      <p className="qualification-info-note">
+                        Rankings are sorted by Season Points, then TrueSkill, then total Points.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
               {viewMode === 'season' && selectedSeason && (() => {
                 const seasonFinal = getSeasonFinal(selectedSeason)
                 if (!seasonFinal) return null
