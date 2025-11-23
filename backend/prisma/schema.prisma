@@ -11,21 +11,23 @@ datasource db {
 
 // Tournament model - represents a single tournament
 model Tournament {
-  id          String   @id @default(cuid())
-  externalId  String   @unique // Original _id from Kickertool
-  name        String
-  createdAt   DateTime
-  updatedAt   DateTime @updatedAt
-  mode        String?
-  sport       String?
-  version     Int      @default(14)
-  rawData     Json?    // Store original JSON data for backward compatibility
+  id            String   @id @default(cuid())
+  externalId    String   @unique // Original _id from Kickertool
+  name          String
+  createdAt     DateTime
+  updatedAt     DateTime @updatedAt
+  mode          String?
+  sport         String?
+  version       Int      @default(14)
+  rawData       Json?    // Store original JSON data for backward compatibility
+  isSeasonFinal Boolean  @default(false) // Flag to mark season final tournaments
   
   // Relations
-  matches     Match[]
-  standings   Standing[]
+  matches       Match[]
+  standings     Standing[]
   
   @@index([createdAt])
+  @@index([isSeasonFinal])
   @@map("tournaments")
 }
 

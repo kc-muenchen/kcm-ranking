@@ -5,38 +5,220 @@ import prisma from '../utils/db.js';
  * @param {Object} data - Raw tournament data from Kickertool
  * @returns {Promise<Object>} - Saved tournament object
  */
+/**
+ * Helper function to check if a tournament is a season final based on name
+ */
+function isSeasonFinalByName(name) {
+  if (!name) return false
+  const lowerName = name.toLowerCase()
+  // Check for various season final patterns
+  return lowerName.includes('season final') ||
+         lowerName.includes('saison final') ||
+         lowerName.includes('saison finale')
+}
+
+/**
+ * Check if tournament has only qualifying (no elimination matches)
+ */
+function hasOnlyQualifying(data) {
+  const hasQualifying = data.qualifying && 
+    data.qualifying[0] && 
+    data.qualifying[0].rounds && 
+    data.qualifying[0].rounds.length > 0 &&
+    data.qualifying[0].rounds.some(round => round.matches && round.matches.length > 0)
+  const hasEliminations = data.eliminations && 
+    data.eliminations.length > 0 &&
+    data.eliminations.some(elim => 
+      elim.levels && 
+      elim.levels.some(level => level.matches && level.matches.length > 0)
+    )
+  return hasQualifying && !hasEliminations
+}
+
+/**
+ * Check if tournament has only eliminations (no qualifying matches)
+ */
+function hasOnlyEliminations(data) {
+  const hasQualifying = data.qualifying && 
+    data.qualifying[0] && 
+    data.qualifying[0].rounds && 
+    data.qualifying[0].rounds.length > 0 &&
+    data.qualifying[0].rounds.some(round => round.matches && round.matches.length > 0)
+  const hasEliminations = data.eliminations && 
+    data.eliminations.length > 0 &&
+    data.eliminations.some(elim => 
+      elim.levels && 
+      elim.levels.some(level => level.matches && level.matches.length > 0)
+    )
+  return hasEliminations && !hasQualifying
+}
+
+/**
+ * Merge two tournament data objects
+ */
+function mergeTournamentData(existingData, newData) {
+  const merged = JSON.parse(JSON.stringify(existingData)) // Deep clone
+  
+  // Merge qualifying data - keep existing if it has matches, otherwise use new
+  if (existingData.qualifying && existingData.qualifying[0]) {
+    // Keep existing qualifying data (it has the matches)
+    merged.qualifying = existingData.qualifying
+  } else if (newData.qualifying && newData.qualifying[0]) {
+    // Use new qualifying data if existing doesn't have it
+    merged.qualifying = newData.qualifying
+  }
+  
+  // Merge elimination data - keep existing if it has matches, otherwise use new
+  if (existingData.eliminations && existingData.eliminations.length > 0) {
+    // Check if existing has actual matches
+    const existingHasMatches = existingData.eliminations.some(elim => 
+      elim.levels && elim.levels.some(level => level.matches && level.matches.length > 0)
+    )
+    if (existingHasMatches) {
+      merged.eliminations = existingData.eliminations
+    } else if (newData.eliminations && newData.eliminations.length > 0) {
+      merged.eliminations = newData.eliminations
+    }
+  } else if (newData.eliminations && newData.eliminations.length > 0) {
+    // Use new elimination data if existing doesn't have it
+    merged.eliminations = newData.eliminations
+  }
+  
+  // Update metadata - use the most recent
+  const existingDate = existingData.updatedAt ? new Date(existingData.updatedAt) : null
+  const newDate = newData.updatedAt ? new Date(newData.updatedAt) : null
+  if (newDate && (!existingDate || newDate > existingDate)) {
+    merged.updatedAt = newData.updatedAt
+  } else if (existingDate) {
+    merged.updatedAt = existingData.updatedAt
+  }
+  
+  merged.version = newData.version || existingData.version || 14
+  
+  // Preserve other important fields from both
+  merged.name = newData.name || existingData.name
+  merged.mode = newData.mode || existingData.mode
+  merged.sport = newData.sport || existingData.sport
+  
+  return merged
+}
+
 export async function processTournamentData(data) {
   // Use a transaction to ensure data consistency
   return await prisma.$transaction(async (tx) => {
-    // 1. Create or get tournament
-    const tournament = await tx.tournament.upsert({
-      where: { externalId: data._id },
-      update: {
-        name: data.name,
-        mode: data.mode,
-        sport: data.sport,
-        version: data.version || 14,
-        rawData: data // Store original JSON for frontend compatibility
-      },
-      create: {
-        externalId: data._id,
-        name: data.name,
-        createdAt: new Date(data.createdAt),
-        mode: data.mode,
-        sport: data.sport,
-        version: data.version || 14,
-        rawData: data // Store original JSON for frontend compatibility
+    // Check if this is a season final based on name
+    const isSeasonFinal = isSeasonFinalByName(data.name)
+    
+    let tournamentToUse = null
+    let mergedData = data
+    
+    // If this is a season final, check for existing season finals in the same year
+    if (isSeasonFinal) {
+      const tournamentYear = new Date(data.createdAt).getFullYear()
+      const yearStart = new Date(tournamentYear, 0, 1)
+      const yearEnd = new Date(tournamentYear + 1, 0, 1)
+      
+      // Find existing season finals in the same year
+      const existingSeasonFinals = await tx.tournament.findMany({
+        where: {
+          isSeasonFinal: true,
+          createdAt: {
+            gte: yearStart,
+            lt: yearEnd
+          },
+          NOT: {
+            externalId: data._id // Exclude the current tournament
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+      
+      // Check if we can merge with an existing season final
+      for (const existing of existingSeasonFinals) {
+        if (!existing.rawData) continue
+        
+        const existingHasOnlyQualifying = hasOnlyQualifying(existing.rawData)
+        const existingHasOnlyEliminations = hasOnlyEliminations(existing.rawData)
+        const newHasOnlyQualifying = hasOnlyQualifying(data)
+        const newHasOnlyEliminations = hasOnlyEliminations(data)
+        
+        // Check if one has only qualifying and the other only eliminations
+        if ((existingHasOnlyQualifying && newHasOnlyEliminations) ||
+            (existingHasOnlyEliminations && newHasOnlyQualifying)) {
+          // Merge the tournaments
+          tournamentToUse = existing
+          mergedData = mergeTournamentData(existing.rawData, data)
+          break
+        }
       }
-    });
+    }
+    
+    // Use existing tournament if we found one to merge with, otherwise create/update normally
+    let tournament
+    
+    if (tournamentToUse) {
+      // Check if a tournament with the new externalId already exists (shouldn't happen, but handle it)
+      const existingWithNewId = await tx.tournament.findUnique({
+        where: { externalId: data._id }
+      })
+      
+      // If a tournament with the new ID exists and it's different from the one we're merging into, delete it
+      if (existingWithNewId && existingWithNewId.id !== tournamentToUse.id) {
+        await tx.tournament.delete({
+          where: { id: existingWithNewId.id }
+        })
+      }
+      
+      // Update the existing tournament with merged data
+      tournament = await tx.tournament.update({
+        where: { id: tournamentToUse.id },
+        data: {
+          name: data.name, // Update name to the latest
+          mode: data.mode,
+          sport: data.sport,
+          version: data.version || 14,
+          isSeasonFinal: true,
+          rawData: mergedData // Store merged JSON
+        }
+      })
+    } else {
+      // Normal create/update
+      tournament = await tx.tournament.upsert({
+        where: { externalId: data._id },
+        update: {
+          name: data.name,
+          mode: data.mode,
+          sport: data.sport,
+          version: data.version || 14,
+          isSeasonFinal: isSeasonFinal,
+          rawData: data // Store original JSON for frontend compatibility
+        },
+        create: {
+          externalId: data._id,
+          name: data.name,
+          createdAt: new Date(data.createdAt),
+          mode: data.mode,
+          sport: data.sport,
+          version: data.version || 14,
+          isSeasonFinal: isSeasonFinal,
+          rawData: data // Store original JSON for frontend compatibility
+        }
+      })
+    }
 
+    // Use merged data for processing if we merged tournaments
+    const dataToProcess = tournamentToUse ? mergedData : data
+    
     // 2. Process qualifying rounds
-    if (data.qualifying && data.qualifying.rounds) {
-      await processMatches(tx, tournament.id, data.qualifying.rounds, false);
+    if (dataToProcess.qualifying && dataToProcess.qualifying[0] && dataToProcess.qualifying[0].rounds) {
+      await processMatches(tx, tournament.id, dataToProcess.qualifying[0].rounds, false);
     }
 
     // 3. Process elimination rounds
-    if (data.eliminations) {
-      for (const elimination of data.eliminations) {
+    if (dataToProcess.eliminations) {
+      for (const elimination of dataToProcess.eliminations) {
         if (elimination.levels) {
           await processMatches(tx, tournament.id, elimination.levels, true);
         }
@@ -48,13 +230,13 @@ export async function processTournamentData(data) {
     }
 
     // 4. Process qualifying standings
-    if (data.qualifying && data.qualifying.standings) {
-      await processStandings(tx, tournament.id, data.qualifying.standings, 'qualifying');
+    if (dataToProcess.qualifying && dataToProcess.qualifying[0] && dataToProcess.qualifying[0].standings) {
+      await processStandings(tx, tournament.id, dataToProcess.qualifying[0].standings, 'qualifying');
     }
 
     // 5. Process elimination standings
-    if (data.eliminations && data.eliminations[0] && data.eliminations[0].standings) {
-      await processStandings(tx, tournament.id, data.eliminations[0].standings, 'elimination');
+    if (dataToProcess.eliminations && dataToProcess.eliminations[0] && dataToProcess.eliminations[0].standings) {
+      await processStandings(tx, tournament.id, dataToProcess.eliminations[0].standings, 'elimination');
     }
 
     return tournament;

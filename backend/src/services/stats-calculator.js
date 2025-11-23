@@ -60,7 +60,7 @@ function calculateSeasonPoints(standings) {
   
   standings.forEach(standing => {
     const placePoints = seasonPointsMap[standing.place] || 0;
-    const attendancePoint = placePoints === 0 ? 1 : 0; // +1 for attending if not in top 16
+    const attendancePoint = 1; // +1 for attending (everyone gets this)
     totalPoints += placePoints + attendancePoint;
   });
   
