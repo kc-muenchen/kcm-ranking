@@ -807,10 +807,9 @@ function calculateTournamentList(playerName, tournaments) {
   const normalizedPlayerName = normalizePlayerNameSync(playerName)
   const tournamentList = []
   
-  // Season points distribution (same as in App.jsx)
+  // Season points distribution (places 1-5, everyone below 4th shares place 5)
   const seasonPointsMap = {
-    1: 25, 2: 20, 3: 16, 4: 13, 5: 11, 6: 10, 7: 9, 8: 8,
-    9: 7, 10: 6, 11: 5, 12: 4, 13: 3, 14: 2, 15: 1, 16: 1
+    1: 25, 2: 20, 3: 16, 4: 13, 5: 11
   }
   
   tournaments.forEach(tournament => {
@@ -855,7 +854,9 @@ function calculateTournamentList(playerName, tournaments) {
     
     // Only add if player participated
     if (foundInQualifying || foundInElimination) {
-      const placePoints = seasonPointsMap[finalPlace] || 0
+      // Places 5-16 are treated as place 5, places > 16 get 0 points
+      const effectivePlace = (finalPlace >= 5 && finalPlace <= 16) ? 5 : finalPlace
+      const placePoints = effectivePlace <= 5 ? (seasonPointsMap[effectivePlace] || 0) : 0
       const attendancePoint = 1 // +1 for attending (everyone gets this)
       
       tournamentList.push({
@@ -1275,9 +1276,9 @@ function calculateAchievements(playerName, matchHistory, tournaments, tournament
   })
   
   // Calculate season ranking for each season
+  // Season points distribution (places 1-5, everyone below 4th shares place 5)
   const seasonPointsMap = {
-    1: 25, 2: 20, 3: 16, 4: 13, 5: 11, 6: 10, 7: 9, 8: 8,
-    9: 7, 10: 6, 11: 5, 12: 4, 13: 3, 14: 2, 15: 1, 16: 1
+    1: 25, 2: 20, 3: 16, 4: 13, 5: 11
   }
   
   let bestSeasonPoints = 0
@@ -1325,7 +1326,9 @@ function calculateAchievements(playerName, matchHistory, tournaments, tournament
         }
         
         const stats = playerSeasonStats.get(normalizedName)
-        const placePoints = seasonPointsMap[playerData.place] || 0
+        // Places 5-16 are treated as place 5, places > 16 get 0 points
+        const effectivePlace = (playerData.place >= 5 && playerData.place <= 16) ? 5 : playerData.place
+        const placePoints = effectivePlace <= 5 ? (seasonPointsMap[effectivePlace] || 0) : 0
         const attendancePoint = 1 // +1 for attending (everyone gets this)
         stats.seasonPoints += placePoints + attendancePoint
       })

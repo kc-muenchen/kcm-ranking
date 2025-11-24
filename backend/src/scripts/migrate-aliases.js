@@ -13,6 +13,8 @@ const existingAliases = {
   'Nik Preisinger': 'Nicki Preisinger',
   'David B.': 'David Brügger',
   'David': 'David Brügger',
+  'Ludwig': 'Ludwig Bauer',
+  'Ludwig Ayrton Bauer': 'Ludwig Bauer',
 };
 
 async function migrateAliases() {

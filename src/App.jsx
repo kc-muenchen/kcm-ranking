@@ -25,6 +25,7 @@ function App() {
   const [selectedPlayer, setSelectedPlayer] = useState(null) // For individual player view
   const [playerHistory, setPlayerHistory] = useState(new Map()) // TrueSkill history per player
   const [showFinaleQualifiers, setShowFinaleQualifiers] = useState(false) // Filter for season finale qualifiers
+  const [showSurelyQualified, setShowSurelyQualified] = useState(false) // Filter for surely qualified players
   const [isQualificationInfoExpanded, setIsQualificationInfoExpanded] = useState(false) // Expandable info box state
 
   useEffect(() => {
@@ -46,11 +47,14 @@ function App() {
         setSelectedPlayer(event.state.playerName || null)
         setSelectedSeason(event.state.season || null)
         setShowFinaleQualifiers(event.state.finaleQualifiers || false)
+        setShowSurelyQualified(event.state.surelyQualified || false)
       } else {
         // If no state, read from URL
         const params = new URLSearchParams(window.location.search)
         const finaleQualifiers = params.get('finaleQualifiers')
+        const surelyQualified = params.get('surelyQualified')
         setShowFinaleQualifiers(finaleQualifiers === 'true')
+        setShowSurelyQualified(surelyQualified === 'true')
       }
     }
 
@@ -63,6 +67,7 @@ function App() {
     const tournamentId = params.get('tournament')
     const season = params.get('season')
     const finaleQualifiers = params.get('finaleQualifiers')
+    const surelyQualified = params.get('surelyQualified')
 
     if (view) setViewMode(view)
     if (player) setSelectedPlayer(player)
@@ -76,6 +81,9 @@ function App() {
     }
     if (finaleQualifiers === 'true') {
       setShowFinaleQualifiers(true)
+    }
+    if (surelyQualified === 'true') {
+      setShowSurelyQualified(true)
     }
 
     return () => {
@@ -279,10 +287,9 @@ function App() {
     const { playerRatings: trueSkillRatings, playerHistory: history } = calculateTrueSkillRatings(loadedTournaments)
     setPlayerHistory(history) // Store player history for individual player view
 
-    // Season points distribution (places 1-16)
+    // Season points distribution (places 1-5, everyone below 4th shares place 5)
     const seasonPointsMap = {
-      1: 25, 2: 20, 3: 16, 4: 13, 5: 11, 6: 10, 7: 9, 8: 8,
-      9: 7, 10: 6, 11: 5, 12: 4, 13: 3, 14: 2, 15: 1, 16: 1
+      1: 25, 2: 20, 3: 16, 4: 13, 5: 10
     }
 
     // Aggregate stats from all tournaments
@@ -353,8 +360,10 @@ function App() {
         stats.places.push(playerData.place)
         
         // Calculate season points based on final placement
-        const placePoints = seasonPointsMap[playerData.place] || 0
-        const attendancePoint = 1 // +1 for attending (everyone gets this)
+        // Places 5-16 are treated as place 5, places > 16 get 0 points
+        const effectivePlace = (playerData.place >= 5 && playerData.place <= 16) ? 5 : playerData.place
+        const placePoints = effectivePlace <= 5 ? (seasonPointsMap[effectivePlace] || 0) : 0
+        const attendancePoint = 1; // +1 for attending (everyone gets this)
         stats.seasonPoints += placePoints + attendancePoint
       })
     })
@@ -461,10 +470,9 @@ function App() {
     // Calculate TrueSkill ratings for season tournaments only
     const { playerRatings: trueSkillRatings } = calculateTrueSkillRatings(seasonTournaments)
 
-    // Season points distribution (places 1-16)
+    // Season points distribution (places 1-5, everyone below 4th shares place 5)
     const seasonPointsMap = {
-      1: 25, 2: 20, 3: 16, 4: 13, 5: 11, 6: 10, 7: 9, 8: 8,
-      9: 7, 10: 6, 11: 5, 12: 4, 13: 3, 14: 2, 15: 1, 16: 1
+      1: 25, 2: 20, 3: 16, 4: 13, 5: 10
     }
 
     // Aggregate stats from season tournaments only
@@ -535,7 +543,9 @@ function App() {
         stats.places.push(playerData.place)
         
         // Calculate season points based on final placement
-        const placePoints = seasonPointsMap[playerData.place] || 0
+        // Places 5-16 are treated as place 5, places > 16 get 0 points
+        const effectivePlace = (playerData.place >= 5 && playerData.place <= 16) ? 5 : playerData.place
+        const placePoints = effectivePlace <= 5 ? (seasonPointsMap[effectivePlace] || 0) : 0
         const attendancePoint = 1 // +1 for attending (everyone gets this)
         stats.seasonPoints += placePoints + attendancePoint
       })
@@ -617,15 +627,20 @@ function App() {
     const params = new URLSearchParams(window.location.search)
     params.set('season', season)
     params.delete('player') // Clear player selection when changing season
-    // Keep finaleQualifiers in URL if it's set
+    // Keep finaleQualifiers and surelyQualified in URL if they're set
     if (showFinaleQualifiers) {
       params.set('finaleQualifiers', 'true')
     } else {
       params.delete('finaleQualifiers')
     }
+    if (showSurelyQualified) {
+      params.set('surelyQualified', 'true')
+    } else {
+      params.delete('surelyQualified')
+    }
     const newUrl = `${window.location.pathname}?${params.toString()}`
     window.history.pushState(
-      { viewMode, season, playerName: null, finaleQualifiers: showFinaleQualifiers },
+      { viewMode, season, playerName: null, finaleQualifiers: showFinaleQualifiers, surelyQualified: showSurelyQualified },
       '',
       newUrl
     )
@@ -641,9 +656,39 @@ function App() {
     } else {
       params.delete('finaleQualifiers')
     }
+    // Keep surelyQualified state
+    if (showSurelyQualified) {
+      params.set('surelyQualified', 'true')
+    } else {
+      params.delete('surelyQualified')
+    }
     const newUrl = `${window.location.pathname}?${params.toString()}`
     window.history.pushState(
-      { viewMode, season: selectedSeason, playerName: null, finaleQualifiers: enabled },
+      { viewMode, season: selectedSeason, playerName: null, finaleQualifiers: enabled, surelyQualified: showSurelyQualified },
+      '',
+      newUrl
+    )
+  }
+
+  const handleSurelyQualifiedToggle = (enabled) => {
+    setShowSurelyQualified(enabled)
+    
+    // Update URL with filter state
+    const params = new URLSearchParams(window.location.search)
+    if (enabled) {
+      params.set('surelyQualified', 'true')
+    } else {
+      params.delete('surelyQualified')
+    }
+    // Keep finaleQualifiers state
+    if (showFinaleQualifiers) {
+      params.set('finaleQualifiers', 'true')
+    } else {
+      params.delete('finaleQualifiers')
+    }
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    window.history.pushState(
+      { viewMode, season: selectedSeason, playerName: null, finaleQualifiers: showFinaleQualifiers, surelyQualified: enabled },
       '',
       newUrl
     )
@@ -686,15 +731,88 @@ function App() {
     window.history.back()
   }
 
-  // Filter season players for finale qualifiers if enabled
+  // Calculate which players are "surely qualified" (will remain in top 20 even if they skip next tournament)
+  const calculateSurelyQualified = (players) => {
+    // Only consider players with 10+ tournaments (eligible for finale)
+    const eligiblePlayers = players.filter(player => player.tournaments >= 10)
+    
+    if (eligiblePlayers.length <= 20) {
+      // If there are 20 or fewer eligible players, all are surely qualified
+      return new Set(eligiblePlayers.map(p => p.name))
+    }
+    
+    // Sort eligible players by current ranking (season points, then TrueSkill, then points)
+    const sortedEligible = [...eligiblePlayers].sort((a, b) => {
+      const seasonPointsDiff = b.seasonPoints - a.seasonPoints
+      if (seasonPointsDiff !== 0) return seasonPointsDiff
+      const trueSkillDiff = b.trueSkill - a.trueSkill
+      if (trueSkillDiff !== 0) return trueSkillDiff
+      return b.points - a.points
+    })
+    
+    // Get current top 20
+    const currentTop20 = sortedEligible.slice(0, 20)
+    const playersBelow20 = sortedEligible.slice(20)
+    
+    // Maximum points from one tournament (1st place = 25 + 1 attendance = 26)
+    const MAX_TOURNAMENT_POINTS = 26
+    
+    // Simulate worst-case scenario: top 20 get 0 points, players below get max points
+    const simulatedPlayers = sortedEligible.map(player => {
+      const isInTop20 = currentTop20.some(p => p.name === player.name)
+      const simulatedPoints = isInTop20 
+        ? player.seasonPoints // Top 20 get 0 additional points (don't attend)
+        : player.seasonPoints + MAX_TOURNAMENT_POINTS // Below 20 get max points
+      
+      return {
+        ...player,
+        simulatedSeasonPoints: simulatedPoints
+      }
+    })
+    
+    // Re-sort with simulated points
+    const simulatedSorted = simulatedPlayers.sort((a, b) => {
+      const seasonPointsDiff = b.simulatedSeasonPoints - a.simulatedSeasonPoints
+      if (seasonPointsDiff !== 0) return seasonPointsDiff
+      const trueSkillDiff = b.trueSkill - a.trueSkill
+      if (trueSkillDiff !== 0) return trueSkillDiff
+      return b.points - a.points
+    })
+    
+    // Get new top 20 after simulation
+    const newTop20 = simulatedSorted.slice(0, 20)
+    const newTop20Names = new Set(newTop20.map(p => p.name))
+    
+    // Players who are in both current top 20 and new top 20 are "surely qualified"
+    const surelyQualifiedNames = new Set(
+      currentTop20
+        .filter(p => newTop20Names.has(p.name))
+        .map(p => p.name)
+    )
+    
+    return surelyQualifiedNames
+  }
+
+  // Filter season players for finale qualifiers or surely qualified filter
   const getFilteredSeasonPlayers = () => {
-    if (viewMode !== 'season' || !showFinaleQualifiers) {
+    if (viewMode !== 'season') {
       return seasonPlayers
     }
     
-    // Filter players with at least 10 tournament attendances and show top 25
-    const eligiblePlayers = seasonPlayers.filter(player => player.tournaments >= 10)
-    return eligiblePlayers.slice(0, 25) // Only show top 25 (20 qualified + 5 successors)
+    // If "surely qualified" filter is enabled
+    if (showSurelyQualified) {
+      const surelyQualifiedNames = calculateSurelyQualified(seasonPlayers)
+      return seasonPlayers.filter(player => surelyQualifiedNames.has(player.name))
+    }
+    
+    // If finale qualifiers filter is enabled
+    if (showFinaleQualifiers) {
+      // Filter players with at least 10 tournament attendances and show top 25
+      const eligiblePlayers = seasonPlayers.filter(player => player.tournaments >= 10)
+      return eligiblePlayers.slice(0, 25) // Only show top 25 (20 qualified + 5 successors)
+    }
+    
+    return seasonPlayers
   }
 
   const currentPlayers = viewMode === 'overall' 
@@ -798,6 +916,8 @@ function App() {
               onSelectSeason={handleSeasonChange}
               showFinaleQualifiers={showFinaleQualifiers}
               onToggleFinaleQualifiers={handleFinaleQualifiersToggle}
+              showSurelyQualified={showSurelyQualified}
+              onToggleSurelyQualified={handleSurelyQualifiedToggle}
             />
           )}
 
@@ -823,6 +943,7 @@ function App() {
                         <li>Minimum <strong>10 tournament attendances</strong> required to qualify</li>
                         <li>Top <strong>20 players</strong> are <span className="qualified-badge">qualified</span> for the season finale</li>
                         <li>Next <strong>5 players</strong> are <span className="successor-badge">potential successors</span> if a spot becomes available</li>
+                        <li><strong>Season Points:</strong> Points based on final placement (1st: 25, 2nd: 20, 3rd: 16, 4th: 13, 5th: 10) plus <strong>1 attendance point</strong> for everyone. Places 5-16 all receive 11 points (e.g., 1st place = 26 total points, 5th-16th place = 12 total points, 17th+ place = 1 total point)</li>
                       </ul>
                       <p className="qualification-info-note">
                         Rankings are sorted by Season Points, then TrueSkill, then total Points.
@@ -896,6 +1017,7 @@ function App() {
                           params.set('tournament', seasonFinal.id)
                           params.delete('season')
                           params.delete('finaleQualifiers')
+                          params.delete('surelyQualified')
                           const newUrl = `${window.location.pathname}?${params.toString()}`
                           window.history.pushState(
                             { viewMode: 'tournament', tournamentId: seasonFinal.id, playerName: null },
@@ -919,6 +1041,8 @@ function App() {
                 players={currentPlayers}
                 viewMode={viewMode}
                 onPlayerSelect={handlePlayerSelect}
+                selectedSeason={viewMode === 'season' ? selectedSeason : null}
+                showSurelyQualified={viewMode === 'season' ? showSurelyQualified : false}
               />
               {viewMode === 'tournament' && selectedTournament && selectedTournament.data.eliminations && (
                 <EliminationBracket eliminationData={selectedTournament.data.eliminations} />

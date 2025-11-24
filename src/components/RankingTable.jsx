@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import './RankingTable.css'
 
-function RankingTable({ players, viewMode, onPlayerSelect }) {
+function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason, showSurelyQualified }) {
   const [sortBy, setSortBy] = useState(viewMode === 'tournament' ? 'finalPlace' : 'place')
   const [sortOrder, setSortOrder] = useState('asc')
+  const [copied, setCopied] = useState(false)
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -47,29 +48,102 @@ function RankingTable({ players, viewMode, onPlayerSelect }) {
       : <span className="sort-icon active">↓</span>
   }
 
+  const exportToWhatsApp = async () => {
+    // Sort players by place (ascending) for export, limit to first 25
+    const sortedForExport = [...players].sort((a, b) => a.place - b.place).slice(0, 25)
+    
+    // Format as WhatsApp message
+    const seasonText = selectedSeason ? ` ${selectedSeason}` : ''
+    let message = `🏆 *Season Rankings${seasonText}*\n\n`
+    
+    sortedForExport.forEach((player, index) => {
+      const place = player.place
+      const medal = getMedalEmoji(place)
+      const name = player.name
+      const points = player.seasonPoints
+      
+      // Add qualification badges if applicable
+      let statusBadge = ''
+      if (player.finaleStatus === 'qualified') {
+        statusBadge = ' ✓'
+      } else if (player.finaleStatus === 'successor') {
+        statusBadge = ' →'
+      }
+      
+      message += `${place <= 3 ? medal : place + '.'} ${name} - ${points} pts${statusBadge}\n`
+    })
+
+    // Add season points calculation info (in German)
+    message += `\n📊 *Punkteberechnung:*\n`
+    message += `Punkte basierend auf Endplatzierung (1.: 25, 2.: 20, 3.: 16, 4.: 13, 5.: 10) plus 1 Anwesenheitspunkt für alle.\n`
+    message += `Plätze 5-16 erhalten alle 11 Punkte (z.B. 1. Platz = 26 Gesamtpunkte, 5.-16. Platz = 11 Gesamtpunkte, 17.+ Platz = 1 Gesamtpunkt)\n\n`
+    message += `*Qualifikation:*\n`
+    message += `Mindestens 10 Turnierteilnahmen erforderlich. Top 20 Spieler sind qualifiziert für das Saisonfinale.`
+        
+    // Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(message)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = message
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed:', fallbackErr)
+      }
+      document.body.removeChild(textArea)
+    }
+  }
+
   return (
     <div className="ranking-table-container">
       <div className="table-header">
-        <h2>
-          {viewMode === 'overall' ? 'Overall Rankings' : 
-           viewMode === 'season' ? 'Season Rankings' : 
-           'Player Rankings'}
-        </h2>
-        <p className="table-subtitle">
-          {viewMode === 'overall' 
-            ? `Showing ${players.length} players across all tournaments`
-            : viewMode === 'season'
-            ? (() => {
-                const qualified = players.filter(p => p.finaleStatus === 'qualified').length
-                const successors = players.filter(p => p.finaleStatus === 'successor').length
-                if (qualified > 0 || successors > 0) {
-                  return `Showing ${qualified} qualified players${successors > 0 ? ` + ${successors} potential successors` : ''} (min. 10 games)`
-                }
-                return `Showing ${players.length} players for this season`
-              })()
-            : `Showing ${players.length} players`
-          }
-        </p>
+        <div className="table-header-top">
+          <div>
+            <h2>
+              {viewMode === 'overall' ? 'Overall Rankings' : 
+               viewMode === 'season' ? 'Season Rankings' : 
+               'Player Rankings'}
+            </h2>
+            <p className="table-subtitle">
+              {viewMode === 'overall' 
+                ? `Showing ${players.length} players across all tournaments`
+                : viewMode === 'season'
+                ? (() => {
+                    if (showSurelyQualified) {
+                      return `Showing ${players.length} players who are surely qualified (will remain in top 20 even if they skip next tournament)`
+                    }
+                    const qualified = players.filter(p => p.finaleStatus === 'qualified').length
+                    const successors = players.filter(p => p.finaleStatus === 'successor').length
+                    if (qualified > 0 || successors > 0) {
+                      return `Showing ${qualified} qualified players${successors > 0 ? ` + ${successors} potential successors` : ''} (min. 10 games)`
+                    }
+                    return `Showing ${players.length} players for this season`
+                  })()
+                : `Showing ${players.length} players`
+              }
+            </p>
+          </div>
+          {false && viewMode === 'season' && players.length > 0 && (
+            <button 
+              className="export-whatsapp-btn"
+              onClick={exportToWhatsApp}
+              title="Copy ranking to clipboard as WhatsApp message"
+            >
+              {copied ? '✓ Copied!' : '📱 Export to WhatsApp'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="table-wrapper">

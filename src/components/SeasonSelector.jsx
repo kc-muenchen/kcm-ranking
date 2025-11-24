@@ -1,6 +1,6 @@
 import './SeasonSelector.css'
 
-function SeasonSelector({ seasons, selectedSeason, onSelectSeason, showFinaleQualifiers, onToggleFinaleQualifiers }) {
+function SeasonSelector({ seasons, selectedSeason, onSelectSeason, showFinaleQualifiers, onToggleFinaleQualifiers, showSurelyQualified, onToggleSurelyQualified }) {
   return (
     <div className="season-selector">
       <div className="selector-row">
@@ -30,6 +30,14 @@ function SeasonSelector({ seasons, selectedSeason, onSelectSeason, showFinaleQua
             onChange={(e) => onToggleFinaleQualifiers && onToggleFinaleQualifiers(e.target.checked)}
           />
           <span>Show Season Finale Qualifiers (Top 20 + 5 successors, min. 10 games)</span>
+        </label>
+        <label className="filter-checkbox">
+          <input
+            type="checkbox"
+            checked={showSurelyQualified || false}
+            onChange={(e) => onToggleSurelyQualified && onToggleSurelyQualified(e.target.checked)}
+          />
+          <span>Show Surely Qualified (Will remain in top 20 even if they skip next tournament)</span>
         </label>
       </div>
     </div>
