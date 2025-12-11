@@ -1,4 +1,51 @@
 import { MAX_TOURNAMENT_POINTS } from '../constants/seasonPoints'
+import { DEFAULT_SEASON_END, DEFAULT_SEASON_START, SEASON_DATE_OVERRIDES } from '../constants/seasonDates'
+
+const pad = (value) => value.toString().padStart(2, '0')
+
+const getSeasonDateRange = (seasonYear) => {
+  const yearNumber = parseInt(seasonYear, 10)
+  const override = SEASON_DATE_OVERRIDES[seasonYear]
+
+  if (override?.start && override?.end) {
+    return {
+      startDate: new Date(override.start),
+      endDate: new Date(override.end)
+    }
+  }
+
+  const startDate = new Date(`${yearNumber}-${pad(DEFAULT_SEASON_START.month)}-${pad(DEFAULT_SEASON_START.day)}T00:00:00Z`)
+  const endYear = (DEFAULT_SEASON_END.month < DEFAULT_SEASON_START.month || (DEFAULT_SEASON_END.month === DEFAULT_SEASON_START.month && DEFAULT_SEASON_END.day < DEFAULT_SEASON_START.day))
+    ? yearNumber + 1
+    : yearNumber
+  const endDate = new Date(`${endYear}-${pad(DEFAULT_SEASON_END.month)}-${pad(DEFAULT_SEASON_END.day)}T23:59:59.999Z`)
+
+  return { startDate, endDate }
+}
+
+export const isTournamentInSeasonWindow = (tournamentDate, seasonYear) => {
+  const { startDate, endDate } = getSeasonDateRange(seasonYear)
+  const date = new Date(tournamentDate)
+  return date >= startDate && date <= endDate
+}
+
+export const getSeasonYearForDate = (date) => {
+  const year = date.getFullYear()
+  const yearString = year.toString()
+
+  if (isTournamentInSeasonWindow(date, yearString)) {
+    return yearString
+  }
+
+  // If it doesn't fit the current year window, try the previous season (for cross-year seasons)
+  const previousYear = (year - 1).toString()
+  if (isTournamentInSeasonWindow(date, previousYear)) {
+    return previousYear
+  }
+
+  // Fallback to calendar year to avoid dropping tournaments
+  return yearString
+}
 
 /**
  * Get available seasons (years) from tournaments
@@ -6,8 +53,8 @@ import { MAX_TOURNAMENT_POINTS } from '../constants/seasonPoints'
 export const getAvailableSeasons = (tournaments) => {
   const years = new Set()
   tournaments.forEach(tournament => {
-    const year = new Date(tournament.date).getFullYear()
-    years.add(year.toString())
+    const year = getSeasonYearForDate(new Date(tournament.date))
+    years.add(year)
   })
   return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)) // Most recent first
 }
@@ -17,8 +64,11 @@ export const getAvailableSeasons = (tournaments) => {
  */
 export const getSeasonFinal = (tournaments, seasonYear) => {
   return tournaments.find(tournament => {
-    const tournamentYear = new Date(tournament.date).getFullYear()
-    return tournamentYear.toString() === seasonYear && tournament.isSeasonFinal === true
+    if (tournament.isSeasonFinal !== true) return false
+    const tournamentDate = new Date(tournament.date)
+    const tournamentSeason = getSeasonYearForDate(tournamentDate)
+    if (tournamentSeason !== seasonYear) return false
+    return isTournamentInSeasonWindow(tournamentDate, seasonYear)
   })
 }
 

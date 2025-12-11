@@ -54,6 +54,82 @@ function hasOnlyEliminations(data) {
 }
 
 /**
+ * Detect tournament type (singles or doubles) from tournament data
+ */
+function detectTournamentType(data) {
+  // Check nameType field first (most reliable indicator)
+  if (data.nameType === 'single') {
+    return 'singles'
+  }
+  
+  // Check elimination nameType as well
+  if (data.eliminations && data.eliminations.length > 0 && data.eliminations[0].nameType === 'single') {
+    return 'singles'
+  }
+  
+  // Check options.numPlayersPerTeam (but verify against actual data)
+  if (data.options && data.options.numPlayersPerTeam !== undefined) {
+    if (data.options.numPlayersPerTeam === 1) {
+      return 'singles'
+    }
+    // If numPlayersPerTeam is 2, we still need to verify it's not actually singles
+    // (some singles tournaments incorrectly have this set to 2)
+  }
+  
+  // Check actual matches to see team sizes
+  // Check qualifying matches
+  if (data.qualifying && data.qualifying[0] && data.qualifying[0].rounds) {
+    for (const round of data.qualifying[0].rounds) {
+      if (round.matches) {
+        for (const match of round.matches) {
+          if (match.team1) {
+            // If players array is empty but team name exists, it's singles
+            if (match.team1.players && match.team1.players.length === 0 && match.team1.name) {
+              return 'singles'
+            }
+            // If players array has data, check the length
+            if (match.team1.players && match.team1.players.length > 0) {
+              const team1Size = match.team1.players.length
+              if (team1Size === 1) return 'singles'
+              if (team1Size === 2) return 'doubles'
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Check elimination matches
+  if (data.eliminations && data.eliminations.length > 0) {
+    for (const elim of data.eliminations) {
+      if (elim.levels) {
+        for (const level of elim.levels) {
+          if (level.matches) {
+            for (const match of level.matches) {
+              if (match.team1) {
+                // If players array is empty but team name exists, it's singles
+                if (match.team1.players && match.team1.players.length === 0 && match.team1.name) {
+                  return 'singles'
+                }
+                // If players array has data, check the length
+                if (match.team1.players && match.team1.players.length > 0) {
+                  const team1Size = match.team1.players.length
+                  if (team1Size === 1) return 'singles'
+                  if (team1Size === 2) return 'doubles'
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Default to doubles if we can't determine
+  return 'doubles'
+}
+
+/**
  * Merge two tournament data objects
  */
 function mergeTournamentData(existingData, newData) {
@@ -104,7 +180,7 @@ function mergeTournamentData(existingData, newData) {
 }
 
 export async function processTournamentData(data) {
-  // Use a transaction to ensure data consistency
+  // Use a transaction to ensure data consistency. Increase timeout to handle large imports.
   return await prisma.$transaction(async (tx) => {
     // Check if this is a season final based on name
     const isSeasonFinal = isSeasonFinalByName(data.name)
@@ -180,6 +256,7 @@ export async function processTournamentData(data) {
           sport: data.sport,
           version: data.version || 14,
           isSeasonFinal: true,
+          tournamentType: 'doubles', // All tournaments are doubles
           rawData: mergedData // Store merged JSON
         }
       })
@@ -193,6 +270,7 @@ export async function processTournamentData(data) {
           sport: data.sport,
           version: data.version || 14,
           isSeasonFinal: isSeasonFinal,
+          tournamentType: 'doubles', // All tournaments are doubles
           rawData: data // Store original JSON for frontend compatibility
         },
         create: {
@@ -203,6 +281,7 @@ export async function processTournamentData(data) {
           sport: data.sport,
           version: data.version || 14,
           isSeasonFinal: isSeasonFinal,
+          tournamentType: 'doubles', // All tournaments are doubles
           rawData: data // Store original JSON for frontend compatibility
         }
       })
@@ -211,42 +290,92 @@ export async function processTournamentData(data) {
     // Use merged data for processing if we merged tournaments
     const dataToProcess = tournamentToUse ? mergedData : data
     
+    // Collect external IDs from incoming data for cleanup
+    const incomingMatchIds = new Set();
+    const incomingStandingKeys = new Set();
+    
     // 2. Process qualifying rounds
     if (dataToProcess.qualifying && dataToProcess.qualifying[0] && dataToProcess.qualifying[0].rounds) {
-      await processMatches(tx, tournament.id, dataToProcess.qualifying[0].rounds, false);
+      await processMatches(tx, tournament.id, dataToProcess.qualifying[0].rounds, false, null, incomingMatchIds);
     }
 
     // 3. Process elimination rounds
     if (dataToProcess.eliminations) {
       for (const elimination of dataToProcess.eliminations) {
         if (elimination.levels) {
-          await processMatches(tx, tournament.id, elimination.levels, true);
+          await processMatches(tx, tournament.id, elimination.levels, true, null, incomingMatchIds);
         }
         // Process third place match
         if (elimination.third && elimination.third.matches) {
-          await processMatches(tx, tournament.id, [{ matches: elimination.third.matches }], true, 'third');
+          await processMatches(tx, tournament.id, [{ matches: elimination.third.matches }], true, 'third', incomingMatchIds);
         }
       }
     }
 
     // 4. Process qualifying standings
     if (dataToProcess.qualifying && dataToProcess.qualifying[0] && dataToProcess.qualifying[0].standings) {
-      await processStandings(tx, tournament.id, dataToProcess.qualifying[0].standings, 'qualifying');
+      await processStandings(tx, tournament.id, dataToProcess.qualifying[0].standings, 'qualifying', incomingStandingKeys);
     }
 
     // 5. Process elimination standings
     if (dataToProcess.eliminations && dataToProcess.eliminations[0] && dataToProcess.eliminations[0].standings) {
-      await processStandings(tx, tournament.id, dataToProcess.eliminations[0].standings, 'elimination');
+      await processStandings(tx, tournament.id, dataToProcess.eliminations[0].standings, 'elimination', incomingStandingKeys);
+    }
+
+    // 6. Cleanup: Delete matches and standings that are no longer in the incoming data
+    // Get all existing matches for this tournament
+    const existingMatches = await tx.match.findMany({
+      where: { tournamentId: tournament.id },
+      select: { externalId: true }
+    });
+    
+    // Delete matches that are not in incoming data
+    const existingMatchIds = new Set(existingMatches.map(m => m.externalId));
+    const matchesToDelete = Array.from(existingMatchIds).filter(id => !incomingMatchIds.has(id));
+    
+    if (matchesToDelete.length > 0) {
+      await tx.match.deleteMany({
+        where: {
+          tournamentId: tournament.id,
+          externalId: { in: matchesToDelete }
+        }
+      });
+    }
+
+    // Get all existing standings for this tournament
+    const existingStandings = await tx.standing.findMany({
+      where: { tournamentId: tournament.id },
+      select: { playerId: true, type: true }
+    });
+    
+    // Delete standings that are not in incoming data
+    const existingStandingKeys = new Set(
+      existingStandings.map(s => `${s.playerId}:${s.type}`)
+    );
+    const standingsToDelete = Array.from(existingStandingKeys).filter(key => !incomingStandingKeys.has(key));
+    
+    if (standingsToDelete.length > 0) {
+      // Parse the keys back to playerId and type
+      for (const key of standingsToDelete) {
+        const [playerId, type] = key.split(':');
+        await tx.standing.deleteMany({
+          where: {
+            tournamentId: tournament.id,
+            playerId: playerId,
+            type: type
+          }
+        });
+      }
     }
 
     return tournament;
-  });
+  }, { timeout: 300000 });
 }
 
 /**
  * Processes matches from rounds/levels
  */
-async function processMatches(tx, tournamentId, rounds, isElimination, levelName = null) {
+async function processMatches(tx, tournamentId, rounds, isElimination, levelName = null, incomingMatchIds = null) {
   for (const round of rounds) {
     if (!round.matches) continue;
 
@@ -256,6 +385,11 @@ async function processMatches(tx, tournamentId, rounds, isElimination, levelName
       // Skip matches with null/empty teams (bye matches, empty slots)
       if (!match.team1 || !match.team2 || !match.team1.players || !match.team2.players) continue;
 
+      // Track this match's external ID for cleanup
+      if (incomingMatchIds !== null && match._id) {
+        incomingMatchIds.add(match._id);
+      }
+
       // Get or create players for both teams
       const team1Players = await Promise.all(
         match.team1.players.map(p => getOrCreatePlayer(tx, p))
@@ -264,14 +398,35 @@ async function processMatches(tx, tournamentId, rounds, isElimination, levelName
         match.team2.players.map(p => getOrCreatePlayer(tx, p))
       );
 
-      // Create match
+      // Delete existing teams for this match before recreating (to handle player changes)
+      const existingMatch = await tx.match.findUnique({
+        where: { externalId: match._id },
+        include: { teams: true }
+      });
+
+      if (existingMatch) {
+        // Delete existing teams (cascade will delete teamPlayers)
+        await tx.team.deleteMany({
+          where: { matchId: existingMatch.id }
+        });
+      }
+
+      // Create or update match
       const createdMatch = await tx.match.upsert({
         where: { externalId: match._id },
         update: {
+          tournamentId, // Update in case tournament was merged
           team1Score: match.result[0],
           team2Score: match.result[1],
           timeStart: match.timeStart ? new Date(match.timeStart) : null,
-          timeEnd: match.timeEnd ? new Date(match.timeEnd) : null
+          timeEnd: match.timeEnd ? new Date(match.timeEnd) : null,
+          roundId: match.roundId,
+          roundName: round.name,
+          groupId: match.groupId,
+          isElimination,
+          eliminationLevel: levelName || round.name,
+          valid: match.valid,
+          skipped: match.skipped
         },
         create: {
           externalId: match._id,
@@ -357,14 +512,19 @@ async function getOrCreatePlayer(tx, playerData) {
 /**
  * Processes standings
  */
-async function processStandings(tx, tournamentId, standings, type) {
+async function processStandings(tx, tournamentId, standings, type, incomingStandingKeys = null) {
   for (const standing of standings) {
     if (standing.removed) continue;
 
     // Get or create player
     const player = await getOrCreatePlayer(tx, standing);
 
-    // Create standing
+    // Track this standing for cleanup
+    if (incomingStandingKeys !== null) {
+      incomingStandingKeys.add(`${player.id}:${type}`);
+    }
+
+    // Create or update standing
     await tx.standing.upsert({
       where: {
         tournamentId_playerId_type: {
@@ -383,7 +543,8 @@ async function processStandings(tx, tournamentId, standings, type) {
         setsLost: standing.stats.setsLost || 0,
         ballsWon: standing.stats.ballsWon || 0,
         ballsLost: standing.stats.ballsLost || 0,
-        deactivated: standing.deactivated || false
+        deactivated: standing.deactivated || false,
+        removed: false // Reset removed flag if player is back
       },
       create: {
         tournamentId,

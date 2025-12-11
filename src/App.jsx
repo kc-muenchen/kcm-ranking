@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import TournamentSelector from './components/TournamentSelector'
 import SeasonSelector from './components/SeasonSelector'
 import RankingTable from './components/RankingTable'
@@ -32,21 +32,55 @@ function App() {
   const [showFinaleQualifiers, setShowFinaleQualifiers] = useState(false)
   const [showSurelyQualified, setShowSurelyQualified] = useState(false)
 
+  // Processing functions - defined before useEffects that use them
+  const processPlayers = (tournamentData) => {
+    const processed = processTournamentPlayers(tournamentData)
+    setPlayers(processed)
+  }
+
+  const processAggregatedPlayersData = useCallback(() => {
+    if (tournaments.length === 0) {
+      setAggregatedPlayers([])
+      setPlayerHistory(new Map())
+      return
+    }
+    
+    const { players: aggregated, playerHistory: history } = processAggregatedPlayers(tournaments)
+    setAggregatedPlayers(aggregated)
+    setPlayerHistory(history)
+  }, [tournaments])
+
+  const processSeasonPlayersData = useCallback((loadedTournaments, seasonYear) => {
+    const seasonFinal = getSeasonFinal(loadedTournaments, seasonYear)
+    const { players: season, playerHistory: history } = processSeasonPlayers(loadedTournaments, seasonYear, seasonFinal)
+    setSeasonPlayers(season)
+    // Note: season processing doesn't return history, but we keep the aggregated history
+  }, [])
+
   // Process tournaments when they load
   useEffect(() => {
-    if (tournaments.length > 0) {
-      if (!selectedTournament) {
-        setSelectedTournament(tournaments[0])
-      }
-      processAggregatedPlayersData()
-      
-      // Set default season to the most recent year
-      const seasons = getAvailableSeasons(tournaments)
-      if (seasons.length > 0 && !selectedSeason) {
-        setSelectedSeason(seasons[0])
-      }
+    if (tournaments.length === 0) {
+      setAggregatedPlayers([])
+      setSeasonPlayers([])
+      setPlayers([])
+      setSelectedTournament(null)
+      setPlayerHistory(new Map())
+      return
     }
-  }, [tournaments])
+    
+    if (!selectedTournament) {
+      setSelectedTournament(tournaments[0])
+    }
+    
+    // Process aggregated players with current tournaments
+    processAggregatedPlayersData()
+    
+    // Set default season to the most recent year
+    const seasons = getAvailableSeasons(tournaments)
+    if (seasons.length > 0 && !selectedSeason) {
+      setSelectedSeason(seasons[0])
+    }
+  }, [tournaments, processAggregatedPlayersData, selectedTournament, selectedSeason])
 
   // Process players when tournament changes
   useEffect(() => {
@@ -60,7 +94,7 @@ function App() {
     if (selectedSeason && tournaments.length > 0) {
       processSeasonPlayersData(tournaments, selectedSeason)
     }
-  }, [selectedSeason, tournaments])
+  }, [selectedSeason, tournaments, processSeasonPlayersData])
 
   // URL state management
   const { updateURL } = useURLState({
@@ -99,25 +133,6 @@ function App() {
       }
     }
   })
-
-  // Processing functions
-  const processPlayers = (tournamentData) => {
-    const processed = processTournamentPlayers(tournamentData)
-    setPlayers(processed)
-  }
-
-  const processAggregatedPlayersData = () => {
-    const { players: aggregated, playerHistory: history } = processAggregatedPlayers(tournaments)
-    setAggregatedPlayers(aggregated)
-    setPlayerHistory(history)
-  }
-
-  const processSeasonPlayersData = (loadedTournaments, seasonYear) => {
-    const seasonFinal = getSeasonFinal(loadedTournaments, seasonYear)
-    const { players: season, playerHistory: history } = processSeasonPlayers(loadedTournaments, seasonYear, seasonFinal)
-    setSeasonPlayers(season)
-    // Note: season processing doesn't return history, but we keep the aggregated history
-  }
 
   // Event handlers
   const handleTournamentChange = (tournament) => {

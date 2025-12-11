@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: kcm-ranking-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run prisma:generate
+    startCommand: npm run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PREFIX
+        value: /api
+      # Set these in the Render dashboard (do not commit secrets)
+      - key: DATABASE_URL
+        sync: false
+      - key: API_KEYS
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+

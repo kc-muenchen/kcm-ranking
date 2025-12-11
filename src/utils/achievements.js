@@ -1,6 +1,7 @@
 import { normalizePlayerNameSync } from '../config/playerAliases'
 import { calculateSeasonPoints } from '../constants/seasonPoints'
 import { ACHIEVEMENT_DEFINITIONS } from '../constants/achievements'
+import { getSeasonYearForDate, isTournamentInSeasonWindow } from './seasonUtils'
 
 /**
  * Calculate all achievements for a player
@@ -122,8 +123,8 @@ export const calculateAchievements = (
   // Count unique seasons
   const seasons = new Set()
   tournamentList.forEach(t => {
-    const year = new Date(t.date).getFullYear()
-    seasons.add(year)
+    const seasonYear = getSeasonYearForDate(new Date(t.date))
+    seasons.add(seasonYear)
   })
   const seasonCount = seasons.size
   if (seasonCount >= 5) achievements.push({ ...ACHIEVEMENT_DEFINITIONS.seasons5, unlocked: true, unlockedDate: null })
@@ -255,31 +256,33 @@ const calculateSeasonRankings = (normalizedPlayerName, tournaments) => {
   // First pass: find all season finals by year
   tournaments.forEach(tournament => {
     if (!tournament || !tournament.data) return
-    if (tournament.isSeasonFinal === true) {
-      const year = new Date(tournament.date).getFullYear().toString()
-      seasonFinalsByYear.set(year, tournament)
-    }
+    if (tournament.isSeasonFinal !== true) return
+    const tournamentDate = new Date(tournament.date)
+    const seasonYear = getSeasonYearForDate(tournamentDate)
+    if (!isTournamentInSeasonWindow(tournamentDate, seasonYear)) return
+    seasonFinalsByYear.set(seasonYear, tournament)
   })
   
   // Second pass: group tournaments by season, excluding season finals and tournaments after season final date
   tournaments.forEach(tournament => {
     if (!tournament || !tournament.data) return
+    const tournamentDate = new Date(tournament.date)
+    const seasonYear = getSeasonYearForDate(tournamentDate)
+    if (!isTournamentInSeasonWindow(tournamentDate, seasonYear)) return
     if (tournament.isSeasonFinal === true) return // Exclude season finals from achievement calculations
     
-    const year = new Date(tournament.date).getFullYear().toString()
-    const seasonFinal = seasonFinalsByYear.get(year)
+    const seasonFinal = seasonFinalsByYear.get(seasonYear)
     
     // If season final exists, exclude tournaments after the season final date
     if (seasonFinal) {
-      const tournamentDate = new Date(tournament.date)
       const finalDate = new Date(seasonFinal.date)
       if (tournamentDate > finalDate) return // Exclude tournaments after season final
     }
     
-    if (!tournamentsBySeason.has(year)) {
-      tournamentsBySeason.set(year, [])
+    if (!tournamentsBySeason.has(seasonYear)) {
+      tournamentsBySeason.set(seasonYear, [])
     }
-    tournamentsBySeason.get(year).push(tournament)
+    tournamentsBySeason.get(seasonYear).push(tournament)
   })
   
   let bestSeasonPoints = 0

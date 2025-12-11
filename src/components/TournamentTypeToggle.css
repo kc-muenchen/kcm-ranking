@@ -1,0 +1,55 @@
+.tournament-type-toggle {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--surface);
+  padding: 0.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.type-button {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.type-button:hover {
+  background: var(--surface-light);
+  color: var(--text-primary);
+}
+
+.type-button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.button-icon {
+  font-size: 1.125rem;
+}
+
+@media (max-width: 768px) {
+  .tournament-type-toggle {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .type-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+

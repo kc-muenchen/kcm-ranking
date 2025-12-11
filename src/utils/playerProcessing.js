@@ -1,6 +1,7 @@
 import { normalizePlayerNameSync } from '../config/playerAliases'
 import { calculateTrueSkillRatings, getConservativeRating } from './trueskill'
 import { calculateSeasonPoints } from '../constants/seasonPoints'
+import { getSeasonYearForDate, isTournamentInSeasonWindow } from './seasonUtils'
 
 /**
  * Process players for a single tournament view
@@ -244,22 +245,21 @@ export const processAggregatedPlayers = (tournaments) => {
  * Process players for a specific season
  */
 export const processSeasonPlayers = (tournaments, seasonYear, seasonFinal) => {
-  // Filter tournaments by year, exclude season finals, and exclude tournaments after season final date
+  // Filter tournaments by configured season window, exclude season finals, and exclude tournaments after season final date
   const seasonTournaments = tournaments.filter(tournament => {
-    const tournamentYear = new Date(tournament.date).getFullYear()
-    const isInSeason = tournamentYear.toString() === seasonYear
-    
-    // Exclude season finals
+    const tournamentDate = new Date(tournament.date)
+    const tournamentSeason = getSeasonYearForDate(tournamentDate)
+    if (tournamentSeason !== seasonYear) return false
+    if (!isTournamentInSeasonWindow(tournamentDate, seasonYear)) return false
     if (tournament.isSeasonFinal) return false
-    
+
     // If season final exists, exclude tournaments after the season final date
     if (seasonFinal) {
-      const tournamentDate = new Date(tournament.date)
       const finalDate = new Date(seasonFinal.date)
       if (tournamentDate > finalDate) return false
     }
-    
-    return isInSeason
+
+    return true
   })
 
   if (seasonTournaments.length === 0) {

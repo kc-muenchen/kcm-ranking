@@ -78,7 +78,7 @@ function generateFilename(tournament) {
 async function exportToBackend() {
   const exportBtn = document.getElementById('exportBtn');
   exportBtn.disabled = true;
-  exportBtn.textContent = '⏳ Uploading...';
+  exportBtn.textContent = '⏳ Sending...';
   
   try {
     // Get settings
@@ -103,25 +103,27 @@ async function exportToBackend() {
       return;
     }
     
-    // Upload to backend API
-    const result = await pushToBackend(
+    // Fire-and-forget upload to backend API
+    showStatus('🚀 Upload sent. The tournament will be ready shortly.', 'success');
+
+    // Clear pending tournament optimistically
+    await chrome.storage.local.remove(['pendingTournament', 'pendingFilename']);
+    document.getElementById('pendingSection').style.display = 'none';
+    chrome.action.setBadgeText({ text: '' });
+
+    // Kick off the upload in the background; log errors if they occur
+    pushToBackend(
       settings.apiUrl,
       settings.apiKey,
       settings.pendingTournament
-    );
-    
-    if (result.success) {
-      showStatus(`✅ Successfully uploaded to backend!`, 'success');
-      
-      // Clear pending tournament
-      await chrome.storage.local.remove(['pendingTournament', 'pendingFilename']);
-      document.getElementById('pendingSection').style.display = 'none';
-      
-      // Reset badge
-      chrome.action.setBadgeText({ text: '' });
-    } else {
-      showStatus(`❌ Error: ${result.error}`, 'error');
-    }
+    ).then((result) => {
+      if (!result.success) {
+        showStatus(`⚠️ Upload sent but processing may have failed: ${result.error}`, 'error');
+      }
+    }).catch((error) => {
+      console.error('Background upload error:', error);
+      showStatus(`⚠️ Upload sent but processing may have failed: ${error.message}`, 'error');
+    });
   } catch (error) {
     console.error('Export error:', error);
     showStatus(`❌ Error: ${error.message}`, 'error');

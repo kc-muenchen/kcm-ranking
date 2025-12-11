@@ -21,6 +21,7 @@ model Tournament {
   version       Int      @default(14)
   rawData       Json?    // Store original JSON data for backward compatibility
   isSeasonFinal Boolean  @default(false) // Flag to mark season final tournaments
+  tournamentType String  @default("doubles") // "singles" or "doubles"
   
   // Relations
   matches       Match[]
@@ -28,6 +29,7 @@ model Tournament {
   
   @@index([createdAt])
   @@index([isSeasonFinal])
+  @@index([tournamentType])
   @@map("tournaments")
 }
 
