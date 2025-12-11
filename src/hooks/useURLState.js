@@ -9,7 +9,6 @@ export const useURLState = ({
   selectedPlayer,
   selectedSeason,
   showFinaleQualifiers,
-  showSurelyQualified,
   tournaments,
   onViewModeChange,
   onTournamentChange,
@@ -45,11 +44,6 @@ export const useURLState = ({
       if (updates.finaleQualifiers) params.set('finaleQualifiers', 'true')
       else params.delete('finaleQualifiers')
     }
-    if (updates.surelyQualified !== undefined) {
-      if (updates.surelyQualified) params.set('surelyQualified', 'true')
-      else params.delete('surelyQualified')
-    }
-
     const newUrl = `${window.location.pathname}?${params.toString()}`
     window.history.pushState(
       {
@@ -57,13 +51,12 @@ export const useURLState = ({
         tournamentId: updates.tournament !== undefined ? updates.tournament : selectedTournament?.id,
         playerName: updates.player !== undefined ? updates.player : selectedPlayer,
         season: updates.season !== undefined ? updates.season : selectedSeason,
-        finaleQualifiers: updates.finaleQualifiers !== undefined ? updates.finaleQualifiers : showFinaleQualifiers,
-        surelyQualified: updates.surelyQualified !== undefined ? updates.surelyQualified : showSurelyQualified
+        finaleQualifiers: updates.finaleQualifiers !== undefined ? updates.finaleQualifiers : showFinaleQualifiers
       },
       '',
       newUrl
     )
-  }, [viewMode, selectedTournament, selectedPlayer, selectedSeason, showFinaleQualifiers, showSurelyQualified])
+  }, [viewMode, selectedTournament, selectedPlayer, selectedSeason, showFinaleQualifiers])
 
   useEffect(() => {
     const handlePopState = (event) => {
@@ -85,19 +78,12 @@ export const useURLState = ({
         if (event.state.finaleQualifiers !== undefined) {
           onFiltersChange({ showFinaleQualifiers: event.state.finaleQualifiers })
         }
-        if (event.state.surelyQualified !== undefined) {
-          onFiltersChange({ showSurelyQualified: event.state.surelyQualified })
-        }
       } else {
         // If no state, read from URL
         const params = new URLSearchParams(window.location.search)
         const finaleQualifiers = params.get('finaleQualifiers')
-        const surelyQualified = params.get('surelyQualified')
         if (finaleQualifiers === 'true') {
           onFiltersChange({ showFinaleQualifiers: true })
-        }
-        if (surelyQualified === 'true') {
-          onFiltersChange({ showSurelyQualified: true })
         }
       }
     }
@@ -112,7 +98,6 @@ export const useURLState = ({
       const tournamentId = params.get('tournament')
       const season = params.get('season')
       const finaleQualifiers = params.get('finaleQualifiers')
-      const surelyQualified = params.get('surelyQualified')
 
       if (view) onViewModeChange(view)
       if (player) onPlayerChange(player)
@@ -125,9 +110,6 @@ export const useURLState = ({
       }
       if (finaleQualifiers === 'true') {
         onFiltersChange({ showFinaleQualifiers: true })
-      }
-      if (surelyQualified === 'true') {
-        onFiltersChange({ showSurelyQualified: true })
       }
       
       initializedRef.current = true

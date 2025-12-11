@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './RankingTable.css'
 
-function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason, showSurelyQualified }) {
+function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
   const [sortBy, setSortBy] = useState(viewMode === 'tournament' ? 'finalPlace' : 'place')
   const [sortOrder, setSortOrder] = useState('asc')
   const [copied, setCopied] = useState(false)
@@ -120,9 +120,6 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason, showS
                 ? `Showing ${players.length} players across all tournaments`
                 : viewMode === 'season'
                 ? (() => {
-                    if (showSurelyQualified) {
-                      return `Showing ${players.length} players who are surely qualified (will remain in top 20 even if they skip next tournament)`
-                    }
                     const qualified = players.filter(p => p.finaleStatus === 'qualified').length
                     const successors = players.filter(p => p.finaleStatus === 'successor').length
                     if (qualified > 0 || successors > 0) {
@@ -158,8 +155,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason, showS
               </th>
               {(viewMode === 'overall' || viewMode === 'season') && (
                 <>
-                  <th onClick={() => handleSort('seasonPoints')} className="sortable season-points-col" title="Season Points - Championship points based on tournament placements">
-                    Season Points <SortIcon field="seasonPoints" />
+                  <th onClick={() => handleSort('seasonPoints')} className="sortable season-points-col" title={viewMode === 'overall' ? "Total Points - Championship points across all seasons" : "Season Points - Championship points based on tournament placements"}>
+                    {viewMode === 'overall' ? 'Total Points' : 'Season Points'} <SortIcon field="seasonPoints" />
                   </th>
                   <th onClick={() => handleSort('trueSkill')} className="sortable" title="TrueSkill Rating - A skill-based ranking system">
                     TrueSkill <SortIcon field="trueSkill" />
@@ -199,6 +196,12 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason, showS
                   </th>
                   <th onClick={() => handleSort('eliminationPlace')} className="sortable">
                     Knockout <SortIcon field="eliminationPlace" />
+                  </th>
+                  <th onClick={() => handleSort('buchholz')} className="sortable" title="Buchholz - Sum of all opponents' points (qualifying stage only)">
+                    Buchholz <SortIcon field="buchholz" />
+                  </th>
+                  <th onClick={() => handleSort('sonnebornBerger')} className="sortable" title="Sonneborn-Berger - Weighted sum of opponents' points (qualifying stage only, win=1, draw=0.5, loss=0)">
+                    SB <SortIcon field="sonnebornBerger" />
                   </th>
                 </>
               )}
@@ -251,13 +254,17 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason, showS
                 </td>
                 <td className="name-cell">
                   <div className="player-info">
-                    <span 
+                    <a 
+                      href={`?player=${encodeURIComponent(player.name)}`}
                       className="player-name clickable" 
-                      onClick={() => onPlayerSelect && onPlayerSelect(player.name)}
-                      title="Click to view player details"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        onPlayerSelect && onPlayerSelect(player.name)
+                      }}
+                      title="Click to view player details (right-click to open in new tab)"
                     >
                       {player.name}
-                    </span>
+                    </a>
                     {player.external && (
                       <span className="player-license">
                         {player.external.nationalLicence}
@@ -290,6 +297,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason, showS
                   <>
                     <td>{getMedalEmoji(player.qualifyingPlace)}</td>
                     <td>{player.eliminationPlace !== null ? getMedalEmoji(player.eliminationPlace) : '-'}</td>
+                    <td>{player.buchholz || 0}</td>
+                    <td>{player.sonnebornBerger || 0}</td>
                   </>
                 )}
                 <td>{player.matches}</td>

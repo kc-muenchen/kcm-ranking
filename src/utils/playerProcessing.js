@@ -4,6 +4,96 @@ import { calculateSeasonPoints } from '../constants/seasonPoints'
 import { getSeasonYearForDate, isTournamentInSeasonWindow } from './seasonUtils'
 
 /**
+ * Calculate Buchholz and Sonneborn-Berger tie-breakers from match data
+ * Only uses qualifying matches (excludes knockout/elimination stages)
+ */
+function calculateTieBreakers(tournamentData, playerStatsMap) {
+  // Create maps: playerId -> opponents and results
+  const playerOpponents = new Map() // playerId -> Set of opponent player IDs
+  const playerResults = new Map() // playerId -> Map of opponentId -> result (1=win, 0.5=draw, 0=loss)
+  
+  // Process qualifying matches only (exclude elimination/knockout stages)
+  if (tournamentData.qualifying && tournamentData.qualifying[0] && tournamentData.qualifying[0].rounds) {
+    tournamentData.qualifying[0].rounds.forEach(round => {
+      if (!round.matches) return
+      
+      round.matches.forEach(match => {
+        if (!match.valid || match.skipped || !match.result || !match.team1 || !match.team2) return
+        if (!match.team1.players || !match.team2.players) return
+        
+        const team1Players = match.team1.players.map(p => p._id || p.id).filter(Boolean)
+        const team2Players = match.team2.players.map(p => p._id || p.id).filter(Boolean)
+        const team1Score = match.result[0]
+        const team2Score = match.result[1]
+        
+        // Determine result: 1 for win, 0.5 for draw, 0 for loss
+        let team1Result = 0
+        let team2Result = 0
+        if (team1Score > team2Score) {
+          team1Result = 1
+          team2Result = 0
+        } else if (team1Score < team2Score) {
+          team1Result = 0
+          team2Result = 1
+        } else {
+          team1Result = 0.5
+          team2Result = 0.5
+        }
+        
+        // Record opponents and results for each player
+        team1Players.forEach(playerId => {
+          if (!playerOpponents.has(playerId)) {
+            playerOpponents.set(playerId, new Set())
+            playerResults.set(playerId, new Map())
+          }
+          team2Players.forEach(opponentId => {
+            playerOpponents.get(playerId).add(opponentId)
+            playerResults.get(playerId).set(opponentId, team1Result)
+          })
+        })
+        
+        team2Players.forEach(playerId => {
+          if (!playerOpponents.has(playerId)) {
+            playerOpponents.set(playerId, new Set())
+            playerResults.set(playerId, new Map())
+          }
+          team1Players.forEach(opponentId => {
+            playerOpponents.get(playerId).add(opponentId)
+            playerResults.get(playerId).set(opponentId, team2Result)
+          })
+        })
+      })
+    })
+  }
+  
+  // Note: Elimination/knockout matches are excluded from tie-breaker calculations
+  // This ensures fair comparison since knockout brackets are based on qualifying results
+  
+  // Calculate Buchholz and Sonneborn-Berger for each player
+  playerStatsMap.forEach((player, playerId) => {
+    let buchholz = 0
+    let sonnebornBerger = 0
+    
+    const opponents = playerOpponents.get(playerId) || new Set()
+    const results = playerResults.get(playerId) || new Map()
+    
+    opponents.forEach(opponentId => {
+      const opponent = playerStatsMap.get(opponentId)
+      if (opponent) {
+        const opponentPoints = opponent.points || 0
+        buchholz += opponentPoints
+        
+        const result = results.get(opponentId) || 0
+        sonnebornBerger += opponentPoints * result
+      }
+    })
+    
+    player.buchholz = buchholz
+    player.sonnebornBerger = sonnebornBerger
+  })
+}
+
+/**
  * Process players for a single tournament view
  */
 export const processTournamentPlayers = (tournamentData) => {
@@ -39,7 +129,9 @@ export const processTournamentPlayers = (tournamentData) => {
       bh1: player.stats.bh1,
       bh2: player.stats.bh2,
       external: player.external,
-      eliminationPlace: null
+      eliminationPlace: null,
+      buchholz: 0,
+      sonnebornBerger: 0
     })
   })
   
@@ -68,10 +160,36 @@ export const processTournamentPlayers = (tournamentData) => {
           if (existingPlayer.matches > 0) {
             existingPlayer.pointsPerGame = (existingPlayer.points / existingPlayer.matches).toFixed(2)
           }
+        } else {
+          // New player in elimination (shouldn't happen often, but handle it)
+          const normalizedName = normalizePlayerNameSync(player.name)
+          playerStatsMap.set(player._id, {
+            id: player._id,
+            name: normalizedName,
+            qualifyingPlace: null,
+            matches: player.stats.matches,
+            points: player.stats.points,
+            won: player.stats.won,
+            lost: player.stats.lost,
+            goalsFor: player.stats.goals,
+            goalsAgainst: player.stats.goals_in,
+            goalDiff: player.stats.goal_diff,
+            pointsPerGame: player.stats.points_per_game || '0.00',
+            correctedPointsPerGame: player.stats.corrected_points_per_game || '0.00',
+            bh1: player.stats.bh1,
+            bh2: player.stats.bh2,
+            external: player.external,
+            eliminationPlace: player.stats.place,
+            buchholz: 0,
+            sonnebornBerger: 0
+          })
         }
       })
     })
   }
+  
+  // Calculate Buchholz and Sonneborn-Berger from match data
+  calculateTieBreakers(tournamentData, playerStatsMap)
   
   // Convert map to array and calculate final stats
   return Array.from(playerStatsMap.values())
@@ -81,7 +199,10 @@ export const processTournamentPlayers = (tournamentData) => {
         ? ((player.won / player.matches) * 100).toFixed(1)
         : 0,
       // Use elimination place if available, otherwise qualifying place
-      finalPlace: player.eliminationPlace !== null ? player.eliminationPlace : player.qualifyingPlace
+      finalPlace: player.eliminationPlace !== null ? player.eliminationPlace : player.qualifyingPlace,
+      // Format tie-breakers to 2 decimal places
+      buchholz: player.buchholz ? parseFloat(player.buchholz.toFixed(2)) : 0,
+      sonnebornBerger: player.sonnebornBerger ? parseFloat(player.sonnebornBerger.toFixed(2)) : 0
     }))
     .sort((a, b) => {
       // Sort by final place (elimination > qualifying)

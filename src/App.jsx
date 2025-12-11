@@ -11,7 +11,7 @@ import { SeasonView } from './components/SeasonView'
 import { useTournaments } from './hooks/useTournaments'
 import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
-import { getAvailableSeasons, getSeasonFinal, calculateSurelyQualified } from './utils/seasonUtils'
+import { getAvailableSeasons, getSeasonFinal } from './utils/seasonUtils'
 import './App.css'
 
 function App() {
@@ -30,7 +30,6 @@ function App() {
 
   // Filter state
   const [showFinaleQualifiers, setShowFinaleQualifiers] = useState(false)
-  const [showSurelyQualified, setShowSurelyQualified] = useState(false)
 
   // Processing functions - defined before useEffects that use them
   const processPlayers = (tournamentData) => {
@@ -103,7 +102,6 @@ function App() {
     selectedPlayer,
     selectedSeason,
     showFinaleQualifiers,
-    showSurelyQualified,
     tournaments,
     onViewModeChange: (newViewMode) => {
       setViewMode(newViewMode)
@@ -126,10 +124,6 @@ function App() {
       if (filters.showFinaleQualifiers !== undefined) {
         setShowFinaleQualifiers(filters.showFinaleQualifiers)
         updateURL({ finaleQualifiers: filters.showFinaleQualifiers })
-      }
-      if (filters.showSurelyQualified !== undefined) {
-        setShowSurelyQualified(filters.showSurelyQualified)
-        updateURL({ surelyQualified: filters.showSurelyQualified })
       }
     }
   })
@@ -163,11 +157,6 @@ function App() {
     updateURL({ finaleQualifiers: enabled })
   }
 
-  const handleSurelyQualifiedToggle = (enabled) => {
-    setShowSurelyQualified(enabled)
-    updateURL({ surelyQualified: enabled })
-  }
-
   const handleViewModeChange = (newViewMode) => {
     setViewMode(newViewMode)
     updateURL({ view: newViewMode, player: null })
@@ -180,8 +169,7 @@ function App() {
       view: 'tournament', 
       tournament: seasonFinal.id, 
       season: null,
-      finaleQualifiers: false,
-      surelyQualified: false
+      finaleQualifiers: false
     })
   }
 
@@ -189,11 +177,6 @@ function App() {
   const getFilteredSeasonPlayers = () => {
     if (viewMode !== 'season') {
       return seasonPlayers
-    }
-    
-    if (showSurelyQualified) {
-      const surelyQualifiedNames = calculateSurelyQualified(seasonPlayers)
-      return seasonPlayers.filter(player => surelyQualifiedNames.has(player.name))
     }
     
     if (showFinaleQualifiers) {
@@ -263,8 +246,6 @@ function App() {
             onSelectSeason={handleSeasonChange}
             showFinaleQualifiers={showFinaleQualifiers}
             onToggleFinaleQualifiers={handleFinaleQualifiersToggle}
-            showSurelyQualified={showSurelyQualified}
-            onToggleSurelyQualified={handleSurelyQualifiedToggle}
           />
           <SeasonView
             tournaments={tournaments}
@@ -287,7 +268,6 @@ function App() {
             viewMode={viewMode}
             onPlayerSelect={handlePlayerSelect}
             selectedSeason={viewMode === 'season' ? selectedSeason : null}
-            showSurelyQualified={viewMode === 'season' ? showSurelyQualified : false}
           />
           {viewMode === 'tournament' && selectedTournament && selectedTournament.data.eliminations && (
             <EliminationBracket eliminationData={selectedTournament.data.eliminations} />

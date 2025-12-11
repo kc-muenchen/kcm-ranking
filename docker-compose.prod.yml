@@ -36,7 +36,10 @@ services:
       DATABASE_URL: postgresql://kcmranking:${DB_PASSWORD}@database:5432/kcm_ranking?schema=public
       PORT: 3001
       NODE_ENV: production
+      API_PREFIX: /api
+      API_KEYS: ${API_KEYS}
       CORS_ORIGIN: ${CORS_ORIGIN:-https://yourdomain.com}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-${CORS_ORIGIN:-https://yourdomain.com}}
     ports:
       - "3001:3001"
     depends_on:
