@@ -33,12 +33,9 @@ if (process.env.NODE_ENV === 'production') {
 // CORS configuration - allow frontend and browser extensions
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl)
+    // Allow requests with no origin (like mobile apps, curl, health checks, direct API access)
+    // This is safe because write operations require API keys
     if (!origin) {
-      // In production, be more strict
-      if (process.env.NODE_ENV === 'production') {
-        return callback(new Error('Origin required in production'));
-      }
       return callback(null, true);
     }
     
