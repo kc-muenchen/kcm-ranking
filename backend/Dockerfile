@@ -1,11 +1,13 @@
 # Backend Dockerfile for KCM Ranking API
 
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 WORKDIR /app
 
 # Install OpenSSL and other required dependencies for Prisma
-RUN apk add --no-cache openssl1.1-compat libc6-compat
+RUN apt-get update && apt-get install -y \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
