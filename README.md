@@ -1,232 +1,267 @@
 # KC München Ranking - Table Soccer Tournament Rankings
 
-A modern React application for displaying and analyzing table soccer (foosball) tournament rankings.
+A modern React application for displaying and analyzing table soccer (foosball) tournament rankings with PostgreSQL backend.
 
-## Features
+## ✨ Features
 
-- 🏆 **Tournament Selection** - Switch between different tournaments
-- 🌟 **Overall Ranking** - Aggregate view of player performance across all tournaments
-- 📊 **Player Rankings** - Comprehensive player statistics and rankings
+### Core Features
+- 🏆 **Tournament Management** - Track multiple tournaments with detailed statistics
+- 🌟 **Overall Rankings** - Aggregate player performance across all tournaments
+- 📊 **Player Statistics** - Comprehensive stats and rankings
 - 🎯 **Statistics Cards** - Quick overview of top performers
 - 📈 **Sortable Tables** - Sort by any metric (points, wins, goals, etc.)
+- 🏅 **TrueSkill Rating** - Advanced skill rating system
+- 🏆 **Season Points** - Championship-style ranking (25pts for 1st, 20pts for 2nd, etc.)
+
+### Player Features
+- 👤 **Individual Player Pages** - Detailed statistics and match history
+- 🤝 **Partner Statistics** - See which partners you win most with
+- ⚔️ **Opponent Statistics** - Track your best and worst matchups
+- 🥇 **Tournament History** - View all tournaments with placements
+- 📈 **TrueSkill Evolution** - See rating changes over time
+
+### Technical Features
+- 🎭 **Player Aliases** - Merge duplicate players with different names
+- 🏆 **Elimination Brackets** - Visualize knockout rounds
+- 🔌 **Browser Extension** - Auto-export from Kickertool
 - 🎨 **Modern UI** - Beautiful dark theme with smooth animations
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
-- 🏅 **TrueSkill Rating** - Advanced skill rating system that updates based on match outcomes
-- 🏆 **Season Points** - Championship-style ranking system (1st: 25pts, 2nd: 20pts, etc.)
-- 👤 **Individual Player Pages** - Detailed player statistics, match history, and TrueSkill evolution
-- 🤝 **Partner Statistics** - See which partners you win the most with
-- ⚔️ **Opponent Statistics** - Track your best and worst matchups
-- 🥇 **Tournament History** - View all tournaments participated in with placements
-- 🎭 **Player Aliases** - Merge duplicate players with different name variations
-- 🔄 **Dynamic Data Loading** - Automatically loads all tournament files
-- 🏆 **Elimination Brackets** - Visualize knockout rounds and finals
-- 🔌 **Browser Extension** - Auto-export tournaments from Kickertool to GitHub
+- 🔄 **Real-time Updates** - API-based architecture
 
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
+- Docker & Docker Compose (recommended)
+- OR: Node.js v20+ and PostgreSQL 16
 
-- Node.js (v20 or higher)
-- npm or yarn
-- Docker (for PostgreSQL database)
+### Using Docker (Easiest)
 
-### Quick Start (Recommended)
-
-The application now uses a **backend API with PostgreSQL** for data storage. See [BACKEND_SETUP.md](./BACKEND_SETUP.md) for detailed instructions.
-
-**1. Start PostgreSQL:**
 ```bash
-docker-compose up -d database
+# 1. Start all services
+docker-compose up -d
+
+# 2. Import data
+docker-compose exec backend npm run migrate:data
+
+# 3. Access the app
+# Frontend: http://localhost:8080
+# Backend: http://localhost:3001
 ```
 
-**2. Setup backend:**
+### Local Development
+
 ```bash
+# 1. Start database
+docker-compose up -d database
+
+# 2. Setup backend
 cd backend
 npm install
-cp env.example .env  # Edit if needed
+cp env.example .env
 npm run prisma:migrate
-npm run migrate:data  # Import existing tournament data
+npm run migrate:data
 npm run dev
-```
 
-**3. Setup frontend (new terminal):**
-```bash
-# From project root
+# 3. Setup frontend (new terminal)
+cd ..
 npm install
 npm run dev
+
+# Access at http://localhost:5173
 ```
 
-**4. Access the app:**
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
-- Health check: http://localhost:3001/health
+## 📚 Documentation
 
-> **Note**: The frontend automatically falls back to loading JSON files if the backend is unavailable.
+- **[Setup Guide](docs/SETUP.md)** - Complete installation and setup instructions
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Deploy to production (Docker, cloud platforms)
+- **[Configuration Guide](docs/CONFIGURATION.md)** - Configure player aliases, seasons, API keys
+- **[CI/CD Guide](docs/CI_CD.md)** - Automated builds with GitHub Actions
+- **[Browser Extension](browser-extension/README.md)** - Auto-export from Kickertool
+- **[Backend Security](backend/SECURITY.md)** - Security best practices
 
-### Migration Guide
+## 🏗️ Architecture
 
-If you're upgrading from the JSON-based version, see [MIGRATION_TO_API.md](./MIGRATION_TO_API.md) for step-by-step instructions.
+```
+┌─────────────────┐
+│  Browser Ext    │──┐
+└─────────────────┘  │
+                     │  POST /api/tournaments
+┌─────────────────┐  │
+│   Frontend      │  │
+│   (React+Vite)  │◄─┼─► ┌──────────────┐
+│  Port 5173/8080 │  │   │  Backend API │
+└─────────────────┘  │   │  (Express)   │     ┌────────────┐
+                     └──►│  Port 3001   │◄───►│ PostgreSQL │
+                         └──────────────┘     │  Port 5432 │
+                                              └────────────┘
+```
 
-### Building for Production
+## 🐳 Docker Deployment
+
+### Pre-built Images (Recommended)
+
+Pre-built images are automatically published to Docker Hub:
 
 ```bash
-npm run build
+# Pull latest images
+docker pull mfreitag1/kcm-ranking-frontend:latest
+docker pull mfreitag1/kcm-ranking-backend:latest
+
+# Use docker-compose.prod.yml
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
-The built files will be in the `dist` directory.
+Images are automatically built on every push to `main` via GitHub Actions.
 
-## Docker Deployment
+### Configuration
 
-### Automated Builds (GitHub Actions)
+Create `.env` file:
 
-This repository includes a GitHub Actions workflow that automatically builds and pushes Docker images to:
-- **Docker Hub**: [`mfreitag1/kcm-ranking`](https://hub.docker.com/r/mfreitag1/kcm-ranking)
-- **GitHub Container Registry**: `ghcr.io/mgaesslein/kcm-ranking`
+```env
+# Database
+DB_PASSWORD=your-secure-password
 
-Images are automatically built when:
-- You push to the `main` branch (tagged as `latest`)
-- You create a version tag (e.g., `v1.0.0`)
-- You create a pull request (build only, no push)
+# API Security
+API_KEYS=your-secret-api-key
 
-#### Setting Up Automated Builds
+# Frontend
+VITE_API_URL=http://localhost:3001
 
-1. **Create a Docker Hub account** at https://hub.docker.com
-
-2. **Generate a Docker Hub Access Token**:
-   - Go to Account Settings → Security → New Access Token
-   - Give it a name (e.g., "GitHub Actions")
-   - Copy the token
-
-3. **Add GitHub Secrets**:
-   - Go to your GitHub repository → Settings → Secrets and variables → Actions
-   - Click "New repository secret" and add:
-     - `DOCKERHUB_USERNAME`: Your Docker Hub username
-     - `DOCKERHUB_TOKEN`: Your Docker Hub access token
-
-4. **Push your code** and the workflow will automatically build and push the image!
-
-#### Pulling Pre-built Images
-
-Your friend can pull the latest image:
-
-```bash
-# From Docker Hub
-docker pull mfreitag1/kcm-ranking:latest
-
-# Or from GitHub Container Registry
-docker pull ghcr.io/mgaesslein/kcm-ranking:latest
-
-# Run it
-docker run -d -p 8080:80 --name kcm-ranking mfreitag1/kcm-ranking:latest
+# CORS
+CORS_ORIGIN=https://yourdomain.com
 ```
 
-### Building the Docker Image Manually
+See [Configuration Guide](docs/CONFIGURATION.md) for details.
 
-Build the Docker image using the following command:
+## 📡 API Endpoints
 
-```bash
-docker build -t kcm-ranking:latest .
+### Tournaments
+```
+GET    /api/tournaments       # List all tournaments
+GET    /api/tournaments/:id   # Get specific tournament
+POST   /api/tournaments       # Create tournament (requires API key)
+DELETE /api/tournaments/:id   # Delete tournament (requires API key)
 ```
 
-### Running the Docker Container
-
-Run the container and map it to port 8080 (or any port you prefer):
-
-```bash
-docker run -d -p 8080:80 --name kcm-ranking kcm-ranking:latest
+### Players
+```
+GET /api/players              # List all players
+GET /api/players/:name        # Get player details
+GET /api/players/:name/history # Get match history
 ```
 
-The application will be available at `http://localhost:8080`
-
-### Docker Commands
-
-**Stop the container:**
-```bash
-docker stop kcm-ranking
+### Stats
+```
+GET /api/stats/overall        # Overall statistics
 ```
 
-**Start the container:**
-```bash
-docker start kcm-ranking
-```
+See [Setup Guide](docs/SETUP.md) for complete API documentation.
 
-**Remove the container:**
-```bash
-docker rm kcm-ranking
-```
+## 🔧 Configuration
 
-**View logs:**
-```bash
-docker logs kcm-ranking
-```
+### Player Aliases
 
-**Rebuild and restart:**
-```bash
-docker stop kcm-ranking
-docker rm kcm-ranking
-docker build -t kcm-ranking:latest .
-docker run -d -p 8080:80 --name kcm-ranking kcm-ranking:latest
-```
-
-### Docker Compose (Optional)
-
-You can also use Docker Compose. Create a `docker-compose.yml` file:
-
-```yaml
-version: '3.8'
-services:
-  kcm-ranking:
-    build: .
-    ports:
-      - "8080:80"
-    restart: unless-stopped
-```
-
-Then run:
-```bash
-docker-compose up -d
-```
-
-## Browser Extension - Auto-Export from Kickertool
-
-We've built a Chrome extension that automatically exports tournament data from Kickertool directly to this GitHub repository!
-
-### Quick Start
-
-1. Navigate to `/browser-extension/` folder
-2. Open `generate-icons.html` in your browser
-3. Download all icons
-4. Follow the complete guide in `/browser-extension/SETUP.md`
-
-### What it Does
-
-- 🎯 Monitors Kickertool for tournament exports
-- 📥 Automatically captures JSON data
-- 🚀 One-click push directly to GitHub
-- ✅ No manual file copying needed!
-
-See [browser-extension/README.md](browser-extension/README.md) for full documentation.
-
-## Player Aliases Configuration
-
-If players appear in tournaments with different name variations (e.g., "Max" vs "Max Müller"), you can configure aliases to merge them into a single player.
-
-Edit `src/config/playerAliases.js`:
+Merge players with different name variations:
 
 ```javascript
+// src/config/playerAliases.js
 export const playerAliases = {
   'Max': 'Max Müller',
   'M. Müller': 'Max Müller',
   'Sarah': 'Sarah Weber',
-  'S. Weber': 'Sarah Weber',
-}
+};
 ```
 
-For detailed instructions, see [PLAYER_ALIASES_GUIDE.md](PLAYER_ALIASES_GUIDE.md)
+See [Configuration Guide](docs/CONFIGURATION.md) for details.
 
-## Data Format
+### Season Configuration
 
-The application expects JSON files in the `/dummy_data` directory with the following structure:
+Define seasons and point systems:
+
+```javascript
+// src/constants/seasonDates.js
+export const seasons = {
+  '2025': {
+    name: 'Season 2025',
+    startDate: '2025-01-01',
+    endDate: '2025-12-31',
+  },
+};
+```
+
+## 🔌 Browser Extension
+
+Auto-export tournaments from Kickertool to your database:
+
+1. Install extension from `browser-extension/` folder
+2. Configure API URL and key
+3. Export tournament from Kickertool
+4. Extension automatically captures and uploads
+
+See [Browser Extension Guide](browser-extension/README.md) for setup.
+
+## 🛠️ Technology Stack
+
+### Frontend
+- React 18 - UI framework
+- Vite - Build tool and dev server
+- CSS3 - Modern styling with CSS variables
+- ts-trueskill - TrueSkill rating algorithm
+
+### Backend
+- Node.js 20 - JavaScript runtime
+- Express - Web framework
+- PostgreSQL 16 - Relational database
+- Prisma - ORM and migrations
+- Helmet - Security headers
+- express-rate-limit - Rate limiting
+
+### DevOps
+- Docker & Docker Compose - Containerization
+- Nginx - Web server for production
+- GitHub Actions - CI/CD pipeline
+
+## 📊 Statistics Explained
+
+### Tournament View
+- **Points** - Total points earned
+- **Matches** - Number of matches played
+- **Won/Lost** - Win/loss record
+- **Win %** - Win percentage
+- **GF/GA** - Goals For/Against
+- **GD** - Goal Difference
+- **PPG** - Points Per Game
+
+### Overall Ranking
+- **Tournaments** - Number of tournaments participated
+- **Best Place** - Highest finish
+- **Avg Place** - Average placement
+- **Total Points** - Cumulative points
+- **TrueSkill** - Skill rating (μ - 3σ)
+
+## 🔐 Security
+
+Production security features:
+- ✅ API key authentication for write operations
+- ✅ Rate limiting (100 req/15min general, 10 req/15min writes)
+- ✅ CORS configuration
+- ✅ Helmet security headers
+- ✅ Input validation
+- ✅ Environment-based configuration
+
+See [Backend Security Guide](backend/SECURITY.md) for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📝 Data Format
+
+Tournament JSON structure:
 
 ```json
 {
@@ -246,9 +281,7 @@ The application expects JSON files in the `/dummy_data` directory with the follo
           "lost": 2,
           "goals": 50,
           "goals_in": 30,
-          "goal_diff": 20,
-          "points_per_game": 2.5,
-          ...
+          "goal_diff": 20
         }
       }
     ]
@@ -256,50 +289,64 @@ The application expects JSON files in the `/dummy_data` directory with the follo
 }
 ```
 
-## Statistics Explained
+## 🚀 Deployment Options
 
-### Single Tournament View
-- **Points** - Total points earned in the tournament
-- **Matches** - Number of matches played
-- **Won/Lost** - Win/loss record
-- **Win %** - Win percentage
-- **GF** - Goals For (scored)
-- **GA** - Goals Against (conceded)
-- **GD** - Goal Difference (GF - GA)
-- **PPG** - Points Per Game average
+1. **Docker Self-Hosted** - Full control, easiest setup
+2. **Pre-built Images** - Pull from Docker Hub, no build needed
+3. **Cloud Platforms** - Render, Railway, Fly.io
+4. **Manual VPS** - Traditional server deployment
 
-### Overall Ranking View
-- **Tournaments** - Number of tournaments participated in
-- **Best Place** - Highest finish across all tournaments
-- **Avg Place** - Average placement across tournaments
-- **Total Points** - Cumulative points across all tournaments
-- **Total Matches** - Total matches played across all tournaments
-- **Win %** - Overall win percentage
-- **PPG** - Average points per game across all tournaments
+See [Deployment Guide](docs/DEPLOYMENT.md) for detailed instructions.
 
-## Technologies Used
+## 📦 Useful Commands
 
-### Frontend
-- **React** - UI framework
-- **Vite** - Build tool and dev server
-- **CSS3** - Styling with CSS variables
-- **JavaScript (ES6+)** - Modern JavaScript features
-- **ts-trueskill** - TrueSkill rating algorithm implementation
+```bash
+# Development
+npm run dev                    # Start frontend dev server
+cd backend && npm run dev      # Start backend dev server
 
-### Backend
-- **Node.js** - JavaScript runtime
-- **Express** - Web framework
-- **PostgreSQL** - Relational database
-- **Prisma** - ORM (Object-Relational Mapping)
-- **CORS** - Cross-origin resource sharing
+# Docker
+docker-compose up -d           # Start all services
+docker-compose logs -f         # View logs
+docker-compose down            # Stop all services
 
-### DevOps
-- **Docker** - Containerization for easy deployment
-- **Docker Compose** - Multi-container orchestration
-- **Nginx** - Web server for production deployment
-- **GitHub Actions** - CI/CD pipeline
+# Database
+cd backend
+npm run prisma:studio          # Open database GUI
+npm run migrate:data           # Import JSON data
+npm run prisma:migrate         # Run migrations
 
-## License
+# Production
+npm run build                  # Build frontend
+docker-compose -f docker-compose.prod.yml up -d  # Production deployment
+```
+
+## 🐛 Troubleshooting
+
+### Frontend shows "Falling back to local JSON files"
+Backend API not accessible. Start backend: `cd backend && npm run dev`
+
+### "Cannot connect to database"
+PostgreSQL not running. Start it: `docker-compose up -d database`
+
+### CORS errors
+Check `CORS_ORIGIN` in `backend/.env` matches your frontend URL
+
+### Port already in use
+Another process using the port. Find and kill it: `lsof -i :3001`
+
+See [Setup Guide](docs/SETUP.md) for more troubleshooting.
+
+## 📄 License
 
 MIT
 
+## 🙏 Acknowledgments
+
+- Built for KC München table soccer community
+- TrueSkill algorithm by Microsoft Research
+- Kickertool for tournament management platform
+
+---
+
+**Need help?** Check the [documentation](docs/) or open an issue!

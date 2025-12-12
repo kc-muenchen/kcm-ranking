@@ -238,14 +238,33 @@ const getPlayerFinalPlacements = (tournament) => {
   })
   
   // Override with elimination placements (these are the final tournament results)
+  // Also ADD elimination stats to qualifying stats (not replace them)
   eliminationStandings.forEach(player => {
     if (!player.removed) {
       const normalizedName = normalizePlayerNameSync(player.name)
       const existing = playerFinalPlacement.get(normalizedName)
       if (existing) {
+        // Add elimination stats to qualifying stats
         playerFinalPlacement.set(normalizedName, {
           ...existing,
-          place: player.stats.place // Use elimination place as final place
+          place: player.stats.place, // Use elimination place as final place
+          stats: {
+            ...existing.stats,
+            matches: existing.stats.matches + player.stats.matches,
+            points: existing.stats.points + player.stats.points,
+            won: existing.stats.won + player.stats.won,
+            lost: existing.stats.lost + player.stats.lost,
+            goals: existing.stats.goals + player.stats.goals,
+            goals_in: existing.stats.goals_in + player.stats.goals_in,
+            goal_diff: (existing.stats.goals + player.stats.goals) - (existing.stats.goals_in + player.stats.goals_in)
+          }
+        })
+      } else {
+        // Player only in elimination (didn't play qualifying)
+        playerFinalPlacement.set(normalizedName, {
+          place: player.stats.place,
+          stats: player.stats,
+          external: player.external
         })
       }
     }

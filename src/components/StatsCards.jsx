@@ -2,7 +2,32 @@ import './StatsCards.css'
 
 function StatsCards({ players, viewMode, tournaments }) {
   const totalPlayers = players.length
-  const totalMatches = players.reduce((sum, p) => sum + p.matches, 0)
+
+  // Count unique matches from tournament data
+  // Matches are nested: qualifying[0].rounds[].matches and eliminations[].levels[].matches
+  const totalMatches = tournaments?.reduce((sum, tournament) => {
+    let matchCount = 0
+    
+    // Count qualifying matches (nested in rounds)
+    if (tournament.data?.qualifying?.[0]?.rounds) {
+      tournament.data.qualifying[0].rounds.forEach(round => {
+        matchCount += round.matches?.length || 0
+      })
+    }
+    
+    // Count elimination matches (nested in levels)
+    if (tournament.data?.eliminations) {
+      tournament.data.eliminations.forEach(elim => {
+        if (elim.levels) {
+          elim.levels.forEach(level => {
+            matchCount += level.matches?.length || 0
+          })
+        }
+      })
+    }
+    
+    return sum + matchCount
+  }, 0) || 0
   const topScorer = players.reduce((max, p) => 
     p.goalsFor > max.goalsFor ? p : max
   , players[0])

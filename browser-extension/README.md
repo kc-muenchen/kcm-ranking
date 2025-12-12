@@ -2,94 +2,123 @@
 
 Automatically export tournament data from Kickertool directly to your backend API!
 
-## 🚀 Installation
+## 🚀 Quick Start
 
-### 1. Load Extension in Chrome
+### 1. Generate Icons
 
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in top right)
+1. Open `generate-icons.html` in your browser
+2. Click "Download All Icons"
+3. Icons are automatically saved to the correct location
+
+### 2. Install Extension
+
+1. Open Chrome → `chrome://extensions/`
+2. Enable "Developer mode" (top right)
 3. Click "Load unpacked"
 4. Select the `browser-extension` folder
-5. The extension should now appear in your extensions list
+5. Extension appears in your toolbar
 
-### 2. Configure API URL
+### 3. Configure Backend API
 
-1. **Start your backend first**:
+1. **Start your backend** (if running locally):
    ```bash
    cd backend
    npm run dev
    ```
 
 2. **Configure extension**:
-   - Click the extension icon
+   - Click extension icon
    - Click "⚙️ Settings"
-   - Enter your API URL (default: `http://localhost:3001`)
+   - Enter API URL: `http://localhost:3001` (or your production URL)
+   - Enter API Key (get from backend admin)
    - Click "💾 Save Settings"
-   - Click "🧪 Test Connection" to verify
+   - Click "🧪 Test Connection"
 
-**Note:** Settings only need to be configured once! They're stored in your browser.
+**Settings are saved in your browser - configure once!**
 
 ## 📖 How to Use
 
 ### Automatic Capture (Recommended)
 
-1. Log into https://app.kickertool.de
-2. Go to your tournaments list
-3. Click "Export" on any tournament
-4. Select "Export as JSON"
-5. The extension will **automatically**:
-   - ✅ Capture the tournament data
-   - ✅ Show a notification
-   - ✅ Display a badge on the extension icon
+1. Go to https://app.kickertool.de
+2. Log in
+3. Navigate to tournaments
+4. Click "Export" on any tournament
+5. Select "Export as JSON"
+6. Extension **automatically**:
+   - ✅ Captures tournament data
+   - ✅ Shows notification
+   - ✅ Displays badge on icon
 
-6. Click the extension icon
-7. Review the tournament details
-8. Click "📤 Upload to Backend"
-9. Done! Check your database or frontend
+7. Click extension icon
+8. Review tournament details
+9. Click "📤 Upload to Backend"
+10. Done! Tournament is in your database
 
-## 🔧 API Configuration
+### Manual Capture (If automatic fails)
+
+1. Download JSON from Kickertool normally
+2. Open the downloaded `.json` file in Chrome
+3. Click extension icon
+4. Click "🔍 Capture from Current Tab"
+5. Click "📤 Upload to Backend"
+
+## 🔧 Configuration
 
 ### Local Development
 ```
-http://localhost:3001
+API URL: http://localhost:3001
+API Key: (from backend/.env API_KEYS)
 ```
 
 ### Production
 ```
-https://api.yourdomain.com
+API URL: https://api.yourdomain.com
+API Key: (from production environment)
 ```
+
+**Important:** Don't include `/api` in the URL - it's added automatically!
 
 ## ✅ Verification
 
-After uploading, verify the tournament is in the database:
+After uploading, verify the tournament:
 
 ```bash
 # Check backend logs
 cd backend
 npm run dev
 
-# Check database (optional)
+# Check database
 npm run prisma:studio
 
 # Check frontend
-# Open http://localhost:5173 and look for the new tournament
+# Open http://localhost:5173 - new tournament should appear
 ```
 
 ## 🐛 Troubleshooting
 
 ### "Please configure API URL in settings first"
 
-**Solution:** Click the extension icon → "⚙️ Settings" → Enter API URL → Save
+**Solution:** Click extension icon → ⚙️ Settings → Enter API URL and Key → Save
 
 ### "Connection error: Failed to fetch"
 
-**Problem:** Backend is not running
+**Problem:** Backend not running
 
 **Solution:**
 ```bash
 cd backend
 npm run dev
 ```
+
+### "Unauthorized" or "API key required"
+
+**Problem:** Missing or invalid API key
+
+**Solution:**
+1. Get valid API key from backend admin
+2. Extension settings → Enter API key → Save
+3. Test connection
 
 ### "Backend returned error: 500"
 
@@ -97,56 +126,162 @@ npm run dev
 
 **Solution:**
 ```bash
-# Make sure PostgreSQL is running
+# Start PostgreSQL
 docker-compose up -d database
 
-# Check backend logs for details
+# Check backend logs
 cd backend
 npm run dev
 ```
 
 ### Capture Not Working
 
-1. Make sure you're on `app.kickertool.de`
-2. Click "Export" → "Export as JSON"
-3. Check browser console (F12) for any errors
-4. Reload the page and try again
+**Try these steps:**
+
+1. **Reload extension:**
+   - Go to `chrome://extensions/`
+   - Find extension
+   - Click reload icon (circular arrow)
+   - Refresh Kickertool page
+
+2. **Check console:**
+   - On Kickertool page, press F12
+   - Look for "KCM Ranking Exporter" messages
+   - Check for errors
+
+3. **Use manual capture:**
+   - Download JSON from Kickertool
+   - Open JSON file in Chrome
+   - Click extension → "🔍 Capture from Current Tab"
+
+4. **Verify permissions:**
+   - `chrome://extensions/` → Extension details
+   - Check it has access to app.kickertool.de
+
+### Extension badge doesn't appear
+
+The badge (green "1") appears when data is captured:
+- Extension must be enabled
+- Check `chrome://extensions/`
+- Try reloading extension
+
+### "No tournament data found on this page"
+
+Make sure:
+- You've downloaded JSON from Kickertool
+- JSON file is open in Chrome (not text editor)
+- File contains valid tournament data
 
 ## 🎯 How It Works
 
-1. **Content Script** (`content.js`) runs on Kickertool pages
-2. **Injected Script** (`injected.js`) intercepts blob downloads
-3. **Background Script** (`background.js`) receives captured data
-4. **Popup** (`popup.html/js`) displays captured tournaments
-5. **Backend API** (`POST /api/tournaments`) stores in database
+1. **Content Script** (`content.js`) - Runs on Kickertool pages
+2. **Injected Script** (`injected.js`) - Intercepts blob downloads
+3. **Background Script** (`background.js`) - Receives captured data
+4. **Popup** (`popup.html/js`) - Displays tournaments
+5. **Backend API** (`POST /api/tournaments`) - Stores in database
 
 ## 📦 What Gets Uploaded
 
-The extension captures and uploads the **complete tournament JSON** including:
+Complete tournament JSON including:
 - Tournament metadata (name, date, mode, sport)
 - Qualifying rounds (matches, standings, stats)
 - Elimination rounds (bracket, matches, results)
-- Player information (names, external IDs, stats)
+- Player information (names, IDs, stats)
 
-This is the exact same data format that Kickertool exports!
+Same format as Kickertool exports!
 
 ## 🔐 Privacy & Security
 
-- API URL is stored locally in your browser
-- No data is sent to external services
-- All communication is between your browser and your backend
-- Data goes directly into your PostgreSQL database
+- API URL and key stored locally in browser
+- No data sent to external services
+- Direct communication: browser → your backend
+- Data goes into your PostgreSQL database
+- API key required for uploads (read-only access is public)
 
-## 🎉 Benefits Over GitHub Method
+## 🎉 Benefits
 
-✅ **Instant updates** - Data appears immediately in your app
-✅ **No git commits** - Cleaner repository history  
-✅ **Simpler workflow** - No GitHub tokens needed
-✅ **Better scalability** - Database handles large datasets efficiently
+✅ **Instant updates** - Data appears immediately
+✅ **No git commits** - Cleaner repository
+✅ **Simpler workflow** - No GitHub tokens
+✅ **Better scalability** - Database handles large datasets
 ✅ **Real-time** - Frontend always shows latest data
+✅ **Secure** - API key authentication
+
+## 📋 Setup Checklist
+
+- [ ] Icons generated
+- [ ] Extension loaded in Chrome
+- [ ] Developer mode enabled
+- [ ] Backend running (local or production)
+- [ ] API URL configured in extension
+- [ ] API key configured in extension
+- [ ] Connection test successful
+- [ ] Test export successful
+
+## 🔄 Updating the Extension
+
+When extension code is updated:
+
+1. Go to `chrome://extensions/`
+2. Find "KCM Ranking - Kickertool Exporter"
+3. Click reload icon (circular arrow)
+4. Extension reloads with new code
+
+## 🐞 Debug Information
+
+### Enable Verbose Logging
+
+**Content script logs** (on Kickertool page):
+- Press F12 on app.kickertool.de
+- Console shows content.js logs
+
+**Background script logs**:
+- `chrome://extensions/`
+- Find extension
+- Click "Inspect views: service worker"
+- Check console
+
+**Popup logs**:
+- Open popup
+- Right-click inside → Inspect
+- Check console
+
+### Look for These Messages
+
+On Kickertool page:
+- `KCM Ranking Exporter: Content script loaded`
+- `KCM Ranking Exporter: Monitoring for exports...`
+- `KCM Ranking Exporter: Tournament data detected`
+
+In popup:
+- `Loaded tournament from storage`
+- `Uploading tournament to backend...`
+- `Upload successful!`
 
 ## 📚 Additional Resources
 
-- [Backend Setup Guide](../BACKEND_SETUP.md)
-- [Migration Guide](../MIGRATION_TO_API.md)
-- [Main README](../README.md)
+- [Backend Setup](../docs/SETUP.md) - Set up the backend API
+- [Configuration Guide](../docs/CONFIGURATION.md) - Configure API keys and settings
+- [Deployment Guide](../docs/DEPLOYMENT.md) - Deploy to production
+- [Main README](../README.md) - Project overview
+
+## 🆘 Still Need Help?
+
+1. Check browser console for errors (F12)
+2. Verify backend is running and accessible
+3. Test API connection in extension settings
+4. Review backend logs for errors
+5. Try manual capture method
+6. Check [Backend Security Guide](../backend/SECURITY.md) for API key setup
+
+## 🎮 Tips for Success
+
+- **Wait for indicator**: Purple "🎯 KCM Exporter Active" badge appears on Kickertool
+- **Use manual capture**: Very reliable if automatic fails
+- **Check API key**: Must match one in backend `API_KEYS` environment variable
+- **Test connection**: Always test after configuring settings
+- **Monitor logs**: Keep browser console open to see what's happening
+
+---
+
+Happy exporting! ⚽🏆
