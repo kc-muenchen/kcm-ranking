@@ -3,13 +3,17 @@ import { TrueSkillChart } from './TrueSkillChart'
 /**
  * Performance tab component showing TrueSkill chart and match history
  */
-export const PerformanceTab = ({ history, playerName, matchHistory, initialSkill }) => {
+export const PerformanceTab = ({ history, playerName, matchHistory, initialSkill, playerHistory, allPlayers }) => {
   return (
     <div className="tab-panel">
       {/* TrueSkill Evolution Chart */}
       <div className="trueskill-chart-section">
         <h2>TrueSkill Evolution</h2>
-        <TrueSkillChart history={history} playerName={playerName} />
+        <TrueSkillChart 
+          playerHistories={playerHistory} 
+          allPlayers={allPlayers}
+          mainPlayerName={playerName}
+        />
       </div>
 
       {/* Match History */}

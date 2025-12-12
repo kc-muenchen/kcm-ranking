@@ -26,6 +26,42 @@ export const usePlayerStats = (
     return history.filter(entry => entry.matchIndex >= 0).reverse()
   }, [history])
   
+  const tournamentList = useMemo(() => {
+    return calculateTournamentList(playerName, tournaments)
+  }, [playerName, tournaments])
+
+  // Calculate skill at the end of the last tournament (before current tournament)
+  const lastTournamentSkill = useMemo(() => {
+    if (tournamentList.length < 2) {
+      // If player has less than 2 tournaments, use first match skill as baseline
+      return matchHistory.length > 0 
+        ? matchHistory[matchHistory.length - 1].skill  // Last in reversed array = first match
+        : (history.length > 0 ? history[0].skill : 0)
+    }
+    
+    // Get the date of the last tournament (second most recent)
+    const lastTournamentDate = new Date(tournamentList[1].date)
+    // Add one day to include matches from the last tournament day
+    const lastTournamentEndDate = new Date(lastTournamentDate)
+    lastTournamentEndDate.setDate(lastTournamentEndDate.getDate() + 1)
+    
+    // Find the most recent match that occurred on or before the last tournament's date
+    // Since matchHistory is reversed (newest first), we iterate to find the first match
+    // that is on or before the last tournament date
+    for (let i = 0; i < matchHistory.length; i++) {
+      const matchDate = new Date(matchHistory[i].date)
+      if (matchDate <= lastTournamentEndDate) {
+        // Found a match from the last tournament or earlier, return its skill
+        return matchHistory[i].skill
+      }
+    }
+    
+    // If no match found, use the first match skill
+    return matchHistory.length > 0 
+      ? matchHistory[matchHistory.length - 1].skill
+      : (history.length > 0 ? history[0].skill : 0)
+  }, [tournamentList, matchHistory, history])
+  
   // Calculate summary stats
   const summaryStats = useMemo(() => {
     const totalMatches = matchHistory.length
@@ -33,8 +69,8 @@ export const usePlayerStats = (
     const losses = totalMatches - wins
     const winRate = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(1) : 0
     const currentSkill = history.length > 0 ? history[history.length - 1].skill : 0
+    // Initial skill is the rating before any matches (for PerformanceTab to show first match delta)
     const initialSkill = history.length > 0 ? history[0].skill : 0
-    const skillChange = currentSkill - initialSkill
     
     return {
       totalMatches,
@@ -43,9 +79,9 @@ export const usePlayerStats = (
       winRate,
       currentSkill,
       initialSkill,
-      skillChange
+      skillChange: currentSkill - lastTournamentSkill
     }
-  }, [matchHistory, history])
+  }, [matchHistory, history, lastTournamentSkill])
   
   // Find player's aggregated stats
   const playerAggregated = useMemo(() => {
@@ -64,10 +100,6 @@ export const usePlayerStats = (
   const opponentStats = useMemo(() => {
     return calculateOpponentStats(matchHistory, playerName)
   }, [matchHistory, playerName])
-  
-  const tournamentList = useMemo(() => {
-    return calculateTournamentList(playerName, tournaments)
-  }, [playerName, tournaments])
   
   const achievements = useMemo(() => {
     return calculateAchievements(

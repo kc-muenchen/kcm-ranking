@@ -78,6 +78,8 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
             playerName={playerName}
             matchHistory={matchHistory}
             initialSkill={summaryStats.initialSkill}
+            playerHistory={playerHistory}
+            allPlayers={allPlayers}
           />
         )}
 

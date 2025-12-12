@@ -364,6 +364,8 @@ export const processAggregatedPlayers = (tournaments) => {
 
 /**
  * Process players for a specific season
+ * TrueSkill is calculated from ALL tournaments (persistent rating)
+ * Season points and match stats are calculated from season tournaments only
  */
 export const processSeasonPlayers = (tournaments, seasonYear, seasonFinal) => {
   // Filter tournaments by configured season window, exclude season finals, and exclude tournaments after season final date
@@ -387,8 +389,11 @@ export const processSeasonPlayers = (tournaments, seasonYear, seasonFinal) => {
     return { players: [], playerHistory: new Map() }
   }
 
+  // Calculate season-specific stats (points, matches, etc.) from season tournaments only
   const playerStats = aggregatePlayerStats(seasonTournaments)
-  const { playerRatings: trueSkillRatings } = calculateTrueSkillRatings(seasonTournaments)
+  
+  // Calculate TrueSkill from ALL tournaments (persistent rating that doesn't reset per season)
+  const { playerRatings: trueSkillRatings } = calculateTrueSkillRatings(tournaments)
   
   const players = convertToPlayerArray(playerStats, trueSkillRatings)
 
