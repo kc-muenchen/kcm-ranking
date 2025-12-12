@@ -777,11 +777,7 @@
 
 /* Player Comparison Section */
 .player-comparison-section {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .player-comparison-section h2 {
@@ -1323,7 +1319,6 @@
 
   .trueskill-chart-section,
   .match-history-section,
-  .player-comparison-section,
   .achievements-section {
     padding: 1.5rem;
   }

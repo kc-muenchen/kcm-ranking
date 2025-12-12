@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SearchableSelect } from '../SearchableSelect'
 
 // Color palette for multiple players
 const PLAYER_COLORS = [
@@ -147,23 +148,21 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
           ))}
         </div>
         {availablePlayers.length > selectedPlayers.length && (
-          <select
-            className="add-player-select"
+          <SearchableSelect
+            options={availablePlayers
+              .filter(name => !selectedPlayers.includes(name))
+              .map(name => ({ name }))}
             value=""
-            onChange={(e) => {
-              if (e.target.value) {
-                handleAddPlayer(e.target.value)
-                e.target.value = ""
+            onChange={(value) => {
+              if (value) {
+                handleAddPlayer(value)
               }
             }}
-          >
-            <option value="">+ Add player to compare</option>
-            {availablePlayers
-              .filter(name => !selectedPlayers.includes(name))
-              .map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-          </select>
+            placeholder="+ Add player to compare..."
+            getOptionLabel={(option) => option.name}
+            getOptionValue={(option) => option.name}
+            className="add-player-select"
+          />
         )}
       </div>
 

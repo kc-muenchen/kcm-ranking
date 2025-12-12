@@ -1,3 +1,5 @@
+import { SearchableSelect } from '../SearchableSelect'
+
 /**
  * Comparison tab component for head-to-head and teammate statistics
  */
@@ -15,18 +17,15 @@ export const ComparisonTab = ({
       <div className="player-comparison-section">
         <h2>🔀 Compare with Another Player</h2>
         <div className="comparison-selector">
-          <select 
-            value={selectedComparePlayer} 
-            onChange={(e) => onPlayerSelect(e.target.value)}
+          <SearchableSelect
+            options={allPlayers}
+            value={selectedComparePlayer}
+            onChange={onPlayerSelect}
+            placeholder="Search for a player to compare..."
+            getOptionLabel={(player) => player.name}
+            getOptionValue={(player) => player.name}
             className="player-select"
-          >
-            <option value="">Select a player to compare...</option>
-            {allPlayers.map(player => (
-              <option key={player.name} value={player.name}>
-                {player.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {headToHeadStats && (

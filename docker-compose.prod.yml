@@ -55,9 +55,12 @@ services:
       retries: 3
 
   # Frontend (Pre-built image from Docker Hub)
+  # API URL is configured at runtime via VITE_API_URL environment variable
   frontend:
     image: mfreitag1/kcm-ranking-frontend:latest
     container_name: kcm-ranking-frontend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
     ports:
       - "8080:80"
     depends_on:

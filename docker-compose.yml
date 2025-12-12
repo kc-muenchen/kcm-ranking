@@ -53,6 +53,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: kcm-ranking-frontend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
     ports:
       - "8080:80"
     depends_on:
