@@ -8,6 +8,7 @@ import EliminationBracket from './components/EliminationBracket'
 import PlayerDetail from './components/PlayerDetail'
 import { AppLayout } from './components/AppLayout'
 import { SeasonView } from './components/SeasonView'
+import { SeasonAwardsPage } from './pages/SeasonAwardsPage'
 import { useTournaments } from './hooks/useTournaments'
 import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
@@ -192,6 +193,12 @@ function App() {
     : viewMode === 'season' 
       ? getFilteredSeasonPlayers()
       : players
+
+  // Check if we're on the season awards page route
+  const pathMatch = window.location.pathname.match(/\/season-awards-(\d{4})/)
+  if (pathMatch) {
+    return <SeasonAwardsPage />
+  }
 
   // Loading state
   if (loading) {

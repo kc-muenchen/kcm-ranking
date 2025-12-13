@@ -113,7 +113,7 @@ export const SeasonView = ({
   tournaments, 
   selectedSeason, 
   seasonFinal, 
-  onViewFinal 
+  onViewFinal
 }) => {
   return (
     <>
