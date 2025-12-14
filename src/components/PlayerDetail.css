@@ -219,6 +219,18 @@
   gap: 1rem;
 }
 
+.ranking-header.clickable {
+  cursor: pointer;
+  padding: 0.5rem;
+  margin: -0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.ranking-header.clickable:hover {
+  background: rgba(129, 140, 248, 0.05);
+}
+
 .ranking-badge {
   font-size: 2rem;
   font-weight: 700;
@@ -230,6 +242,14 @@
   font-size: 0.875rem;
   color: var(--text-secondary);
   font-weight: 600;
+  flex: 1;
+}
+
+.expand-indicator {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+  padding: 0.25rem;
 }
 
 .ranking-tournaments {
@@ -239,6 +259,21 @@
   margin-top: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ranking-tournaments.expanded {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tournament-badge-small {
@@ -252,6 +287,30 @@
   opacity: 0.8;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.tournament-badge-clickable {
+  background: rgba(129, 140, 248, 0.15);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.tournament-badge-clickable:hover {
+  background: rgba(129, 140, 248, 0.25);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(129, 140, 248, 0.2);
+}
+
+.tournament-badge-clickable:active {
+  transform: translateY(0);
 }
 
 /* Top Partners */

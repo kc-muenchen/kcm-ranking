@@ -61,22 +61,40 @@ export const useURLState = ({
   useEffect(() => {
     const handlePopState = (event) => {
       if (event.state) {
-        // Restore state from history
-        onViewModeChange(event.state.viewMode || 'tournament')
-        if (event.state.tournamentId) {
-          const tournament = tournaments.find(t => t.id === event.state.tournamentId)
+        // Browser went back/forward - the URL is already updated by the browser
+        // We just need to sync our app state to match the URL
+        // Read directly from the current URL which browser has already restored
+        const params = new URLSearchParams(window.location.search)
+        const view = params.get('view')
+        const player = params.get('player')
+        const tournamentId = params.get('tournament')
+        const season = params.get('season')
+        const finaleQualifiers = params.get('finaleQualifiers')
+        
+        // Restore state from URL (which browser already restored for us)
+        if (view) {
+          onViewModeChange(view)
+        } else {
+          onViewModeChange(null)
+        }
+        
+        if (tournamentId) {
+          const tournament = tournaments.find(t => t.id === tournamentId)
           if (tournament) onTournamentChange(tournament)
         }
-        if (event.state.playerName) {
-          onPlayerChange(event.state.playerName)
+        
+        if (player && view === 'player') {
+          onPlayerChange(player)
         } else {
           onPlayerChange(null)
         }
-        if (event.state.season) {
-          onSeasonChange(event.state.season)
+        
+        if (season) {
+          onSeasonChange(season)
         }
-        if (event.state.finaleQualifiers !== undefined) {
-          onFiltersChange({ showFinaleQualifiers: event.state.finaleQualifiers })
+        
+        if (finaleQualifiers === 'true') {
+          onFiltersChange({ showFinaleQualifiers: true })
         }
       } else {
         // If no state, read from URL
@@ -99,8 +117,16 @@ export const useURLState = ({
       const season = params.get('season')
       const finaleQualifiers = params.get('finaleQualifiers')
 
-      if (view) onViewModeChange(view)
-      if (player) onPlayerChange(player)
+      // Set view mode
+      if (view) {
+        onViewModeChange(view)
+      }
+      
+      // Set player only if view is 'player'
+      if (player && view === 'player') {
+        onPlayerChange(player)
+      }
+      
       if (tournamentId) {
         const tournament = tournaments.find(t => t.id === tournamentId)
         if (tournament) onTournamentChange(tournament)

@@ -1,30 +1,68 @@
+import { useState } from 'react'
+
 /**
  * Overview tab component showing best rankings, top partners, and opponent stats
  */
-export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats }) => {
+export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTournamentClick }) => {
+  const [expandedPlaces, setExpandedPlaces] = useState(new Set())
+
+  const togglePlace = (place) => {
+    setExpandedPlaces(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(place)) {
+        newSet.delete(place)
+      } else {
+        newSet.add(place)
+      }
+      return newSet
+    })
+  }
+
+  const getMedalEmoji = (place) => {
+    if (place === 1) return '🥇'
+    if (place === 2) return '🥈'
+    if (place === 3) return '🥉'
+    return `#${place}`
+  }
+
+  // Get podium finishes (1st, 2nd, 3rd) with full tournament lists
+  const podiumFinishes = bestRankingStats.filter(ranking => ranking.place <= 3)
+
   return (
     <div className="tab-panel">
       {/* Best Ranking and Top Partners Section */}
       <div className="player-insights">
-        {/* Best Rankings (Top 3) */}
+        {/* Podium Finishes */}
         <div className="insight-box best-ranking">
-          <h3 className="insight-title">🏅 Best Rankings</h3>
-          {bestRankingStats.length > 0 ? (
+          <h3 className="insight-title">🏅 Podium Finishes</h3>
+          {podiumFinishes.length > 0 ? (
             <div className="rankings-list">
-              {bestRankingStats.map((ranking, index) => (
-                <div key={ranking.place} className={`ranking-item rank-level-${index + 1}`}>
-                  <div className="ranking-header">
+              {podiumFinishes.map((ranking) => (
+                <div key={ranking.place} className={`ranking-item rank-level-${ranking.place}`}>
+                  <div 
+                    className="ranking-header clickable" 
+                    onClick={() => togglePlace(ranking.place)}
+                    title={expandedPlaces.has(ranking.place) ? "Click to collapse" : "Click to expand"}
+                  >
                     <div className="ranking-badge">
-                      #{ranking.place}
+                      {getMedalEmoji(ranking.place)}
                     </div>
                     <div className="ranking-count">
                       {ranking.count} time{ranking.count !== 1 ? 's' : ''}
                     </div>
+                    <div className="expand-indicator">
+                      {expandedPlaces.has(ranking.place) ? '▼' : '▶'}
+                    </div>
                   </div>
-                  {ranking.count <= 3 && (
-                    <div className="ranking-tournaments">
+                  {expandedPlaces.has(ranking.place) && (
+                    <div className="ranking-tournaments expanded">
                       {ranking.tournaments.map((t, i) => (
-                        <div key={i} className="tournament-badge-small">
+                        <div 
+                          key={i} 
+                          className="tournament-badge-clickable"
+                          onClick={() => onTournamentClick && onTournamentClick(t)}
+                          title={`Click to view ${t.tournament}`}
+                        >
                           {t.tournament}
                         </div>
                       ))}
@@ -34,7 +72,7 @@ export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats }) =>
               ))}
             </div>
           ) : (
-            <div className="no-data-small">No tournament data available</div>
+            <div className="no-data-small">No podium finishes yet</div>
           )}
         </div>
 

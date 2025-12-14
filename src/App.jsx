@@ -103,27 +103,23 @@ function App() {
     selectedSeason,
     showFinaleQualifiers,
     tournaments,
+    // These callbacks are ONLY called by popstate (browser back/forward)
+    // They should ONLY update state, NOT call updateURL (which would push new history)
     onViewModeChange: (newViewMode) => {
       setViewMode(newViewMode)
-      updateURL({ view: newViewMode, player: null })
     },
     onTournamentChange: (tournament) => {
       setSelectedTournament(tournament)
-      updateURL({ tournament: tournament.id, player: null })
     },
     onPlayerChange: (playerName) => {
       setSelectedPlayer(playerName)
-      // Don't update URL here - let handlePlayerSelect handle it
-      // This callback is only for restoring state from URL/popstate
     },
     onSeasonChange: (season) => {
       setSelectedSeason(season)
-      updateURL({ season, player: null })
     },
     onFiltersChange: (filters) => {
       if (filters.showFinaleQualifiers !== undefined) {
         setShowFinaleQualifiers(filters.showFinaleQualifiers)
-        updateURL({ finaleQualifiers: filters.showFinaleQualifiers })
       }
     }
   })
@@ -141,15 +137,24 @@ function App() {
   }
 
   const handlePlayerSelect = (playerName) => {
+    // Set viewMode to 'player' to indicate we want to view player details
     // Update URL first with explicit values to avoid closure issues
-    updateURL({ player: playerName, view: viewMode })
+    // Clear tournament and season when viewing player
+    updateURL({ 
+      player: playerName, 
+      view: 'player',
+      tournament: null,
+      season: null 
+    })
     // Then update state - this will trigger a re-render but URL is already set
     setSelectedPlayer(playerName)
+    setViewMode('player')
   }
 
   const handleBackFromPlayer = () => {
     setSelectedPlayer(null)
-    updateURL({ player: null })
+    setViewMode('overall') // Go back to overall view
+    updateURL({ player: null, view: 'overall' })
   }
 
   const handleFinaleQualifiersToggle = (enabled) => {
@@ -205,8 +210,12 @@ function App() {
     )
   }
 
-  // Player detail view
-  if (selectedPlayer) {
+  // Player detail view - show if player is selected and viewMode indicates player view
+  // viewMode will be 'player' when viewing player details
+  // viewMode will be 'tournament', 'season', or 'overall' when viewing rankings
+  const showPlayerDetail = selectedPlayer && viewMode === 'player'
+  
+  if (showPlayerDetail) {
     return (
       <AppLayout>
         <PlayerDetail 
@@ -215,6 +224,18 @@ function App() {
           tournaments={tournaments}
           aggregatedPlayers={aggregatedPlayers}
           onBack={handleBackFromPlayer}
+          onTournamentSelect={(tournament) => {
+            // Navigate to tournament with clean URL (no player param)
+            // Browser history will naturally restore player view on back button
+            setViewMode('tournament')
+            setSelectedTournament(tournament)
+            setSelectedPlayer(null) // Clear player for clean state
+            updateURL({ 
+              view: 'tournament', 
+              tournament: tournament.id,
+              player: null // Explicitly clear player from URL
+            })
+          }}
         />
       </AppLayout>
     )

@@ -9,9 +9,20 @@ import { ComparisonTab } from './playerDetail/ComparisonTab'
 import { AchievementsDisplay } from './playerDetail/AchievementsDisplay'
 import './PlayerDetail.css'
 
-function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayers, onBack }) {
+function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayers, onBack, onTournamentSelect }) {
   const [selectedComparePlayer, setSelectedComparePlayer] = useState('')
   const [activeTab, setActiveTab] = useState('overview')
+
+  const handleTournamentClick = (tournamentData) => {
+    // Find the full tournament object
+    const tournament = tournaments.find(t => 
+      t.name === tournamentData.tournament || 
+      (t.data && t.data.name === tournamentData.tournament)
+    )
+    if (tournament && onTournamentSelect) {
+      onTournamentSelect(tournament)
+    }
+  }
   
   // Calculate all player statistics using custom hook
   const {
@@ -60,6 +71,7 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
             bestRankingStats={bestRankingStats}
             topPartners={topPartners}
             opponentStats={opponentStats}
+            onTournamentClick={handleTournamentClick}
           />
         )}
 
