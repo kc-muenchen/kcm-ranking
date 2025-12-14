@@ -19,12 +19,16 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
     let aVal = a[sortBy]
     let bVal = b[sortBy]
 
-    // Handle numeric sorting
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
+    // Try to parse as numbers (handles both numeric types and numeric strings)
+    const aNum = typeof aVal === 'number' ? aVal : parseFloat(aVal)
+    const bNum = typeof bVal === 'number' ? bVal : parseFloat(bVal)
+
+    // Handle numeric sorting (including numeric strings like winRate, avgPlace)
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return sortOrder === 'asc' ? aNum - bNum : bNum - aNum
     }
 
-    // Handle string sorting
+    // Handle string sorting for non-numeric values
     if (typeof aVal === 'string' && typeof bVal === 'string') {
       return sortOrder === 'asc' 
         ? aVal.localeCompare(bVal)
