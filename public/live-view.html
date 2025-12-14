@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OBS Overlay - Live View</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+    #team1 {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      font-size: 24px;
+      font-weight: 600;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      white-space: nowrap;
+    }
+    #team2 {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 24px;
+      font-weight: 600;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      white-space: nowrap;
+      text-align: right;
+    }
+    .player-name {
+      display: inline;
+    }
+    .separator {
+      margin: 0 4px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div id="team1"></div>
+  <div id="team2"></div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const team1El = document.getElementById('team1');
+    const team2El = document.getElementById('team2');
+
+    // Function to fetch tournament data from API (using CORS proxy to bypass CORS restrictions)
+    async function fetchTournamentData(tournamentId) {
+      // Add cache-busting timestamp to prevent caching
+      const timestamp = Date.now();
+      const targetUrl = `https://live.kickertool.de/api/table_soccer/tournaments/${tournamentId}.json?t=${timestamp}`;
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+      
+      try {
+        const response = await fetch(proxyUrl, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('[Fetch] Error fetching tournament data:', error);
+        try {
+          const altProxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+          const altResponse = await fetch(altProxyUrl, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache'
+            }
+          });
+          if (!altResponse.ok) {
+            throw new Error(`HTTP error! status: ${altResponse.status}`);
+          }
+          const data = await altResponse.json();
+          return data;
+        } catch (altError) {
+          console.error('[Fetch] Alternative proxy also failed:', altError);
+          return null;
+        }
+      }
+    }
+
+    // Helper: check if match is on table 1
+    function isOnTable1(match) {
+      if (!match.tables || !Array.isArray(match.tables) || match.tables.length === 0) {
+        return false;
+      }
+      return match.tables.some(table => table && table.name === "1");
+    }
+
+    // Function to render teams
+    function renderTeams(tournamentData) {
+      let allMatches = [];
+      
+      // Parse the Kickertool JSON structure: qualifying[].rounds[].matches[]
+      if (tournamentData.qualifying && Array.isArray(tournamentData.qualifying)) {
+        tournamentData.qualifying.forEach(qualifying => {
+          if (qualifying.rounds && Array.isArray(qualifying.rounds)) {
+            qualifying.rounds.forEach(round => {
+              if (round.matches && Array.isArray(round.matches)) {
+                allMatches = allMatches.concat(round.matches);
+              }
+            });
+          }
+        });
+      } else if (tournamentData.rounds && Array.isArray(tournamentData.rounds)) {
+        tournamentData.rounds.forEach(round => {
+          if (round.matches && Array.isArray(round.matches)) {
+            allMatches = allMatches.concat(round.matches);
+          }
+        });
+      } else if (tournamentData.matches && Array.isArray(tournamentData.matches)) {
+        allMatches = tournamentData.matches;
+      }
+      
+      console.log('[Render] Total matches found:', allMatches.length);
+      
+      // Filter for matches on table 1 (only check if tables array has name "1")
+      const table1Matches = allMatches.filter(match => isOnTable1(match));
+      
+      console.log('[Render] Matches on table 1:', table1Matches.length);
+      
+      // Get the most recent match
+      const activeGame = table1Matches
+        .sort((a, b) => {
+          const timeA = a.timeStart || 0;
+          const timeB = b.timeStart || 0;
+          return timeB - timeA;
+        })[0];
+      
+      console.log('[Render] Active game found:', activeGame ? 'Yes' : 'No');
+      
+      if (!activeGame) {
+        team1El.textContent = '';
+        team2El.textContent = '';
+        return;
+      }
+      
+      // Extract player names from team1 and team2
+      let leftTeam = [];
+      let rightTeam = [];
+      
+      if (activeGame.team1 && activeGame.team1.players && Array.isArray(activeGame.team1.players)) {
+        leftTeam = activeGame.team1.players.map(p => p.name || `${p.external?.firstName || ''} ${p.external?.lastName || ''}`.trim() || 'Unknown').filter(Boolean);
+      }
+      
+      if (activeGame.team2 && activeGame.team2.players && Array.isArray(activeGame.team2.players)) {
+        rightTeam = activeGame.team2.players.map(p => p.name || `${p.external?.firstName || ''} ${p.external?.lastName || ''}`.trim() || 'Unknown').filter(Boolean);
+      }
+      
+      // Render team 1 (left bottom)
+      if (leftTeam.length > 0) {
+        team1El.innerHTML = leftTeam.map(name => `<span class="player-name">${name}</span>`).join('<span class="separator">/</span>');
+      } else {
+        team1El.textContent = '';
+      }
+      
+      // Render team 2 (right bottom)
+      if (rightTeam.length > 0) {
+        team2El.innerHTML = rightTeam.map(name => `<span class="player-name">${name}</span>`).join('<span class="separator">/</span>');
+      } else {
+        team2El.textContent = '';
+      }
+    }
+    // ========================================================
+    // Tournament ID
+    // ========================================================
+    const tournamentId = '0lgRZQ6wREz5LLLd0XGDJ';
+    // ========================================================
+    // End of Tournament ID
+    // ========================================================
+
+    // Socket.IO connection
+    const socket = io('https://api.kickertool.com/result', {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      query: {
+        tournamentId,
+      },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    // Initial load (don't wait for socket connection)
+    (async () => {
+      const tournamentData = await fetchTournamentData(tournamentId);
+      if (tournamentData) {
+        renderTeams(tournamentData);
+      }
+    })();
+
+    socket.on('connect', async () => {
+      const tournamentData = await fetchTournamentData(tournamentId);
+      if (tournamentData) {
+        renderTeams(tournamentData);
+      }
+    });
+
+    socket.on('tournament-update', async (data) => {
+      const updateTournamentId = data?.tournamentId || tournamentId;
+      const tournamentData = await fetchTournamentData(updateTournamentId);
+      if (tournamentData) {
+        renderTeams(tournamentData);
+      }
+    });
+  </script>
+</body>
+</html>
+

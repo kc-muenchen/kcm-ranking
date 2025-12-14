@@ -4,16 +4,34 @@ import ScrollToTop from './ScrollToTop'
 /**
  * App layout component with header and footer
  */
-export const AppLayout = ({ children }) => {
+export const AppLayout = ({ children, mainViewMode = 'rankings', onMainViewModeChange }) => {
+  const isLiveView = mainViewMode === 'live'
+  
   return (
     <div className="app">
       <header className="header">
         <div className="container">
-          <h1 className="title">
-            <img src={logo} alt="KCM Logo" className="logo" />
-            KCM Ranking
-          </h1>
-          <p className="subtitle">Table Soccer Tournament Rankings</p>
+          <div className="header-content">
+            <div className="header-left">
+              <h1 className="title">
+                <img src={logo} alt="KCM Logo" className="logo" />
+                KCM Ranking
+              </h1>
+              <p className="subtitle">Table Soccer Tournament Rankings</p>
+            </div>
+            {onMainViewModeChange && (
+              <div className="header-right">
+                <button 
+                  className="live-view-button" 
+                  onClick={() => {
+                    onMainViewModeChange(isLiveView ? 'rankings' : 'live')
+                  }}
+                >
+                  {isLiveView ? '📊 Rankings' : '📺 Live View'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

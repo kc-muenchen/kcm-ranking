@@ -166,3 +166,54 @@ model Standing {
   @@map("standings")
 }
 
+// BettingUser model - represents users who can place bets
+model BettingUser {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  passwordHash    String
+  balance         Float    @default(1000.0) // Virtual currency starting balance
+  totalWagered    Float    @default(0)
+  totalWon        Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastActive      DateTime @default(now())
+  
+  // Relations
+  bets            Bet[]
+  
+  @@index([username])
+  @@map("betting_users")
+}
+
+// Bet model - represents a single bet on a live game
+model Bet {
+  id              String   @id @default(cuid())
+  userId          String
+  user            BettingUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Match identification (from live Kickertool data)
+  tournamentId    String   // Kickertool tournament ID
+  matchId         String?  // Kickertool match ID if available
+  tableName       String   // Table number/name
+  
+  // Bet details
+  amount          Float
+  predictedWinner Int      // 1 or 2 (team1 or team2)
+  odds            Float    // Odds at time of bet
+  team1Names      String   // JSON array of team 1 player names
+  team2Names      String   // JSON array of team 2 player names
+  
+  // Outcome
+  status          String   @default("pending") // "pending", "won", "lost", "cancelled"
+  payout          Float?   // Amount won (if status = "won")
+  
+  // Timestamps
+  placedAt        DateTime @default(now())
+  resolvedAt      DateTime?
+  
+  @@index([userId])
+  @@index([status])
+  @@index([placedAt])
+  @@map("bets")
+}
+

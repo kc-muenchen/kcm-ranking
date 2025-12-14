@@ -9,6 +9,7 @@ import tournamentsRouter from './routes/tournaments.js';
 import playersRouter from './routes/players.js';
 import statsRouter from './routes/stats.js';
 import aliasesRouter from './routes/aliases.js';
+import bettingRouter from './routes/betting.js';
 import { requireApiKey } from './middleware/auth.js';
 
 dotenv.config();
@@ -106,6 +107,9 @@ app.use(`${API_PREFIX}/tournaments`, tournamentsRouter);
 // Aliases routes - GET requests are read-only, POST/PUT/DELETE require auth
 // We'll handle write operations in the route handlers
 app.use(`${API_PREFIX}/aliases`, aliasesRouter);
+
+// Betting routes
+app.use(`${API_PREFIX}/betting`, bettingRouter);
 
 // 404 handler
 app.use((req, res) => {

@@ -9,6 +9,7 @@ import PlayerDetail from './components/PlayerDetail'
 import { AppLayout } from './components/AppLayout'
 import { SeasonView } from './components/SeasonView'
 import { SeasonAwardsPage } from './pages/SeasonAwardsPage'
+import { LiveView } from './components/LiveView'
 import { useTournaments } from './hooks/useTournaments'
 import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
@@ -23,6 +24,9 @@ function App() {
   const [aggregatedPlayers, setAggregatedPlayers] = useState([])
   const [seasonPlayers, setSeasonPlayers] = useState([])
   const [playerHistory, setPlayerHistory] = useState(new Map())
+
+  // Main view mode (rankings or live)
+  const [mainViewMode, setMainViewMode] = useState('rankings')
 
   // View state
   const [viewMode, setViewMode] = useState('overall')
@@ -203,7 +207,10 @@ function App() {
   // Loading state
   if (loading) {
     return (
-      <AppLayout>
+      <AppLayout 
+        mainViewMode={mainViewMode} 
+        onMainViewModeChange={setMainViewMode}
+      >
         <div className="loading">
           <div className="spinner"></div>
           <p>Loading tournament data...</p>
@@ -212,10 +219,31 @@ function App() {
     )
   }
 
+  // Main view
+  const seasonFinal = selectedSeason ? getSeasonFinal(tournaments, selectedSeason) : null
+
+  // If main view mode is 'live', only show live view
+  if (mainViewMode === 'live') {
+    return (
+      <AppLayout 
+        mainViewMode={mainViewMode} 
+        onMainViewModeChange={setMainViewMode}
+      >
+        <div className="live-view-container">
+          <LiveView aggregatedPlayers={aggregatedPlayers} />
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // Rankings mode - show player detail or rankings
   // Player detail view
   if (selectedPlayer) {
     return (
-      <AppLayout>
+      <AppLayout 
+        mainViewMode={mainViewMode} 
+        onMainViewModeChange={setMainViewMode}
+      >
         <PlayerDetail 
           playerName={selectedPlayer}
           playerHistory={playerHistory}
@@ -227,11 +255,13 @@ function App() {
     )
   }
 
-  // Main view
-  const seasonFinal = selectedSeason ? getSeasonFinal(tournaments, selectedSeason) : null
-
+  // Rankings view (mainViewMode === 'rankings')
   return (
-    <AppLayout>
+    <AppLayout 
+      mainViewMode={mainViewMode} 
+      onMainViewModeChange={setMainViewMode}
+    >
+      
       <ViewToggle 
         viewMode={viewMode} 
         onViewModeChange={handleViewModeChange}
