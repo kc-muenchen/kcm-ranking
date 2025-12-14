@@ -39,6 +39,12 @@ const existingAliases = {
   'Benjamin Stein': 'Ben',
   'Benjamin': 'Ben',
   'Wolfgang': 'Wolfgang S.',
+  'Maxx': 'Max',
+  'maxx': 'Max',
+  'Maxxx': 'Max',
+  'maxxx': 'Max',
+  'max': 'Max',
+  'Srefan': 'Stefan',
 };
 
 async function migrateAliases() {
