@@ -1,16 +1,27 @@
 import { SearchableSelect } from '../SearchableSelect'
+import { calculateWinProbability } from '../../utils/trueskill'
 
 /**
  * Comparison tab component for head-to-head and teammate statistics
  */
 export const ComparisonTab = ({ 
-  playerName, 
+  playerName,
+  currentPlayer,
   allPlayers, 
   selectedComparePlayer, 
   onPlayerSelect, 
   headToHeadStats, 
   teammateStats 
 }) => {
+  // Get TrueSkill ratings for both players
+  const player1 = currentPlayer
+  const player2 = allPlayers.find(p => p.name === selectedComparePlayer)
+  
+  // Calculate win probability if both players have TrueSkill ratings
+  const prediction = (player1?.trueSkill && player2?.trueSkill) 
+    ? calculateWinProbability(player1.trueSkill, player2.trueSkill)
+    : null
+
   return (
     <div className="tab-panel">
       {/* Player Comparison Section */}
@@ -27,6 +38,49 @@ export const ComparisonTab = ({
             className="player-select"
           />
         </div>
+
+        {/* Match Prediction */}
+        {prediction && selectedComparePlayer && (
+          <div className="match-prediction">
+            <h3>🔮 Next Match Prediction</h3>
+            <div className="prediction-container">
+              <div className="prediction-players">
+                <div className="prediction-player player1">
+                  <div className="player-name">{playerName}</div>
+                  <div className="player-skill">TrueSkill: {player1.trueSkill.toFixed(1)}</div>
+                  <div className={`win-probability ${prediction.player1WinProb > 0.5 ? 'favorite' : ''}`}>
+                    {(prediction.player1WinProb * 100).toFixed(1)}%
+                  </div>
+                </div>
+                
+                <div className="vs-divider">VS</div>
+                
+                <div className="prediction-player player2">
+                  <div className="player-name">{selectedComparePlayer}</div>
+                  <div className="player-skill">TrueSkill: {player2.trueSkill.toFixed(1)}</div>
+                  <div className={`win-probability ${prediction.player2WinProb > 0.5 ? 'favorite' : ''}`}>
+                    {(prediction.player2WinProb * 100).toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+              
+              <div className="prediction-bar-container">
+                <div 
+                  className="prediction-bar player1-bar" 
+                  style={{ width: `${prediction.player1WinProb * 100}%` }}
+                ></div>
+                <div 
+                  className="prediction-bar player2-bar" 
+                  style={{ width: `${prediction.player2WinProb * 100}%` }}
+                ></div>
+              </div>
+              
+              <div className="prediction-note">
+                Based on current TrueSkill ratings (1v1 scenario)
+              </div>
+            </div>
+          </div>
+        )}
 
         {headToHeadStats && (
           <div className="comparison-results">

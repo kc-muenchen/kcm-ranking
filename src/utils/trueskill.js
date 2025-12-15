@@ -211,3 +211,30 @@ export function exportRatings(playerRatings) {
   return ratings
 }
 
+/**
+ * Calculate win probability for a 1v1 match based on TrueSkill ratings
+ * Uses logistic function to convert skill difference to probability
+ * @param {number} player1Skill - TrueSkill rating of player 1
+ * @param {number} player2Skill - TrueSkill rating of player 2
+ * @returns {Object} Object with player1WinProb and player2WinProb (0-1 range)
+ */
+export function calculateWinProbability(player1Skill, player2Skill) {
+  // Validate inputs
+  if (typeof player1Skill !== 'number' || typeof player2Skill !== 'number') {
+    return { player1WinProb: 0.5, player2WinProb: 0.5 }
+  }
+  
+  // Calculate skill difference
+  const skillDiff = player1Skill - player2Skill
+  
+  // Use logistic function to convert skill difference to probability
+  // Scale factor of 3.0 is tuned for TrueSkill's typical range
+  const scaleFactor = 3.0
+  const player1WinProb = 1 / (1 + Math.exp(-skillDiff / scaleFactor))
+  
+  return {
+    player1WinProb,
+    player2WinProb: 1 - player1WinProb
+  }
+}
+

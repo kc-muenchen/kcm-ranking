@@ -12,7 +12,20 @@ import { useTournaments } from './hooks/useTournaments'
 import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
 import { getAvailableSeasons, getSeasonFinal } from './utils/seasonUtils'
+import { copySeasonTop25, copySeasonPlayers, showClipboardHelp } from './utils/clipboardHelpers'
 import './App.css'
+
+// Expose clipboard helper functions to window for console access
+if (typeof window !== 'undefined') {
+  window.copySeasonTop25 = copySeasonTop25
+  window.copySeasonPlayers = copySeasonPlayers
+  window.showClipboardHelp = showClipboardHelp
+  
+  // Log available functions on page load (only in development)
+  if (import.meta.env.DEV) {
+    console.log('📋 Clipboard helpers loaded! Type showClipboardHelp() for more info.');
+  }
+}
 
 function App() {
   // Data state

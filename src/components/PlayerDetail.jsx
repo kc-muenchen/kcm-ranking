@@ -29,6 +29,7 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
     history,
     matchHistory,
     summaryStats,
+    playerAggregated,
     bestRankingStats,
     topPartners,
     opponentStats,
@@ -102,6 +103,7 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
         {activeTab === 'comparison' && (
           <ComparisonTab
             playerName={playerName}
+            currentPlayer={playerAggregated}
             allPlayers={allPlayers}
             selectedComparePlayer={selectedComparePlayer}
             onPlayerSelect={setSelectedComparePlayer}
