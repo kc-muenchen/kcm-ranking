@@ -6,6 +6,13 @@
   padding: 0.5rem;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  align-items: flex-start;
+}
+
+.main-navigation {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
 }
 
 .toggle-button {
@@ -41,15 +48,113 @@
   font-size: 1.25rem;
 }
 
+/* Tools Dropdown */
+.tools-dropdown {
+  position: relative;
+  min-width: 140px;
+}
+
+.tools-button {
+  width: 100%;
+  background: rgba(251, 191, 36, 0.08);
+  border-color: transparent;
+}
+
+.tools-button:hover {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.tools-button.active {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.dropdown-arrow {
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+  transition: transform 0.2s ease;
+}
+
+.tools-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tool-item {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  font-family: inherit;
+}
+
+.tool-item:last-child {
+  border-bottom: none;
+}
+
+.tool-item:hover {
+  background: var(--surface-light);
+  color: var(--primary-color);
+}
+
+.tool-item.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary-color);
+}
+
+.tool-icon {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
 @media (max-width: 768px) {
   .view-toggle {
     flex-direction: column;
     gap: 0.5rem;
   }
 
+  .main-navigation {
+    width: 100%;
+    flex-direction: column;
+  }
+
   .toggle-button {
     padding: 0.875rem 1rem;
     font-size: 0.9375rem;
   }
-}
 
+  .tools-dropdown {
+    width: 100%;
+  }
+}
