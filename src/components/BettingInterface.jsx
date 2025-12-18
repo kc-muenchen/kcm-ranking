@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './BettingInterface.css'
 
-export function BettingInterface({ game, prediction, tableColor, user, onBetPlaced, onLogout }) {
+export function BettingInterface({ game, prediction, tableColor, user, onBetPlaced }) {
   const [showBetForm, setShowBetForm] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [betAmount, setBetAmount] = useState(10)
@@ -71,14 +71,6 @@ export function BettingInterface({ game, prediction, tableColor, user, onBetPlac
 
   return (
     <div className="betting-interface">
-      <div className="betting-user-info">
-        <div className="betting-user-details">
-          <span className="betting-username">{user.username}</span>
-          <span className="betting-balance">💰 {user.balance.toFixed(2)}</span>
-        </div>
-        <button className="betting-logout" onClick={onLogout}>Logout</button>
-      </div>
-
       <div className="betting-actions">
         <button
           className="bet-button bet-team1"

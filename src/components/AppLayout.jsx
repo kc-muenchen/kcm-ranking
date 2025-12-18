@@ -4,7 +4,14 @@ import ScrollToTop from './ScrollToTop'
 /**
  * App layout component with header and footer
  */
-export const AppLayout = ({ children, mainViewMode = 'rankings', onMainViewModeChange }) => {
+export const AppLayout = ({ 
+  children, 
+  mainViewMode = 'rankings', 
+  onMainViewModeChange,
+  bettingUser,
+  onShowAuth,
+  onLogout
+}) => {
   const isLiveView = mainViewMode === 'live'
   
   return (
@@ -29,6 +36,19 @@ export const AppLayout = ({ children, mainViewMode = 'rankings', onMainViewModeC
                 >
                   {isLiveView ? '📊 Rankings' : '📺 Live View'}
                 </button>
+                {!bettingUser ? (
+                  <button className="betting-login-btn" onClick={onShowAuth}>
+                    🎲 Login
+                  </button>
+                ) : (
+                  <div className="betting-user-header">
+                    <span className="betting-user-name">{bettingUser.username}</span>
+                    <span className="betting-user-balance">💰 {bettingUser.balance.toFixed(2)}</span>
+                    <button className="betting-logout-btn" onClick={onLogout} title="Logout">
+                      ×
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

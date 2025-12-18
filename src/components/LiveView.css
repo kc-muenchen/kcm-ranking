@@ -358,3 +358,207 @@
   }
 }
 
+/* Active Bet Display */
+.active-bet-display {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border: 2px solid;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.active-bet-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.active-bet-icon {
+  font-size: 1.25rem;
+}
+
+.active-bet-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.active-bet-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.active-bet-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.active-bet-label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.active-bet-value {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.active-bet-team {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.active-bet-players {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.active-bet-amount {
+  color: #f59e0b;
+  font-size: 1rem;
+}
+
+.active-bet-payout {
+  color: #10b981;
+  font-size: 1rem;
+}
+
+/* Win Notification */
+.win-notification {
+  position: fixed;
+  top: 100px;
+  right: 2rem;
+  z-index: 1000;
+  animation: slideInRight 0.4s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.win-notification-content {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 300px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.win-notification-icon {
+  font-size: 2.5rem;
+  animation: bounce 0.6s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.win-notification-text {
+  flex: 1;
+  color: white;
+}
+
+.win-notification-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.win-notification-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.win-notification-balance {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.win-notification-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+  padding: 0;
+}
+
+.win-notification-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .win-notification {
+    right: 1rem;
+    left: 1rem;
+    top: 80px;
+  }
+
+  .win-notification-content {
+    min-width: auto;
+  }
+
+  .active-bet-display {
+    padding: 0.875rem;
+  }
+
+  .active-bet-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .active-bet-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .active-bet-team {
+    align-items: flex-start;
+  }
+
+  .active-bet-label {
+    font-size: 0.75rem;
+  }
+
+  .active-bet-value {
+    font-size: 0.875rem;
+  }
+}
+

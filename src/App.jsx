@@ -10,6 +10,7 @@ import { AppLayout } from './components/AppLayout'
 import { SeasonView } from './components/SeasonView'
 import { SeasonAwardsPage } from './pages/SeasonAwardsPage'
 import { LiveView } from './components/LiveView'
+import { BettingAuth } from './components/BettingAuth'
 import { useTournaments } from './hooks/useTournaments'
 import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
@@ -28,6 +29,10 @@ function App() {
   // Main view mode (rankings or live)
   const [mainViewMode, setMainViewMode] = useState('rankings')
 
+  // Betting/Auth state
+  const [showAuth, setShowAuth] = useState(false)
+  const [bettingUser, setBettingUser] = useState(null)
+
   // View state
   const [viewMode, setViewMode] = useState('overall')
   const [selectedSeason, setSelectedSeason] = useState(null)
@@ -35,6 +40,34 @@ function App() {
 
   // Filter state
   const [showFinaleQualifiers, setShowFinaleQualifiers] = useState(false)
+
+  // Check for existing betting session
+  useEffect(() => {
+    const token = localStorage.getItem('betting_token')
+    const user = localStorage.getItem('betting_user')
+    if (token && user) {
+      try {
+        setBettingUser(JSON.parse(user))
+      } catch (e) {
+        console.error('Failed to parse betting user:', e)
+      }
+    }
+  }, [])
+
+  const handleLogin = (user, token) => {
+    setBettingUser(user)
+    setShowAuth(false)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('betting_token')
+    localStorage.removeItem('betting_user')
+    setBettingUser(null)
+  }
+
+  const handleBetPlaced = (newBalance) => {
+    setBettingUser(prev => ({ ...prev, balance: newBalance }))
+  }
 
   // Processing functions - defined before useEffects that use them
   const processPlayers = (tournamentData) => {
@@ -207,15 +240,21 @@ function App() {
   // Loading state
   if (loading) {
     return (
-      <AppLayout 
-        mainViewMode={mainViewMode} 
-        onMainViewModeChange={setMainViewMode}
-      >
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>Loading tournament data...</p>
-        </div>
-      </AppLayout>
+      <>
+        <AppLayout 
+          mainViewMode={mainViewMode} 
+          onMainViewModeChange={setMainViewMode}
+          bettingUser={bettingUser}
+          onShowAuth={() => setShowAuth(true)}
+          onLogout={handleLogout}
+        >
+          <div className="loading">
+            <div className="spinner"></div>
+            <p>Loading tournament data...</p>
+          </div>
+        </AppLayout>
+        {showAuth && <BettingAuth onLogin={handleLogin} onClose={() => setShowAuth(false)} />}
+      </>
     )
   }
 
@@ -225,14 +264,24 @@ function App() {
   // If main view mode is 'live', only show live view
   if (mainViewMode === 'live') {
     return (
-      <AppLayout 
-        mainViewMode={mainViewMode} 
-        onMainViewModeChange={setMainViewMode}
-      >
-        <div className="live-view-container">
-          <LiveView aggregatedPlayers={aggregatedPlayers} />
-        </div>
-      </AppLayout>
+      <>
+        <AppLayout 
+          mainViewMode={mainViewMode} 
+          onMainViewModeChange={setMainViewMode}
+          bettingUser={bettingUser}
+          onShowAuth={() => setShowAuth(true)}
+          onLogout={handleLogout}
+        >
+          <div className="live-view-container">
+            <LiveView 
+              aggregatedPlayers={aggregatedPlayers}
+              bettingUser={bettingUser}
+              onBetPlaced={handleBetPlaced}
+            />
+          </div>
+        </AppLayout>
+        {showAuth && <BettingAuth onLogin={handleLogin} onClose={() => setShowAuth(false)} />}
+      </>
     )
   }
 
@@ -240,32 +289,42 @@ function App() {
   // Player detail view
   if (selectedPlayer) {
     return (
-      <AppLayout 
-        mainViewMode={mainViewMode} 
-        onMainViewModeChange={setMainViewMode}
-      >
-        <PlayerDetail 
-          playerName={selectedPlayer}
-          playerHistory={playerHistory}
-          tournaments={tournaments}
-          aggregatedPlayers={aggregatedPlayers}
-          onBack={handleBackFromPlayer}
-        />
-      </AppLayout>
+      <>
+        <AppLayout 
+          mainViewMode={mainViewMode} 
+          onMainViewModeChange={setMainViewMode}
+          bettingUser={bettingUser}
+          onShowAuth={() => setShowAuth(true)}
+          onLogout={handleLogout}
+        >
+          <PlayerDetail 
+            playerName={selectedPlayer}
+            playerHistory={playerHistory}
+            tournaments={tournaments}
+            aggregatedPlayers={aggregatedPlayers}
+            onBack={handleBackFromPlayer}
+          />
+        </AppLayout>
+        {showAuth && <BettingAuth onLogin={handleLogin} onClose={() => setShowAuth(false)} />}
+      </>
     )
   }
 
   // Rankings view (mainViewMode === 'rankings')
   return (
-    <AppLayout 
-      mainViewMode={mainViewMode} 
-      onMainViewModeChange={setMainViewMode}
-    >
-      
-      <ViewToggle 
-        viewMode={viewMode} 
-        onViewModeChange={handleViewModeChange}
-      />
+    <>
+      <AppLayout 
+        mainViewMode={mainViewMode} 
+        onMainViewModeChange={setMainViewMode}
+        bettingUser={bettingUser}
+        onShowAuth={() => setShowAuth(true)}
+        onLogout={handleLogout}
+      >
+        
+        <ViewToggle 
+          viewMode={viewMode} 
+          onViewModeChange={handleViewModeChange}
+        />
 
       {viewMode === 'tournament' && (
         <TournamentSelector
@@ -315,7 +374,9 @@ function App() {
           <p>No player data available.</p>
         </div>
       )}
-    </AppLayout>
+      </AppLayout>
+      {showAuth && <BettingAuth onLogin={handleLogin} onClose={() => setShowAuth(false)} />}
+    </>
   )
 }
 
