@@ -6,6 +6,7 @@ import StatsCards from './components/StatsCards'
 import ViewToggle from './components/ViewToggle'
 import EliminationBracket from './components/EliminationBracket'
 import PlayerDetail from './components/PlayerDetail'
+import ProbabilityCalculator from './components/ProbabilityCalculator'
 import { AppLayout } from './components/AppLayout'
 import { SeasonView } from './components/SeasonView'
 import { SeasonAwardsPage } from './pages/SeasonAwardsPage'
@@ -352,7 +353,11 @@ function App() {
         </>
       )}
 
-      {currentPlayers.length > 0 ? (
+      {viewMode === 'probability' && (
+        <ProbabilityCalculator players={aggregatedPlayers} />
+      )}
+
+      {viewMode !== 'probability' && currentPlayers.length > 0 && (
         <>
           <StatsCards 
             players={currentPlayers}
@@ -369,7 +374,9 @@ function App() {
             <EliminationBracket eliminationData={selectedTournament.data.eliminations} />
           )}
         </>
-      ) : (
+      )}
+      
+      {viewMode !== 'probability' && currentPlayers.length === 0 && (
         <div className="no-data">
           <p>No player data available.</p>
         </div>

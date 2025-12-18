@@ -463,6 +463,18 @@
   font-size: 0.875rem;
 }
 
+.footer a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.footer a:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {
