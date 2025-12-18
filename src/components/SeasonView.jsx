@@ -80,9 +80,19 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
     return place
   }
   
+  // Arrange teams for podium display (2nd, 1st, 3rd)
+  const arrangedTeams = []
+  const firstPlace = topTeams.find(t => t.place === 1)
+  const secondPlace = topTeams.find(t => t.place === 2)
+  const thirdPlace = topTeams.find(t => t.place === 3)
+  
+  if (secondPlace) arrangedTeams.push(secondPlace)
+  if (firstPlace) arrangedTeams.push(firstPlace)
+  if (thirdPlace) arrangedTeams.push(thirdPlace)
+  
   return (
     <div className="season-final-section">
-      <h2>🏆 Season Final</h2>
+      <h2>🏆 Season Final Champions</h2>
       <div className="season-final-card">
         <div className="season-final-header">
           <h3>{seasonFinal.name}</h3>
@@ -90,16 +100,25 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
             {new Date(seasonFinal.date).toLocaleDateString()}
           </span>
         </div>
-        {topTeams.length > 0 && (
-          <div className="season-final-podium">
-            {topTeams.map(team => (
-              <div key={team.place} className={`podium-item place-${team.place}`}>
-                <span className="podium-medal">{getMedalEmoji(team.place)}</span>
-                <span className="podium-name">
-                  {team.players.join(' & ')}
-                </span>
-              </div>
-            ))}
+        {arrangedTeams.length > 0 && (
+          <div className="champions-podium-container">
+            <div className="champions-podium">
+              {arrangedTeams.map(team => (
+                <div key={team.place} className={`podium-position position-${team.place}`}>
+                  <div className="podium-rank-display">
+                    <span className="podium-medal-large">{getMedalEmoji(team.place)}</span>
+                    <span className="podium-rank-number">{team.place}</span>
+                  </div>
+                  <div className="podium-team-name">
+                    {team.players.map((player, idx) => (
+                      <span key={idx} className="team-player">
+                        {player}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         <div className="season-final-info">
