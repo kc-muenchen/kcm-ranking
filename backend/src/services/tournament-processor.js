@@ -14,7 +14,8 @@ function isSeasonFinalByName(name) {
   // Check for various season final patterns
   return lowerName.includes('season final') ||
          lowerName.includes('saison final') ||
-         lowerName.includes('saison finale')
+         lowerName.includes('saison finale') ||
+         lowerName.includes('saisonfinale')
 }
 
 /**
