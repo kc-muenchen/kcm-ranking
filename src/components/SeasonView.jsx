@@ -44,17 +44,31 @@ export const QualificationInfoBox = () => {
 export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
   if (!seasonFinal) return null
 
-  // Get top 3 from elimination standings
-  const topPlayers = []
+  // Get top 3 teams from elimination standings
+  // In doubles tournaments, multiple players share the same place (they're a team)
+  const topTeams = []
   if (seasonFinal.data?.eliminations && Array.isArray(seasonFinal.data.eliminations) && seasonFinal.data.eliminations.length > 0) {
     const eliminationStandings = seasonFinal.data.eliminations[0].standings || []
+    
+    // Group players by place
+    const playersByPlace = new Map()
     eliminationStandings
       .filter(player => player && player.stats && !player.removed && player.stats.place <= 3)
-      .sort((a, b) => a.stats.place - b.stats.place)
       .forEach(player => {
-        topPlayers.push({
-          name: player.name,
-          place: player.stats.place
+        const place = player.stats.place
+        if (!playersByPlace.has(place)) {
+          playersByPlace.set(place, [])
+        }
+        playersByPlace.get(place).push(player.name)
+      })
+    
+    // Convert to team format (sorted by place)
+    Array.from(playersByPlace.entries())
+      .sort((a, b) => a[0] - b[0]) // Sort by place
+      .forEach(([place, players]) => {
+        topTeams.push({
+          place,
+          players
         })
       })
   }
@@ -76,12 +90,14 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
             {new Date(seasonFinal.date).toLocaleDateString()}
           </span>
         </div>
-        {topPlayers.length > 0 && (
+        {topTeams.length > 0 && (
           <div className="season-final-podium">
-            {topPlayers.map(player => (
-              <div key={player.name} className={`podium-item place-${player.place}`}>
-                <span className="podium-medal">{getMedalEmoji(player.place)}</span>
-                <span className="podium-name">{player.name}</span>
+            {topTeams.map(team => (
+              <div key={team.place} className={`podium-item place-${team.place}`}>
+                <span className="podium-medal">{getMedalEmoji(team.place)}</span>
+                <span className="podium-name">
+                  {team.players.join(' & ')}
+                </span>
               </div>
             ))}
           </div>

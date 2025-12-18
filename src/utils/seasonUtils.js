@@ -61,14 +61,16 @@ export const getAvailableSeasons = (tournaments) => {
 
 /**
  * Get season final tournament for a given season
+ * Note: Season finals can be held outside the regular season window
+ * (e.g., after the points earning cutoff), so we don't check isTournamentInSeasonWindow
  */
 export const getSeasonFinal = (tournaments, seasonYear) => {
   return tournaments.find(tournament => {
     if (tournament.isSeasonFinal !== true) return false
     const tournamentDate = new Date(tournament.date)
-    const tournamentSeason = getSeasonYearForDate(tournamentDate)
-    if (tournamentSeason !== seasonYear) return false
-    return isTournamentInSeasonWindow(tournamentDate, seasonYear)
+    const tournamentYear = tournamentDate.getFullYear().toString()
+    // Match by calendar year - season finals typically happen in or shortly after their season year
+    return tournamentYear === seasonYear
   })
 }
 

@@ -8,9 +8,20 @@ import { getSeasonYearForDate, isTournamentInSeasonWindow } from './seasonUtils'
  * Only uses qualifying matches (excludes knockout/elimination stages)
  */
 function calculateTieBreakers(tournamentData, playerStatsMap) {
-  // Create maps: playerId -> opponents and results
-  const playerOpponents = new Map() // playerId -> Set of opponent player IDs
-  const playerResults = new Map() // playerId -> Map of opponentId -> result (1=win, 0.5=draw, 0=loss)
+  // Create a map from player ID to normalized name for lookup
+  const playerIdToName = new Map()
+  if (tournamentData.qualifying && tournamentData.qualifying[0] && tournamentData.qualifying[0].standings) {
+    tournamentData.qualifying[0].standings.forEach(player => {
+      if (!player.deactivated && !player.removed) {
+        const normalizedName = normalizePlayerNameSync(player.name)
+        playerIdToName.set(player._id, normalizedName)
+      }
+    })
+  }
+  
+  // Create maps: playerName -> opponents and results
+  const playerOpponents = new Map() // playerName -> Set of opponent player names
+  const playerResults = new Map() // playerName -> Map of opponentName -> result (1=win, 0.5=draw, 0=loss)
   
   // Process qualifying matches only (exclude elimination/knockout stages)
   if (tournamentData.qualifying && tournamentData.qualifying[0] && tournamentData.qualifying[0].rounds) {
@@ -21,8 +32,13 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
         if (!match.valid || match.skipped || !match.result || !match.team1 || !match.team2) return
         if (!match.team1.players || !match.team2.players) return
         
-        const team1Players = match.team1.players.map(p => p._id || p.id).filter(Boolean)
-        const team2Players = match.team2.players.map(p => p._id || p.id).filter(Boolean)
+        // Get player names instead of IDs
+        const team1PlayerNames = match.team1.players
+          .map(p => playerIdToName.get(p._id || p.id))
+          .filter(Boolean)
+        const team2PlayerNames = match.team2.players
+          .map(p => playerIdToName.get(p._id || p.id))
+          .filter(Boolean)
         const team1Score = match.result[0]
         const team2Score = match.result[1]
         
@@ -40,26 +56,26 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
           team2Result = 0.5
         }
         
-        // Record opponents and results for each player
-        team1Players.forEach(playerId => {
-          if (!playerOpponents.has(playerId)) {
-            playerOpponents.set(playerId, new Set())
-            playerResults.set(playerId, new Map())
+        // Record opponents and results for each player (by name)
+        team1PlayerNames.forEach(playerName => {
+          if (!playerOpponents.has(playerName)) {
+            playerOpponents.set(playerName, new Set())
+            playerResults.set(playerName, new Map())
           }
-          team2Players.forEach(opponentId => {
-            playerOpponents.get(playerId).add(opponentId)
-            playerResults.get(playerId).set(opponentId, team1Result)
+          team2PlayerNames.forEach(opponentName => {
+            playerOpponents.get(playerName).add(opponentName)
+            playerResults.get(playerName).set(opponentName, team1Result)
           })
         })
         
-        team2Players.forEach(playerId => {
-          if (!playerOpponents.has(playerId)) {
-            playerOpponents.set(playerId, new Set())
-            playerResults.set(playerId, new Map())
+        team2PlayerNames.forEach(playerName => {
+          if (!playerOpponents.has(playerName)) {
+            playerOpponents.set(playerName, new Set())
+            playerResults.set(playerName, new Map())
           }
-          team1Players.forEach(opponentId => {
-            playerOpponents.get(playerId).add(opponentId)
-            playerResults.get(playerId).set(opponentId, team2Result)
+          team1PlayerNames.forEach(opponentName => {
+            playerOpponents.get(playerName).add(opponentName)
+            playerResults.get(playerName).set(opponentName, team2Result)
           })
         })
       })
@@ -70,20 +86,20 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
   // This ensures fair comparison since knockout brackets are based on qualifying results
   
   // Calculate Buchholz and Sonneborn-Berger for each player
-  playerStatsMap.forEach((player, playerId) => {
+  playerStatsMap.forEach((player, playerName) => {
     let buchholz = 0
     let sonnebornBerger = 0
     
-    const opponents = playerOpponents.get(playerId) || new Set()
-    const results = playerResults.get(playerId) || new Map()
+    const opponents = playerOpponents.get(playerName) || new Set()
+    const results = playerResults.get(playerName) || new Map()
     
-    opponents.forEach(opponentId => {
-      const opponent = playerStatsMap.get(opponentId)
+    opponents.forEach(opponentName => {
+      const opponent = playerStatsMap.get(opponentName)
       if (opponent) {
         const opponentPoints = opponent.points || 0
         buchholz += opponentPoints
         
-        const result = results.get(opponentId) || 0
+        const result = results.get(opponentName) || 0
         sonnebornBerger += opponentPoints * result
       }
     })
@@ -104,7 +120,7 @@ export const processTournamentPlayers = (tournamentData) => {
   // Get qualifying standings
   const qualifyingStandings = tournamentData.qualifying[0].standings || []
   
-  // Create a map to aggregate stats by player ID
+  // Create a map to aggregate stats by player name (not ID, to handle merged tournaments)
   const playerStatsMap = new Map()
   
   // Process qualifying round
@@ -113,7 +129,7 @@ export const processTournamentPlayers = (tournamentData) => {
     
     const normalizedName = normalizePlayerNameSync(player.name)
     
-    playerStatsMap.set(player._id, {
+    playerStatsMap.set(normalizedName, {
       id: player._id,
       name: normalizedName,
       qualifyingPlace: player.stats.place,
@@ -143,7 +159,8 @@ export const processTournamentPlayers = (tournamentData) => {
       eliminationStandings.forEach(player => {
         if (player.deactivated || player.removed) return
         
-        const existingPlayer = playerStatsMap.get(player._id)
+        const normalizedName = normalizePlayerNameSync(player.name)
+        const existingPlayer = playerStatsMap.get(normalizedName)
         
         if (existingPlayer) {
           // Add elimination stats to existing player
@@ -162,8 +179,7 @@ export const processTournamentPlayers = (tournamentData) => {
           }
         } else {
           // New player in elimination (shouldn't happen often, but handle it)
-          const normalizedName = normalizePlayerNameSync(player.name)
-          playerStatsMap.set(player._id, {
+          playerStatsMap.set(normalizedName, {
             id: player._id,
             name: normalizedName,
             qualifyingPlace: null,
