@@ -27,7 +27,7 @@ export const AppLayout = ({ children }) => {
 
       <footer className="footer">
         <div className="container">
-          <p>KC München Table Soccer Rankings</p>
+          <p><a href="https://kc-muenchen.de/">KC München</a> Table Soccer Rankings</p>
         </div>
       </footer>
     </div>

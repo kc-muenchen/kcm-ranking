@@ -24,6 +24,13 @@ function ViewToggle({ viewMode, onViewModeChange }) {
         <span className="button-icon">📅</span>
         Single Tournament
       </button>
+      <button
+        className={`toggle-button ${viewMode === 'probability' ? 'active' : ''}`}
+        onClick={() => onViewModeChange('probability')}
+      >
+        <span className="button-icon">🎯</span>
+        Match Probability
+      </button>
     </div>
   )
 }
