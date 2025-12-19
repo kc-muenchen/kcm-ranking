@@ -1,55 +1,15 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { MaterialReactTable } from 'material-react-table'
 import './RankingTable.css'
 
 function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
-  const [sortBy, setSortBy] = useState(viewMode === 'tournament' ? 'finalPlace' : 'place')
-  const [sortOrder, setSortOrder] = useState('asc')
   const [copied, setCopied] = useState(false)
-
-  const handleSort = (field) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortBy(field)
-      setSortOrder(field === 'place' ? 'asc' : 'desc')
-    }
-  }
-
-  const sortedPlayers = [...players].sort((a, b) => {
-    let aVal = a[sortBy]
-    let bVal = b[sortBy]
-
-    // Try to parse as numbers (handles both numeric types and numeric strings)
-    const aNum = typeof aVal === 'number' ? aVal : parseFloat(aVal)
-    const bNum = typeof bVal === 'number' ? bVal : parseFloat(bVal)
-
-    // Handle numeric sorting (including numeric strings like winRate, avgPlace)
-    if (!isNaN(aNum) && !isNaN(bNum)) {
-      return sortOrder === 'asc' ? aNum - bNum : bNum - aNum
-    }
-
-    // Handle string sorting for non-numeric values
-    if (typeof aVal === 'string' && typeof bVal === 'string') {
-      return sortOrder === 'asc' 
-        ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal)
-    }
-
-    return 0
-  })
 
   const getMedalEmoji = (place) => {
     if (place === 1) return '🥇'
     if (place === 2) return '🥈'
     if (place === 3) return '🥉'
     return place
-  }
-
-  const SortIcon = ({ field }) => {
-    if (sortBy !== field) return <span className="sort-icon">↕️</span>
-    return sortOrder === 'asc' 
-      ? <span className="sort-icon active">↑</span>
-      : <span className="sort-icon active">↓</span>
   }
 
   const exportToWhatsApp = async () => {
@@ -109,6 +69,247 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
     }
   }
 
+  // Define columns based on viewMode
+  const columns = useMemo(() => {
+    const cols = []
+
+    // Rank column
+    cols.push({
+      accessorKey: viewMode === 'tournament' ? 'finalPlace' : 'place',
+      id: 'rank',
+      header: viewMode === 'tournament' ? 'Final' : 'Rank',
+      size: 80,
+      Cell: ({ row }) => {
+        const player = row.original
+        const displayPlace = viewMode === 'tournament' ? player.finalPlace : player.place
+        return (
+          <div className="rank-cell">
+            <span className="rank-badge">
+              {getMedalEmoji(displayPlace)}
+            </span>
+            {player.finaleStatus === 'qualified' && (
+              <span className="finale-badge qualified" title="Qualified for Season Finale">✓</span>
+            )}
+            {player.finaleStatus === 'successor' && (
+              <span className="finale-badge successor" title="Potential Successor">→</span>
+            )}
+          </div>
+        )
+      }
+    })
+
+    // Name column
+    cols.push({
+      accessorKey: 'name',
+      id: 'name',
+      header: 'Player',
+      size: 200,
+      Cell: ({ row }) => {
+        const player = row.original
+        return (
+          <div className="name-cell">
+            <div className="player-info">
+              <a 
+                href={`?player=${encodeURIComponent(player.name)}`}
+                className="player-name clickable" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  onPlayerSelect && onPlayerSelect(player.name)
+                }}
+                title="Click to view player details (right-click to open in new tab)"
+              >
+                {player.name}
+              </a>
+              {player.external && (
+                <span className="player-license">
+                  {player.external.nationalLicence}
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      }
+    })
+
+    // View-specific columns
+    if (viewMode === 'overall' || viewMode === 'season') {
+      cols.push(
+        {
+          accessorKey: 'seasonPoints',
+          id: 'seasonPoints',
+          header: viewMode === 'overall' ? 'Total Points' : 'Season Points',
+          size: 120,
+          Cell: ({ cell }) => (
+            <div className="season-points-cell">
+              <span className="season-points-value" title={`Season Points: ${cell.getValue()}`}>
+                {cell.getValue()}
+              </span>
+            </div>
+          )
+        },
+        {
+          accessorKey: 'trueSkill',
+          id: 'trueSkill',
+          header: 'TrueSkill',
+          size: 100,
+          Cell: ({ cell }) => (
+            <div className="trueskill-cell">
+              <span className="trueskill-rating" title={`TrueSkill: ${cell.getValue().toFixed(1)}`}>
+                {cell.getValue().toFixed(1)}
+              </span>
+            </div>
+          )
+        },
+        {
+          accessorKey: 'tournaments',
+          id: 'tournaments',
+          header: 'Tournaments',
+          size: 100
+        },
+        {
+          accessorKey: 'bestPlace',
+          id: 'bestPlace',
+          header: 'Best Place',
+          size: 100,
+          Cell: ({ cell }) => (
+            <span className="best-place">
+              {getMedalEmoji(cell.getValue())}
+            </span>
+          )
+        },
+        {
+          accessorKey: 'avgPlace',
+          id: 'avgPlace',
+          header: 'Avg Place',
+          size: 100
+        }
+      )
+    }
+
+    if (viewMode === 'tournament') {
+      cols.push(
+        {
+          accessorKey: 'qualifyingPlace',
+          id: 'qualifyingPlace',
+          header: 'Qualifying',
+          size: 100,
+          Cell: ({ cell }) => getMedalEmoji(cell.getValue())
+        },
+        {
+          accessorKey: 'eliminationPlace',
+          id: 'eliminationPlace',
+          header: 'Knockout',
+          size: 100,
+          Cell: ({ cell }) => cell.getValue() !== null ? getMedalEmoji(cell.getValue()) : '-'
+        },
+        {
+          accessorKey: 'buchholz',
+          id: 'buchholz',
+          header: 'Buchholz',
+          size: 100,
+          Cell: ({ cell }) => cell.getValue() || 0
+        },
+        {
+          accessorKey: 'sonnebornBerger',
+          id: 'sonnebornBerger',
+          header: 'SB',
+          size: 100,
+          Cell: ({ cell }) => cell.getValue() || 0
+        }
+      )
+    }
+
+    // Common columns
+    cols.push(
+      {
+        accessorKey: 'matches',
+        id: 'matches',
+        header: 'Matches',
+        size: 80
+      },
+      {
+        accessorKey: 'points',
+        id: 'points',
+        header: 'Points',
+        size: 80,
+        Cell: ({ cell }) => (
+          <div className="points-cell">
+            <strong>{cell.getValue()}</strong>
+          </div>
+        )
+      },
+      {
+        accessorKey: 'won',
+        id: 'won',
+        header: 'Won',
+        size: 80,
+        Cell: ({ cell }) => <span className="positive">{cell.getValue()}</span>
+      },
+      {
+        accessorKey: 'lost',
+        id: 'lost',
+        header: 'Lost',
+        size: 80,
+        Cell: ({ cell }) => <span className="negative">{cell.getValue()}</span>
+      },
+      {
+        accessorKey: 'winRate',
+        id: 'winRate',
+        header: 'Win %',
+        size: 80,
+        Cell: ({ cell }) => {
+          const rate = parseFloat(cell.getValue())
+          return (
+            <span className={`win-rate ${
+              rate >= 60 ? 'high' :
+              rate >= 40 ? 'medium' : 'low'
+            }`}>
+              {cell.getValue()}%
+            </span>
+          )
+        }
+      },
+      {
+        accessorKey: 'goalsFor',
+        id: 'goalsFor',
+        header: 'GF',
+        size: 60
+      },
+      {
+        accessorKey: 'goalsAgainst',
+        id: 'goalsAgainst',
+        header: 'GA',
+        size: 60
+      },
+      {
+        accessorKey: 'goalDiff',
+        id: 'goalDiff',
+        header: 'GD',
+        size: 60,
+        Cell: ({ cell }) => {
+          const diff = cell.getValue()
+          return (
+            <span className={diff >= 0 ? 'positive' : 'negative'}>
+              {diff >= 0 ? '+' : ''}{diff}
+            </span>
+          )
+        }
+      },
+      {
+        accessorKey: 'pointsPerGame',
+        id: 'pointsPerGame',
+        header: 'PPG',
+        size: 80,
+        Cell: ({ cell }) => {
+          const value = cell.getValue()
+          return typeof value === 'number' ? value.toFixed(2) : value
+        }
+      }
+    )
+
+    return cols
+  }, [viewMode, onPlayerSelect])
+
   return (
     <div className="ranking-table-container">
       <div className="table-header">
@@ -148,194 +349,207 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
       </div>
 
       <div className="table-wrapper">
-        <table className="ranking-table">
-          <thead>
-            <tr>
-              <th onClick={() => handleSort(viewMode === 'tournament' ? 'finalPlace' : 'place')} className="sortable">
-                {viewMode === 'tournament' ? 'Final' : 'Rank'} <SortIcon field={viewMode === 'tournament' ? 'finalPlace' : 'place'} />
-              </th>
-              <th onClick={() => handleSort('name')} className="sortable name-col">
-                Player <SortIcon field="name" />
-              </th>
-              {(viewMode === 'overall' || viewMode === 'season') && (
-                <>
-                  <th onClick={() => handleSort('seasonPoints')} className="sortable season-points-col" title={viewMode === 'overall' ? "Total Points - Championship points across all seasons" : "Season Points - Championship points based on tournament placements"}>
-                    {viewMode === 'overall' ? 'Total Points' : 'Season Points'} <SortIcon field="seasonPoints" />
-                  </th>
-                  <th onClick={() => handleSort('trueSkill')} className="sortable" title="TrueSkill Rating - A skill-based ranking system">
-                    TrueSkill <SortIcon field="trueSkill" />
-                  </th>
-                  {viewMode === 'overall' && (
-                    <>
-                      <th onClick={() => handleSort('tournaments')} className="sortable">
-                        Tournaments <SortIcon field="tournaments" />
-                      </th>
-                      <th onClick={() => handleSort('bestPlace')} className="sortable">
-                        Best Place <SortIcon field="bestPlace" />
-                      </th>
-                      <th onClick={() => handleSort('avgPlace')} className="sortable">
-                        Avg Place <SortIcon field="avgPlace" />
-                      </th>
-                    </>
-                  )}
-                  {viewMode === 'season' && (
-                    <>
-                      <th onClick={() => handleSort('tournaments')} className="sortable">
-                        Tournaments <SortIcon field="tournaments" />
-                      </th>
-                      <th onClick={() => handleSort('bestPlace')} className="sortable">
-                        Best Place <SortIcon field="bestPlace" />
-                      </th>
-                      <th onClick={() => handleSort('avgPlace')} className="sortable">
-                        Avg Place <SortIcon field="avgPlace" />
-                      </th>
-                    </>
-                  )}
-                </>
-              )}
-              {viewMode === 'tournament' && (
-                <>
-                  <th onClick={() => handleSort('qualifyingPlace')} className="sortable">
-                    Qualifying <SortIcon field="qualifyingPlace" />
-                  </th>
-                  <th onClick={() => handleSort('eliminationPlace')} className="sortable">
-                    Knockout <SortIcon field="eliminationPlace" />
-                  </th>
-                  <th onClick={() => handleSort('buchholz')} className="sortable" title="Buchholz - Sum of all opponents' points (qualifying stage only)">
-                    Buchholz <SortIcon field="buchholz" />
-                  </th>
-                  <th onClick={() => handleSort('sonnebornBerger')} className="sortable" title="Sonneborn-Berger - Weighted sum of opponents' points (qualifying stage only, win=1, draw=0.5, loss=0)">
-                    SB <SortIcon field="sonnebornBerger" />
-                  </th>
-                </>
-              )}
-              <th onClick={() => handleSort('matches')} className="sortable">
-                Matches <SortIcon field="matches" />
-              </th>
-              <th onClick={() => handleSort('points')} className="sortable">
-                Points <SortIcon field="points" />
-              </th>
-              <th onClick={() => handleSort('won')} className="sortable">
-                Won <SortIcon field="won" />
-              </th>
-              <th onClick={() => handleSort('lost')} className="sortable">
-                Lost <SortIcon field="lost" />
-              </th>
-              <th onClick={() => handleSort('winRate')} className="sortable">
-                Win % <SortIcon field="winRate" />
-              </th>
-              <th onClick={() => handleSort('goalsFor')} className="sortable">
-                GF <SortIcon field="goalsFor" />
-              </th>
-              <th onClick={() => handleSort('goalsAgainst')} className="sortable">
-                GA <SortIcon field="goalsAgainst" />
-              </th>
-              <th onClick={() => handleSort('goalDiff')} className="sortable">
-                GD <SortIcon field="goalDiff" />
-              </th>
-              <th onClick={() => handleSort('pointsPerGame')} className="sortable">
-                PPG <SortIcon field="pointsPerGame" />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedPlayers.map((player) => {
-              const displayPlace = viewMode === 'tournament' ? player.finalPlace : player.place
-              const finaleClass = player.finaleStatus === 'qualified' ? 'finale-qualified' : 
-                                 player.finaleStatus === 'successor' ? 'finale-successor' : ''
-              return (
-              <tr key={player.id} className={`rank-${displayPlace <= 3 ? displayPlace : ''} ${finaleClass}`}>
-                <td className="rank-cell">
-                  <span className="rank-badge">
-                    {getMedalEmoji(displayPlace)}
-                  </span>
-                  {player.finaleStatus === 'qualified' && (
-                    <span className="finale-badge qualified" title="Qualified for Season Finale">✓</span>
-                  )}
-                  {player.finaleStatus === 'successor' && (
-                    <span className="finale-badge successor" title="Potential Successor">→</span>
-                  )}
-                </td>
-                <td className="name-cell">
-                  <div className="player-info">
-                    <a 
-                      href={`?player=${encodeURIComponent(player.name)}`}
-                      className="player-name clickable" 
-                      onClick={(e) => {
-                        e.preventDefault()
-                        onPlayerSelect && onPlayerSelect(player.name)
-                      }}
-                      title="Click to view player details (right-click to open in new tab)"
-                    >
-                      {player.name}
-                    </a>
-                    {player.external && (
-                      <span className="player-license">
-                        {player.external.nationalLicence}
-                      </span>
-                    )}
-                  </div>
-                </td>
-                {(viewMode === 'overall' || viewMode === 'season') && (
-                  <>
-                    <td className="season-points-cell">
-                      <span className="season-points-value" title={`Season Points: ${player.seasonPoints}`}>
-                        {player.seasonPoints}
-                      </span>
-                    </td>
-                    <td className="trueskill-cell">
-                      <span className="trueskill-rating" title={`TrueSkill: ${player.trueSkill.toFixed(1)}`}>
-                        {player.trueSkill.toFixed(1)}
-                      </span>
-                    </td>
-                    <td>{player.tournaments}</td>
-                    <td>
-                      <span className="best-place">
-                        {getMedalEmoji(player.bestPlace)}
-                      </span>
-                    </td>
-                    <td>{player.avgPlace}</td>
-                  </>
-                )}
-                {viewMode === 'tournament' && (
-                  <>
-                    <td>{getMedalEmoji(player.qualifyingPlace)}</td>
-                    <td>{player.eliminationPlace !== null ? getMedalEmoji(player.eliminationPlace) : '-'}</td>
-                    <td>{player.buchholz || 0}</td>
-                    <td>{player.sonnebornBerger || 0}</td>
-                  </>
-                )}
-                <td>{player.matches}</td>
-                <td className="points-cell">
-                  <strong>{player.points}</strong>
-                </td>
-                <td className="positive">{player.won}</td>
-                <td className="negative">{player.lost}</td>
-                <td>
-                  <span className={`win-rate ${
-                    parseFloat(player.winRate) >= 60 ? 'high' :
-                    parseFloat(player.winRate) >= 40 ? 'medium' : 'low'
-                  }`}>
-                    {player.winRate}%
-                  </span>
-                </td>
-                <td>{player.goalsFor}</td>
-                <td>{player.goalsAgainst}</td>
-                <td className={player.goalDiff >= 0 ? 'positive' : 'negative'}>
-                  {player.goalDiff >= 0 ? '+' : ''}{player.goalDiff}
-                </td>
-                <td>{typeof player.pointsPerGame === 'number' 
-                  ? player.pointsPerGame.toFixed(2) 
-                  : player.pointsPerGame}
-                </td>
-              </tr>
-            )})}
-          </tbody>
-        </table>
+        <MaterialReactTable
+          columns={columns}
+          data={players}
+          enableStickyHeader
+          enableColumnResizing={false}
+          enableDensityToggle={false}
+          enableFullScreenToggle={false}
+          enableHiding={false}
+          enablePagination={false}
+          enableSorting
+          enableGlobalFilter={true}
+          renderBottomToolbar={false}
+          initialState={{
+            sorting: [{
+              id: 'rank',
+              desc: false
+            }]
+          }}
+          muiTableContainerProps={{
+            sx: {
+              maxHeight: 'calc(100vh)',
+              backgroundColor: 'var(--surface) !important',
+              borderRadius: '8px',
+              '& .MuiTable-root': {
+                borderCollapse: 'separate',
+                borderSpacing: 0,
+                backgroundColor: 'var(--surface) !important'
+              }
+            }
+          }}
+          muiTablePaperProps={{
+            sx: {
+              boxShadow: 'none',
+              backgroundColor: 'var(--surface) !important',
+              color: 'var(--text-primary)',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              '& .MuiToolbar-root': {
+                backgroundColor: 'var(--surface)',
+                color: 'var(--text-primary)'
+              },
+              '& *': {
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                  height: '8px'
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent'
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'var(--border)',
+                  borderRadius: '4px',
+                  '&:hover': {
+                    background: 'var(--text-secondary)'
+                  }
+                }
+              }
+            }
+          }}
+          muiTableProps={{
+            sx: {
+              backgroundColor: 'var(--surface)',
+              '& .MuiTableHead-root': {
+                backgroundColor: 'var(--background)'
+              },
+              '& .MuiTableBody-root': {
+                backgroundColor: 'var(--surface)'
+              }
+            }
+          }}
+          muiTableHeadCellProps={{
+            sx: {
+              backgroundColor: 'var(--background) !important',
+              color: 'var(--text-secondary) !important',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              letterSpacing: '0.5px',
+              borderBottom: '2px solid var(--border)',
+              padding: '1rem',
+              '&:hover': {
+                backgroundColor: 'var(--surface-light) !important',
+                color: 'var(--primary-color) !important'
+              },
+              '& .MuiTableSortLabel-root': {
+                color: 'inherit !important',
+                '&:hover': {
+                  color: 'var(--primary-color) !important'
+                },
+                '&.Mui-active': {
+                  color: 'var(--primary-color) !important'
+                },
+                '& .MuiTableSortLabel-icon': {
+                  color: 'inherit !important'
+                }
+              }
+            }
+          }}
+          muiTableBodyCellProps={{
+            sx: {
+              borderBottom: '1px solid var(--border)',
+              padding: '1rem',
+              fontSize: '0.9375rem',
+              backgroundColor: 'var(--surface)',
+              color: 'var(--text-primary)'
+            }
+          }}
+          muiTableBodyRowProps={({ row }) => {
+            const player = row.original
+            const displayPlace = viewMode === 'tournament' ? player.finalPlace : player.place
+            const finaleClass = player.finaleStatus === 'qualified' ? 'finale-qualified' : 
+                               player.finaleStatus === 'successor' ? 'finale-successor' : ''
+            return {
+              className: `rank-${displayPlace <= 3 ? displayPlace : ''} ${finaleClass}`,
+              sx: {
+                backgroundColor: 'var(--surface)',
+                color: 'var(--text-primary)',
+                '&:hover': {
+                  backgroundColor: 'var(--surface-light) !important'
+                },
+                '&:nth-of-type(even)': {
+                  backgroundColor: 'var(--surface)'
+                }
+              }
+            }
+          }}
+          muiTopToolbarProps={{
+            sx: {
+              backgroundColor: 'var(--surface) !important',
+              color: 'var(--text-primary) !important',
+              borderBottom: '1px solid var(--border)',
+              padding: '0.5rem 1rem',
+              minHeight: '48px',
+              '& .MuiButton-root': {
+                color: 'var(--text-primary) !important',
+                borderColor: 'var(--border)',
+                '&:hover': {
+                  backgroundColor: 'var(--surface-light) !important'
+                }
+              },
+              '& .MuiIconButton-root': {
+                color: 'var(--text-primary) !important',
+                '&:hover': {
+                  backgroundColor: 'var(--surface-light) !important'
+                }
+              },
+              '& .MuiTypography-root': {
+                color: 'var(--text-secondary) !important'
+              },
+              '& .MuiInputBase-root': {
+                color: 'var(--text-primary) !important',
+                backgroundColor: 'var(--surface-light)',
+                '& .MuiInputBase-input': {
+                  color: 'var(--text-primary) !important',
+                  '&::placeholder': {
+                    color: 'var(--text-secondary) !important',
+                    opacity: 1
+                  }
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--border) !important'
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--primary-color) !important'
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--primary-color) !important'
+                }
+              }
+            }
+          }}
+          muiBottomToolbarProps={{
+            sx: {
+              backgroundColor: 'var(--surface)',
+              color: 'var(--text-primary)',
+              '& .MuiButton-root': {
+                color: 'var(--text-primary)',
+                '&:hover': {
+                  backgroundColor: 'var(--surface-light)'
+                }
+              },
+              '& .MuiTypography-root': {
+                color: 'var(--text-secondary)'
+              }
+            }
+          }}
+          muiToolbarAlertBannerProps={{
+            sx: {
+              backgroundColor: 'var(--surface)',
+              color: 'var(--text-primary)'
+            }
+          }}
+          muiSearchTextFieldProps={{
+            sx: {
+              
+            }
+          }}
+        />
       </div>
     </div>
   )
 }
 
 export default RankingTable
-

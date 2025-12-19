@@ -64,6 +64,7 @@
 .ranking-table {
   width: 100%;
   border-collapse: collapse;
+  position: relative;
   font-size: 0.9375rem;
 }
 
@@ -72,6 +73,25 @@
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.ranking-table thead::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ranking-table thead th {
+  background: var(--background);
+  position: sticky;
+  top: 0;
+  z-index: 101;
+  backdrop-filter: blur(10px);
 }
 
 .ranking-table th {
@@ -173,7 +193,6 @@
 
 .ranking-table tbody tr.finale-successor:hover {
   background: rgba(251, 191, 36, 0.05);
-}
 }
 
 .rank-badge {
