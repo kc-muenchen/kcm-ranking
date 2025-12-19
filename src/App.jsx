@@ -177,6 +177,8 @@ function App() {
     // Then update state - this will trigger a re-render but URL is already set
     setSelectedPlayer(playerName)
     setViewMode('player')
+    // Scroll to top when selecting a player to prevent scrolling to bottom
+    window.scrollTo({ top: 0, behavior: 'instant' })
   }
 
   const handleBackFromPlayer = () => {
