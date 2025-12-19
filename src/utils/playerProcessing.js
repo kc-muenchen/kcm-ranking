@@ -364,6 +364,8 @@ const convertToPlayerArray = (playerStats, trueSkillRatings) => {
           ? ((player.won / player.matches) * 100).toFixed(1)
           : 0,
         trueSkill: trueSkill,
+        mu: rating ? rating.mu : 25,
+        sigma: rating ? rating.sigma : 8.333,
         seasonPoints: player.seasonPoints,
         external: player.external
       }

@@ -1,5 +1,22 @@
-import { rate, Rating } from 'ts-trueskill'
+import { Rating, TrueSkill } from 'ts-trueskill'
 import { normalizePlayerNameSync } from '../config/playerAliases'
+
+/**
+ * TrueSkill configuration
+ * - mu: 25 (initial skill estimate)
+ * - sigma: 25/3 ≈ 8.333 (initial uncertainty)
+ * - beta: 5.5 (skill vs luck factor - higher = more luck-based)
+ * - tau: 0.12 (dynamics factor - higher = skills change faster over time)
+ */
+const TRUESKILL_CONFIG = {
+  mu: 25,
+  sigma: 25 / 3,
+  beta: 5.5,  // Changed from 3.0 to 5.5 - more luck-based
+  tau: 0.12   // Increased from default ≈ 0.083 to 0.12
+}
+
+// Create a TrueSkill environment with custom parameters
+const trueskill = new TrueSkill(TRUESKILL_CONFIG.mu, TRUESKILL_CONFIG.sigma, TRUESKILL_CONFIG.beta, TRUESKILL_CONFIG.tau, 0)
 
 /**
  * Calculate TrueSkill ratings for all players across all tournaments
@@ -7,7 +24,7 @@ import { normalizePlayerNameSync } from '../config/playerAliases'
  * @returns {Object} Object with playerRatings Map and playerHistory Map
  */
 export function calculateTrueSkillRatings(tournaments) {
-  // Initialize player ratings (mu=25, sigma=8.333 by default)
+  // Initialize player ratings with custom config
   const playerRatings = new Map()
   const playerHistory = new Map() // Track rating history per player
   
@@ -87,11 +104,12 @@ export function calculateTrueSkillRatings(tournaments) {
   allMatches.forEach(match => {
     [...match.team1Players, ...match.team2Players].forEach(playerName => {
       if (!playerHistory.has(playerName)) {
+        const initialRating = trueskill.createRating()
         playerHistory.set(playerName, [{
           matchIndex: -1,
           date: allMatches[0].date,
-          rating: new Rating(),
-          skill: getConservativeRating(new Rating()),
+          rating: initialRating,
+          skill: getConservativeRating(initialRating),
           match: null
         }])
       }
@@ -103,14 +121,14 @@ export function calculateTrueSkillRatings(tournaments) {
     // Get or create ratings for all players
     const team1Ratings = match.team1Players.map(playerName => {
       if (!playerRatings.has(playerName)) {
-        playerRatings.set(playerName, new Rating())
+        playerRatings.set(playerName, trueskill.createRating())
       }
       return playerRatings.get(playerName)
     })
     
     const team2Ratings = match.team2Players.map(playerName => {
       if (!playerRatings.has(playerName)) {
-        playerRatings.set(playerName, new Rating())
+        playerRatings.set(playerName, trueskill.createRating())
       }
       return playerRatings.get(playerName)
     })
@@ -125,9 +143,10 @@ export function calculateTrueSkillRatings(tournaments) {
       ranks = [1, 1] // Draw
     }
     
-    // Calculate new ratings
+    // Calculate new ratings with custom environment
     try {
-      const [newTeam1Ratings, newTeam2Ratings] = rate([team1Ratings, team2Ratings], ranks)
+      const result = trueskill.rate([team1Ratings, team2Ratings], ranks)
+      const [newTeam1Ratings, newTeam2Ratings] = result
       
       // Update player ratings and history
       match.team1Players.forEach((playerName, index) => {

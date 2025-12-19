@@ -13,13 +13,20 @@ import { useTournaments } from './hooks/useTournaments'
 import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
 import { getAvailableSeasons, getSeasonFinal } from './utils/seasonUtils'
-import { copySeasonTop25, copySeasonPlayers, showClipboardHelp } from './utils/clipboardHelpers'
+import { copySeasonTop25, copySeasonPlayers, copyPlayerStatsCSV, showClipboardHelp } from './utils/clipboardHelpers'
 import './App.css'
 
 // Expose clipboard helper functions to window for console access
 if (typeof window !== 'undefined') {
   window.copySeasonTop25 = copySeasonTop25
   window.copySeasonPlayers = copySeasonPlayers
+  window.copyPlayerStatsCSV = () => {
+    // We need to access the current players from state, 
+    // but this code is outside the component.
+    // I'll handle this by making copyPlayerStatsCSV take the player list,
+    // and exposing a wrapper function.
+    console.error('❌ Please use copyPlayerStatsCSV() inside the console while the app is running.');
+  }
   window.showClipboardHelp = showClipboardHelp
   
   // Log available functions on page load (only in development)
@@ -69,6 +76,13 @@ function App() {
     setSeasonPlayers(season)
     // Note: season processing doesn't return history, but we keep the aggregated history
   }, [])
+
+  // Expose clipboard helper with latest data to window
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.copyPlayerStatsCSV = () => copyPlayerStatsCSV(aggregatedPlayers)
+    }
+  }, [aggregatedPlayers])
 
   // Process tournaments when they load
   useEffect(() => {

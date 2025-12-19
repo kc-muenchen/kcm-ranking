@@ -226,6 +226,7 @@ Available commands:
 - copySeasonTop25(false)         Copy top 25 with dashes instead
 - copySeasonPlayers(1, 20)       Copy custom range (e.g., top 20)
 - copySeasonPlayers(1, 20, false) Copy with dashes instead of numbers
+- copyPlayerStatsCSV()           Export all players as CSV (Name, TrueSkill, μ, σ, Matches)
 - showClipboardHelp()            Show this help message
 
 Example usage:
@@ -253,5 +254,60 @@ Example usage:
 
 Make sure you're on the Season view before using these commands!
   `);
+}
+
+/**
+ * Copy all players' stats to clipboard in CSV format
+ * @param {Array} players - Array of player objects
+ */
+export function copyPlayerStatsCSV(players) {
+  if (!players || players.length === 0) {
+    console.error('❌ No player data available to export.');
+    return;
+  }
+
+  // Header row
+  let csvContent = 'Name,TrueSkill,Mu,Sigma,Matches\n';
+
+  // Sort by TrueSkill descending (same as ranking)
+  const sortedPlayers = [...players].sort((a, b) => b.trueSkill - a.trueSkill);
+
+  sortedPlayers.forEach(player => {
+    const name = `"${player.name.replace(/"/g, '""')}"`; // Escape quotes for CSV
+    const trueSkill = player.trueSkill.toFixed(2);
+    const mu = (player.mu || 0).toFixed(2);
+    const sigma = (player.sigma || 0).toFixed(2);
+    const matches = player.matches || 0;
+
+    csvContent += `${name},${trueSkill},${mu},${sigma},${matches}\n`;
+  });
+
+  // Copy to clipboard using fallback method
+  const textarea = document.createElement('textarea');
+  textarea.value = csvContent;
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-999999px';
+  textarea.style.top = '-999999px';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  try {
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    
+    if (successful) {
+      console.log(`✅ CSV data for ${sortedPlayers.length} players copied to clipboard!`);
+      console.log('\nPreview (first 5 lines):');
+      console.log(csvContent.split('\n').slice(0, 6).join('\n'));
+    } else {
+      throw new Error('Copy command failed');
+    }
+  } catch (err) {
+    if (document.body.contains(textarea)) {
+      document.body.removeChild(textarea);
+    }
+    console.error('❌ Failed to copy to clipboard:', err);
+  }
 }
 
