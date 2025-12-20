@@ -78,7 +78,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
       accessorKey: viewMode === 'tournament' ? 'finalPlace' : 'place',
       id: 'rank',
       header: viewMode === 'tournament' ? 'Final' : 'Rank',
-      size: 80,
+      size: 60,
+      minSize: 50,
       Cell: ({ row }) => {
         const player = row.original
         const displayPlace = viewMode === 'tournament' ? player.finalPlace : player.place
@@ -103,7 +104,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
       accessorKey: 'name',
       id: 'name',
       header: 'Player',
-      size: 200,
+      size: 150,
+      minSize: 120,
       Cell: ({ row }) => {
         const player = row.original
         return (
@@ -138,7 +140,11 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           accessorKey: 'seasonPoints',
           id: 'seasonPoints',
           header: viewMode === 'overall' ? 'Total Points' : 'Season Points',
-          size: 120,
+          size: 50,
+          minSize: 40,
+          minSize: 50,
+          minSize: 60,
+          minSize: 80,
           Cell: ({ cell }) => (
             <div className="season-points-cell">
               <span className="season-points-value" title={`Season Points: ${cell.getValue()}`}>
@@ -151,7 +157,10 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           accessorKey: 'trueSkill',
           id: 'trueSkill',
           header: 'TrueSkill',
-          size: 100,
+          size: 50,
+          minSize: 40,
+          minSize: 50,
+          minSize: 60,
           Cell: ({ cell }) => (
             <div className="trueskill-cell">
               <span className="trueskill-rating" title={`TrueSkill: ${cell.getValue().toFixed(1)}`}>
@@ -170,7 +179,10 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           accessorKey: 'bestPlace',
           id: 'bestPlace',
           header: 'Best Place',
-          size: 100,
+          size: 50,
+          minSize: 40,
+          minSize: 50,
+          minSize: 60,
           Cell: ({ cell }) => (
             <span className="best-place">
               {getMedalEmoji(cell.getValue())}
@@ -192,28 +204,40 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           accessorKey: 'qualifyingPlace',
           id: 'qualifyingPlace',
           header: 'Qualifying',
-          size: 100,
+          size: 50,
+          minSize: 40,
+          minSize: 50,
+          minSize: 60,
           Cell: ({ cell }) => getMedalEmoji(cell.getValue())
         },
         {
           accessorKey: 'eliminationPlace',
           id: 'eliminationPlace',
           header: 'Knockout',
-          size: 100,
+          size: 50,
+          minSize: 40,
+          minSize: 50,
+          minSize: 60,
           Cell: ({ cell }) => cell.getValue() !== null ? getMedalEmoji(cell.getValue()) : '-'
         },
         {
           accessorKey: 'buchholz',
           id: 'buchholz',
           header: 'Buchholz',
-          size: 100,
+          size: 50,
+          minSize: 40,
+          minSize: 50,
+          minSize: 60,
           Cell: ({ cell }) => cell.getValue() || 0
         },
         {
           accessorKey: 'sonnebornBerger',
           id: 'sonnebornBerger',
           header: 'SB',
-          size: 100,
+          size: 50,
+          minSize: 40,
+          minSize: 50,
+          minSize: 60,
           Cell: ({ cell }) => cell.getValue() || 0
         }
       )
@@ -468,6 +492,10 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
               letterSpacing: '0.5px',
               borderBottom: '2px solid var(--border)',
               padding: '1rem',
+              '@media (max-width: 768px)': {
+                fontSize: '0.625rem',
+                padding: '0.5rem 0.375rem'
+              },
               '&:hover': {
                 backgroundColor: 'var(--surface-light) !important',
                 color: 'var(--primary-color) !important'
@@ -492,7 +520,11 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
               padding: '1rem',
               fontSize: '0.9375rem',
               backgroundColor: 'var(--surface)',
-              color: 'var(--text-primary)'
+              color: 'var(--text-primary)',
+              '@media (max-width: 768px)': {
+                fontSize: '0.75rem',
+                padding: '0.5rem 0.375rem'
+              }
             }
           }}
           muiTableBodyRowProps={({ row }) => {

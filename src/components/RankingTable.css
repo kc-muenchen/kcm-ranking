@@ -68,6 +68,34 @@
   font-size: 0.9375rem;
 }
 
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .ranking-table {
+    font-size: 0.75rem;
+  }
+  
+  .ranking-table th {
+    padding: 0.5rem 0.375rem;
+    font-size: 0.625rem;
+  }
+  
+  .ranking-table td {
+    padding: 0.5rem 0.375rem;
+  }
+  
+  .ranking-table-container {
+    padding: 1rem;
+  }
+  
+  .table-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .table-subtitle {
+    font-size: 0.75rem;
+  }
+}
+
 .ranking-table thead {
   background: var(--background);
   position: sticky;
