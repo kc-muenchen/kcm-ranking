@@ -310,6 +310,44 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
     return cols
   }, [viewMode, onPlayerSelect])
 
+  // Define default column visibility based on view mode
+  const defaultColumnVisibility = useMemo(() => {
+    const visibility = {
+      rank: true,
+      name: true,
+      matches: false,
+      points: false,
+      won: false,
+      lost: false,
+      winRate: true,
+      // Hide these by default - users can enable them if needed
+      goalsFor: false,
+      goalsAgainst: false,
+      goalDiff: false,
+      pointsPerGame: false
+    }
+
+    if (viewMode === 'overall' || viewMode === 'season') {
+      visibility.seasonPoints = true
+      visibility.trueSkill = true
+      visibility.tournaments = true
+      visibility.bestPlace = true
+      visibility.avgPlace = true
+    }
+
+    if (viewMode === 'tournament') {
+      visibility.qualifyingPlace = true
+      visibility.eliminationPlace = false
+      visibility.buchholz = true // Hidden by default
+      visibility.sonnebornBerger = true // Hidden by default
+      visibility.points = true
+      visibility.won = true
+      visibility.lost = true
+    }
+
+    return visibility
+  }, [viewMode])
+
   return (
     <div className="ranking-table-container">
       <div className="table-header">
@@ -356,7 +394,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           enableColumnResizing={false}
           enableDensityToggle={false}
           enableFullScreenToggle={false}
-          enableHiding={false}
+          enableHiding={true}
           enablePagination={false}
           enableSorting
           enableGlobalFilter={true}
@@ -365,7 +403,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
             sorting: [{
               id: 'rank',
               desc: false
-            }]
+            }],
+            columnVisibility: defaultColumnVisibility
           }}
           muiTableContainerProps={{
             sx: {
@@ -516,6 +555,23 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
                 },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'var(--primary-color) !important'
+                }
+              },
+              '& .MuiMenu-paper': {
+                backgroundColor: 'var(--surface) !important',
+                color: 'var(--text-primary) !important',
+                border: '1px solid var(--border)'
+              },
+              '& .MuiMenuItem-root': {
+                color: 'var(--text-primary) !important',
+                '&:hover': {
+                  backgroundColor: 'var(--surface-light) !important'
+                },
+                '& .MuiCheckbox-root': {
+                  color: 'var(--text-secondary) !important',
+                  '&.Mui-checked': {
+                    color: 'var(--primary-color) !important'
+                  }
                 }
               }
             }
