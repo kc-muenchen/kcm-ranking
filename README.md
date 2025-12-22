@@ -37,15 +37,22 @@ A modern React application for displaying and analyzing table soccer (foosball) 
 ### Using Docker (Easiest)
 
 ```bash
-# 1. Start all services
+# 1. Start all services (database, backend, frontend)
 docker-compose up -d
 
-# 2. Import data
+# 2. Create the database
+docker-compose exec backend npm run prisma:migrate
+
+# 3. Import existing tournament data
 docker-compose exec backend npm run migrate:data
 
-# 3. Access the app
+# 4. Import player aliases
+docker-compose exec backend npm run migrate:aliases
+
+# 4. Access the application
 # Frontend: http://localhost:8080
-# Backend: http://localhost:3001
+# Backend API: http://localhost:3001
+# Health check: http://localhost:3001/health
 ```
 
 ### Local Development

@@ -10,10 +10,13 @@ The fastest way to get started is using Docker Compose:
 # 1. Start all services (database, backend, frontend)
 docker-compose up -d
 
-# 2. Import existing tournament data
+# 2. Create the database
+docker-compose exec backend npm run prisma:migrate
+
+# 3. Import existing tournament data
 docker-compose exec backend npm run migrate:data
 
-# 3. Import player aliases
+# 4. Import player aliases
 docker-compose exec backend npm run migrate:aliases
 
 # 4. Access the application
