@@ -12,7 +12,7 @@ import { SeasonView } from './components/SeasonView'
 import { useTournaments } from './hooks/useTournaments'
 import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
-import { getAvailableSeasons, getSeasonFinal } from './utils/seasonUtils'
+import { getAvailableSeasons, getSeasonFinal, isTournamentInSeasonWindow } from './utils/seasonUtils'
 import { copySeasonTop25, copySeasonPlayers, copyPlayerStatsCSV, showClipboardHelp } from './utils/clipboardHelpers'
 import './App.css'
 
@@ -274,6 +274,17 @@ function App() {
   // Main view
   const seasonFinal = selectedSeason ? getSeasonFinal(tournaments, selectedSeason) : null
 
+  // The list of tournaments to be considered for stats.
+  const tournamentListForStats = (() => {
+    if (viewMode == 'tournament' && selectedTournament != null) {
+      return tournaments.filter(t => t.id == selectedTournament.id)
+    }
+    if (viewMode == 'season' && selectedSeason != null) {
+      return tournaments.filter(t => isTournamentInSeasonWindow(t.date, selectedSeason))
+    }
+    return tournaments
+  })()
+
   return (
     <AppLayout>
       <ViewToggle 
@@ -316,7 +327,7 @@ function App() {
           <StatsCards 
             players={currentPlayers}
             viewMode={viewMode}
-            tournaments={tournaments}
+            tournaments={tournamentListForStats}
           />
           <RankingTable 
             players={currentPlayers}
