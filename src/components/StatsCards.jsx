@@ -23,6 +23,10 @@ function StatsCards({ players, viewMode, tournaments }) {
             matchCount += level.matches?.length || 0
           })
         }
+        // Count the match for the third place if there was one.
+        if (elim.thirdPlace) {
+          ++matchCount;
+        }
       })
     }
     
