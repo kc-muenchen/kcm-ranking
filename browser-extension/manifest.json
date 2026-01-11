@@ -12,6 +12,7 @@
   ],
   "host_permissions": [
     "https://app.kickertool.de/*",
+    "https://alpha.kickertool.de/*",
     "https://api.github.com/*",
     "http://localhost:3001/*",
     "http://127.0.0.1:3001/*"
@@ -21,7 +22,10 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://app.kickertool.de/*"],
+      "matches": [
+        "https://app.kickertool.de/*",
+        "https://alpha.kickertool.de/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_start",
       "all_frames": true
@@ -44,7 +48,10 @@
   "web_accessible_resources": [
     {
       "resources": ["injected.js"],
-      "matches": ["https://app.kickertool.de/*"]
+      "matches": [
+        "https://app.kickertool.de/*",
+        "https://alpha.kickertool.de/*"
+      ]
     }
   ]
 }

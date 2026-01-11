@@ -276,8 +276,6 @@ function App() {
           <div className="live-view-container">
             <LiveView 
               aggregatedPlayers={aggregatedPlayers}
-              bettingUser={bettingUser}
-              onBetPlaced={handleBetPlaced}
             />
           </div>
         </AppLayout>

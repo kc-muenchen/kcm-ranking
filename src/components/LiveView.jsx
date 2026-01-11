@@ -1,7 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import './LiveView.css'
-import { BettingInterface } from './BettingInterface'
-import { BettingLeaderboard } from './BettingLeaderboard'
 
 /**
  * Live View Component
@@ -10,8 +8,6 @@ import { BettingLeaderboard } from './BettingLeaderboard'
  * Features:
  * - Real-time game updates via WebSocket
  * - TrueSkill-based win probability predictions
- * - Betting interface with live balance updates
- * - Automatic win notifications when bets are resolved
  */
 
 // Color palette for different tables
@@ -44,109 +40,13 @@ const getTableColor = (tableName) => {
   return TABLE_COLORS[Math.abs(hash) % TABLE_COLORS.length]
 }
 
-export function LiveView({ aggregatedPlayers = [], bettingUser, onBetPlaced }) {
+export function LiveView({ aggregatedPlayers = [] }) {
   const [activeGames, setActiveGames] = useState([])
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState(null)
 
-  // Betting state
-  const [showLeaderboard, setShowLeaderboard] = useState(false)
-  const [winNotification, setWinNotification] = useState(null)
-  const [activeBets, setActiveBets] = useState([])
-
-  // Track previous active games to detect when games finish
-  const [previousGames, setPreviousGames] = useState([])
-
   // Tournament ID - can be made configurable later
-  const tournamentId = '3lF3HVx4gURBojBAnyRXS'
-
-  // Fetch active bets for the logged-in user
-  const fetchActiveBets = useCallback(async () => {
-    if (!bettingUser) {
-      setActiveBets([])
-      return
-    }
-
-    try {
-      const API_BASE_URL = (typeof window !== 'undefined' && window.APP_CONFIG?.API_URL) ||
-                           import.meta.env.VITE_API_URL ||
-                           'http://localhost:3001'
-      
-      const token = localStorage.getItem('betting_token')
-      if (!token) return
-
-      const response = await fetch(`${API_BASE_URL}/api/betting/bets?status=pending`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) return
-
-      const bets = await response.json()
-      setActiveBets(bets)
-    } catch (error) {
-      console.error('[LiveView] Error fetching active bets:', error)
-    }
-  }, [bettingUser])
-
-  // Fetch active bets when user logs in or component mounts
-  useEffect(() => {
-    fetchActiveBets()
-  }, [fetchActiveBets])
-
-  // Check for bet winnings when games finish
-  const checkForWinnings = async (currentGames) => {
-    if (!bettingUser) return
-
-    // Detect finished games (games that were in previousGames but not in currentGames)
-    const previousTableNames = new Set(previousGames.map(g => g.tableName))
-    const currentTableNames = new Set(currentGames.map(g => g.tableName))
-    
-    const finishedTables = Array.from(previousTableNames).filter(
-      tableName => !currentTableNames.has(tableName)
-    )
-
-    if (finishedTables.length === 0) return
-
-    // Fetch updated user profile to check balance
-    try {
-      const API_BASE_URL = (typeof window !== 'undefined' && window.APP_CONFIG?.API_URL) ||
-                           import.meta.env.VITE_API_URL ||
-                           'http://localhost:3001'
-      
-      const token = localStorage.getItem('betting_token')
-      if (!token) return
-
-      const response = await fetch(`${API_BASE_URL}/api/betting/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) return
-
-      const data = await response.json()
-      const newBalance = data.balance
-
-      // Check if balance increased
-      if (newBalance > bettingUser.balance) {
-        const winAmount = newBalance - bettingUser.balance
-        setWinNotification({
-          amount: winAmount,
-          newBalance: newBalance
-        })
-        
-        // Update parent component with new balance
-        onBetPlaced(newBalance)
-
-        // Auto-hide notification after 5 seconds
-        setTimeout(() => setWinNotification(null), 5000)
-      }
-    } catch (error) {
-      console.error('[LiveView] Error checking for winnings:', error)
-    }
-  }
+  const tournamentId = 'Wc_ULXvHt-Ho4mPBOJaWL'
 
   // Calculate win probability based on TrueSkill ratings
   const calculateWinProbability = (team1Players, team2Players) => {
@@ -353,12 +253,6 @@ export function LiveView({ aggregatedPlayers = [], bettingUser, onBetPlaced }) {
         return a.tableName.localeCompare(b.tableName)
       })
       
-      // Check for winnings if games have finished
-      checkForWinnings(games)
-      
-      // Update previous games for next comparison
-      setPreviousGames(games)
-      
       setActiveGames(games)
       setError(null)
     }
@@ -431,36 +325,8 @@ export function LiveView({ aggregatedPlayers = [], bettingUser, onBetPlaced }) {
           </span>
           <span>📺 Live Games</span>
         </div>
-        <div className="live-view-header-actions">
-          <button className="betting-leaderboard-btn" onClick={() => setShowLeaderboard(true)}>
-            🏆 Leaderboard
-          </button>
-        </div>
         {error && <div className="live-view-error">{error}</div>}
       </div>
-
-      {showLeaderboard && <BettingLeaderboard onClose={() => setShowLeaderboard(false)} />}
-      
-      {/* Win Notification */}
-      {winNotification && (
-        <div className="win-notification">
-          <div className="win-notification-content">
-            <span className="win-notification-icon">🎉</span>
-            <div className="win-notification-text">
-              <div className="win-notification-title">You won!</div>
-              <div className="win-notification-amount">+💰 {winNotification.amount.toFixed(2)}</div>
-              <div className="win-notification-balance">New balance: 💰 {winNotification.newBalance.toFixed(2)}</div>
-            </div>
-            <button 
-              className="win-notification-close" 
-              onClick={() => setWinNotification(null)}
-              aria-label="Close notification"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
       
       {activeGames.length > 0 ? (
         <div className="live-games-list">
@@ -477,11 +343,6 @@ export function LiveView({ aggregatedPlayers = [], bettingUser, onBetPlaced }) {
                 console.error('[LiveView] Error calculating prediction:', error)
               }
             }
-
-            // Find active bet for this game
-            const activeBet = activeBets.find(
-              bet => bet.tournamentId === tournamentId && bet.tableName === game.tableName
-            )
 
             return (
               <div 
@@ -535,63 +396,6 @@ export function LiveView({ aggregatedPlayers = [], bettingUser, onBetPlaced }) {
                     }}
                   ></div>
                 </div>
-              )}
-              
-              {/* Active Bet Display */}
-              {activeBet && (
-                <div className="active-bet-display" style={{ borderColor: tableColor }}>
-                  <div className="active-bet-header">
-                    <span className="active-bet-icon">🎲</span>
-                    <span className="active-bet-title">Your Active Bet</span>
-                  </div>
-                  <div className="active-bet-details">
-                    <div className="active-bet-row">
-                      <span className="active-bet-label">Betting on:</span>
-                      <span className="active-bet-value active-bet-team">
-                        Team {activeBet.predictedWinner}
-                        {activeBet.predictedWinner === 1 ? (
-                          <span className="active-bet-players">
-                            ({game.team1.join(' / ')})
-                          </span>
-                        ) : (
-                          <span className="active-bet-players">
-                            ({game.team2.join(' / ')})
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="active-bet-row">
-                      <span className="active-bet-label">Amount:</span>
-                      <span className="active-bet-value active-bet-amount">💰 {activeBet.amount.toFixed(2)}</span>
-                    </div>
-                    <div className="active-bet-row">
-                      <span className="active-bet-label">Potential payout:</span>
-                      <span className="active-bet-value active-bet-payout">
-                        💰 {(activeBet.amount / activeBet.odds).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="active-bet-row">
-                      <span className="active-bet-label">Win chance:</span>
-                      <span className="active-bet-value">
-                        {(activeBet.odds * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Betting Interface */}
-              {bettingUser && !activeBet && (
-                <BettingInterface
-                  game={game}
-                  prediction={prediction}
-                  tableColor={tableColor}
-                  user={bettingUser}
-                  onBetPlaced={(newBalance) => {
-                    onBetPlaced(newBalance)
-                    fetchActiveBets()
-                  }}
-                />
               )}
             </div>
             )
