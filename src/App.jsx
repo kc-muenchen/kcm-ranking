@@ -58,21 +58,21 @@ function App() {
     setPlayers(processed)
   }
 
-  const processAggregatedPlayersData = useCallback(() => {
+  const processAggregatedPlayersData = useCallback(async () => {
     if (tournaments.length === 0) {
       setAggregatedPlayers([])
       setPlayerHistory(new Map())
       return
     }
     
-    const { players: aggregated, playerHistory: history } = processAggregatedPlayers(tournaments)
+    const { players: aggregated, playerHistory: history } = await processAggregatedPlayers(tournaments)
     setAggregatedPlayers(aggregated)
     setPlayerHistory(history)
   }, [tournaments])
 
-  const processSeasonPlayersData = useCallback((loadedTournaments, seasonYear) => {
+  const processSeasonPlayersData = useCallback(async (loadedTournaments, seasonYear) => {
     const seasonFinal = getSeasonFinal(loadedTournaments, seasonYear)
-    const { players: season, playerHistory: history } = processSeasonPlayers(loadedTournaments, seasonYear, seasonFinal)
+    const { players: season, playerHistory: history } = await processSeasonPlayers(loadedTournaments, seasonYear, seasonFinal)
     setSeasonPlayers(season)
     // Note: season processing doesn't return history, but we keep the aggregated history
   }, [])

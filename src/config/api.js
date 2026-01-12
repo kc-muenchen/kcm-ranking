@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   players: `${API_BASE_URL}/api/players`,
   stats: `${API_BASE_URL}/api/stats`,
   aliases: `${API_BASE_URL}/api/aliases`,
+  trueskill: `${API_BASE_URL}/api/trueskill`,
 };
 
 /**

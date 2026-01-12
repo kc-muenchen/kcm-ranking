@@ -1,7 +1,9 @@
 import { normalizePlayerNameSync } from '../config/playerAliases'
-import { calculateTrueSkillRatings, getConservativeRating } from './trueskill'
+import { getConservativeRating } from './trueskill'
 import { calculateSeasonPoints } from '../constants/seasonPoints'
 import { getSeasonYearForDate, isTournamentInSeasonWindow } from './seasonUtils'
+import { API_ENDPOINTS, apiFetch } from '../config/api'
+import { Rating } from 'ts-trueskill'
 
 /**
  * Calculate Buchholz and Sonneborn-Berger tie-breakers from match data
@@ -387,11 +389,47 @@ const convertToPlayerArray = (playerStats, trueSkillRatings) => {
 }
 
 /**
- * Process aggregated players across all tournaments
+ * Fetch TrueSkill ratings from backend API
+ * @returns {Promise<Object>} Object with playerRatings Map and playerHistory Map
  */
-export const processAggregatedPlayers = (tournaments) => {
+async function fetchTrueSkillRatings() {
+  try {
+    const response = await apiFetch(API_ENDPOINTS.trueskill)
+    const { ratings, history } = response.data
+    
+    // Convert ratings object to Map of Rating objects
+    const playerRatings = new Map()
+    Object.entries(ratings).forEach(([playerName, ratingData]) => {
+      playerRatings.set(playerName, new Rating(ratingData.mu, ratingData.sigma))
+    })
+    
+    // Convert history object to Map
+    const playerHistory = new Map()
+    Object.entries(history).forEach(([playerName, historyArray]) => {
+      // Convert rating objects back to Rating instances
+      const convertedHistory = historyArray.map(entry => ({
+        ...entry,
+        rating: entry.rating ? new Rating(entry.rating.mu, entry.rating.sigma) : null
+      }))
+      playerHistory.set(playerName, convertedHistory)
+    })
+    
+    return { playerRatings, playerHistory }
+  } catch (error) {
+    console.error('Error fetching TrueSkill ratings from API:', error)
+    // Return empty maps as fallback
+    return { playerRatings: new Map(), playerHistory: new Map() }
+  }
+}
+
+/**
+ * Process aggregated players across all tournaments
+ * @param {Array} tournaments - Array of tournament data
+ * @returns {Promise<Object>} Object with players array and playerHistory Map
+ */
+export const processAggregatedPlayers = async (tournaments) => {
   const playerStats = aggregatePlayerStats(tournaments)
-  const { playerRatings: trueSkillRatings, playerHistory } = calculateTrueSkillRatings(tournaments)
+  const { playerRatings: trueSkillRatings, playerHistory } = await fetchTrueSkillRatings()
   
   return {
     players: convertToPlayerArray(playerStats, trueSkillRatings),
@@ -403,8 +441,12 @@ export const processAggregatedPlayers = (tournaments) => {
  * Process players for a specific season
  * TrueSkill is calculated from ALL tournaments (persistent rating)
  * Season points and match stats are calculated from season tournaments only
+ * @param {Array} tournaments - Array of tournament data
+ * @param {number} seasonYear - Season year
+ * @param {Object} seasonFinal - Season final tournament (optional)
+ * @returns {Promise<Object>} Object with players array
  */
-export const processSeasonPlayers = (tournaments, seasonYear, seasonFinal) => {
+export const processSeasonPlayers = async (tournaments, seasonYear, seasonFinal) => {
   // Filter tournaments by configured season window, exclude season finals, and exclude tournaments after season final date
   const seasonTournaments = tournaments.filter(tournament => {
     const tournamentDate = new Date(tournament.date)
@@ -429,8 +471,8 @@ export const processSeasonPlayers = (tournaments, seasonYear, seasonFinal) => {
   // Calculate season-specific stats (points, matches, etc.) from season tournaments only
   const playerStats = aggregatePlayerStats(seasonTournaments)
   
-  // Calculate TrueSkill from ALL tournaments (persistent rating that doesn't reset per season)
-  const { playerRatings: trueSkillRatings } = calculateTrueSkillRatings(tournaments)
+  // Fetch TrueSkill from ALL tournaments (persistent rating that doesn't reset per season)
+  const { playerRatings: trueSkillRatings } = await fetchTrueSkillRatings()
   
   const players = convertToPlayerArray(playerStats, trueSkillRatings)
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { API_ENDPOINTS, apiFetch } from '../config/api'
 import { preloadAliases } from '../config/playerAliases'
+import { convertNewFormatToOld } from '../utils/format-converter'
 
 /**
  * Custom hook to load and manage tournaments
@@ -25,14 +26,19 @@ export const useTournaments = () => {
       
       // Transform API response to match the expected format
       const loadedTournaments = tournamentsData
-        .map(tournament => ({
-          id: tournament.externalId || tournament.id,
-          name: tournament.name,
-          date: tournament.createdAt,
-          fileName: `${tournament.name}.json`,
-          isSeasonFinal: tournament.isSeasonFinal || false,
-          data: tournament.rawData
-        }))
+        .map(tournament => {
+          // Convert new format to old format if needed (safety net in case backend didn't convert)
+          const convertedData = tournament.rawData ? convertNewFormatToOld(tournament.rawData) : null
+          
+          return {
+            id: tournament.externalId || tournament.id,
+            name: tournament.name,
+            date: tournament.createdAt,
+            fileName: `${tournament.name}.json`,
+            isSeasonFinal: tournament.isSeasonFinal || false,
+            data: convertedData || tournament.rawData
+          }
+        })
         .sort((a, b) => new Date(b.date) - new Date(a.date))
 
       console.log(`Loaded ${loadedTournaments.length} tournaments from API`)
@@ -62,13 +68,16 @@ export const useTournaments = () => {
             const data = module.default
             const fileName = path.split('/').pop()
             
+            // Convert new format to old format if needed
+            const convertedData = convertNewFormatToOld(data)
+            
             return {
               id: data._id,
               name: data.name,
               date: data.createdAt,
               fileName: fileName,
               isSeasonFinal: false,
-              data: data
+              data: convertedData
             }
           } catch (error) {
             console.warn(`Error loading ${path}:`, error)

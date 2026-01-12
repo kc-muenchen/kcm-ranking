@@ -1,4 +1,5 @@
 import prisma from '../utils/db.js';
+import { convertNewFormatToOld } from '../utils/format-converter.js';
 
 /**
  * Processes and saves tournament data to the database
@@ -181,13 +182,16 @@ function mergeTournamentData(existingData, newData) {
 }
 
 export async function processTournamentData(data) {
+  // Convert new format to old format if needed
+  const convertedData = convertNewFormatToOld(data)
+  
   // Use a transaction to ensure data consistency. Increase timeout to handle large imports.
   return await prisma.$transaction(async (tx) => {
     // Check if this is a season final based on name
-    const isSeasonFinal = isSeasonFinalByName(data.name)
+    const isSeasonFinal = isSeasonFinalByName(convertedData.name)
     
     let tournamentToUse = null
-    let mergedData = data
+    let mergedData = convertedData
     
     // If this is a season final, check for existing season finals in the same year
     if (isSeasonFinal) {
@@ -218,8 +222,8 @@ export async function processTournamentData(data) {
         
         const existingHasOnlyQualifying = hasOnlyQualifying(existing.rawData)
         const existingHasOnlyEliminations = hasOnlyEliminations(existing.rawData)
-        const newHasOnlyQualifying = hasOnlyQualifying(data)
-        const newHasOnlyEliminations = hasOnlyEliminations(data)
+        const newHasOnlyQualifying = hasOnlyQualifying(convertedData)
+        const newHasOnlyEliminations = hasOnlyEliminations(convertedData)
         
         // Check if one has only qualifying and the other only eliminations
         if ((existingHasOnlyQualifying && newHasOnlyEliminations) ||
@@ -264,32 +268,32 @@ export async function processTournamentData(data) {
     } else {
       // Normal create/update
       tournament = await tx.tournament.upsert({
-        where: { externalId: data._id },
+        where: { externalId: convertedData._id },
         update: {
-          name: data.name,
-          mode: data.mode,
-          sport: data.sport,
-          version: data.version || 14,
+          name: convertedData.name,
+          mode: convertedData.mode,
+          sport: convertedData.sport,
+          version: convertedData.version || 14,
           isSeasonFinal: isSeasonFinal,
           tournamentType: 'doubles', // All tournaments are doubles
-          rawData: data // Store original JSON for frontend compatibility
+          rawData: convertedData // Store converted JSON for frontend compatibility
         },
         create: {
-          externalId: data._id,
-          name: data.name,
-          createdAt: new Date(data.createdAt),
-          mode: data.mode,
-          sport: data.sport,
-          version: data.version || 14,
+          externalId: convertedData._id,
+          name: convertedData.name,
+          createdAt: new Date(convertedData.createdAt || convertedData.startTime || Date.now()),
+          mode: convertedData.mode,
+          sport: convertedData.sport,
+          version: convertedData.version || 14,
           isSeasonFinal: isSeasonFinal,
           tournamentType: 'doubles', // All tournaments are doubles
-          rawData: data // Store original JSON for frontend compatibility
+          rawData: convertedData // Store converted JSON for frontend compatibility
         }
       })
     }
 
     // Use merged data for processing if we merged tournaments
-    const dataToProcess = tournamentToUse ? mergedData : data
+    const dataToProcess = tournamentToUse ? mergedData : convertedData
     
     // Collect external IDs from incoming data for cleanup
     const incomingMatchIds = new Set();

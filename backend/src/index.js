@@ -9,6 +9,7 @@ import tournamentsRouter from './routes/tournaments.js';
 import playersRouter from './routes/players.js';
 import statsRouter from './routes/stats.js';
 import aliasesRouter from './routes/aliases.js';
+import trueskillRouter from './routes/trueskill.js';
 import { requireApiKey } from './middleware/auth.js';
 
 dotenv.config();
@@ -102,6 +103,7 @@ app.use(`${API_PREFIX}/`, apiLimiter);
 app.use(`${API_PREFIX}/players`, playersRouter);
 app.use(`${API_PREFIX}/stats`, statsRouter);
 app.use(`${API_PREFIX}/tournaments`, tournamentsRouter);
+app.use(`${API_PREFIX}/trueskill`, trueskillRouter);
 
 // Aliases routes - GET requests are read-only, POST/PUT/DELETE require auth
 // We'll handle write operations in the route handlers

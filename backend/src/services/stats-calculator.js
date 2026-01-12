@@ -1,3 +1,34 @@
+import { calculateTrueSkillRatings } from './trueskill-service.js';
+import prisma from '../utils/db.js';
+
+/**
+ * Normalize player name using aliases (same logic as TrueSkill service)
+ */
+function normalizePlayerName(name, aliasesMap) {
+  if (!name || typeof name !== 'string') return ''
+  const trimmed = name.trim()
+  return aliasesMap.get(trimmed) || trimmed
+}
+
+/**
+ * Load player aliases for name normalization
+ */
+async function loadAliases() {
+  const aliases = await prisma.playerAlias.findMany({
+    select: {
+      alias: true,
+      canonicalName: true
+    }
+  })
+  
+  const map = new Map()
+  aliases.forEach(alias => {
+    map.set(alias.alias, alias.canonicalName)
+  })
+  
+  return map
+}
+
 /**
  * Calculates aggregated stats for players including TrueSkill, season points, etc.
  * This service aggregates data from the database and performs calculations
@@ -9,7 +40,33 @@
  * @returns {Array} - Players with calculated stats
  */
 export async function calculateAggregatedStats(players) {
+  // Fetch TrueSkill ratings for all players
+  const { ratings: trueSkillRatings } = await calculateTrueSkillRatings();
+  
+  // Load aliases to normalize player names for lookup
+  const aliasesMap = await loadAliases();
+  
+  // Create a case-insensitive lookup map for faster matching
+  const caseInsensitiveRatings = {}
+  Object.keys(trueSkillRatings).forEach(key => {
+    caseInsensitiveRatings[key.toLowerCase()] = trueSkillRatings[key]
+  })
+  
   return players.map(player => {
+    // Normalize player name to match TrueSkill ratings (which use normalized names)
+    const normalizedName = normalizePlayerName(player.name, aliasesMap);
+    let trueSkillRating = null;
+    
+    // Only try to lookup if we have a valid normalized name
+    if (normalizedName && typeof normalizedName === 'string') {
+      trueSkillRating = trueSkillRatings[normalizedName];
+      
+      // If not found, try case-insensitive lookup as fallback
+      if (!trueSkillRating) {
+        trueSkillRating = caseInsensitiveRatings[normalizedName.toLowerCase()];
+      }
+    }
+    
     // Get all elimination standings (for season points)
     const eliminationStandings = player.standings.filter(s => s.type === 'elimination' && !s.removed);
     
@@ -36,7 +93,7 @@ export async function calculateAggregatedStats(players) {
       seasonPoints,
       bestPlace,
       ...matchStats,
-      trueSkill: 25.0, // Will be calculated separately with TrueSkill algorithm
+      trueSkill: trueSkillRating?.skill || 25.0, // Get from TrueSkill service
       external: player.isExternal
     };
   }).sort((a, b) => {
