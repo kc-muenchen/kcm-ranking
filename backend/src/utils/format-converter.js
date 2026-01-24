@@ -137,13 +137,25 @@ export function convertNewFormatToOld(data) {
             if (isElimination) {
               // Add to eliminations
               if (converted.eliminations.length === 0) {
-                converted.eliminations.push({ levels: [] })
+                converted.eliminations.push({ 
+                  levels: [],
+                  name: stage.name || group.name || 'Knockout Stage'
+                })
               }
               const elimination = converted.eliminations[0]
               if (!elimination.levels) elimination.levels = []
+              // Preserve name if not already set
+              if (!elimination.name && (stage.name || group.name)) {
+                elimination.name = stage.name || group.name
+              }
+              
+              // Determine level name - prioritize round.name, then group.name (e.g., "FINALS-1-2")
+              const levelName = round.name || group.name || null
               
               elimination.levels.push({
-                matches: convertedMatches
+                matches: convertedMatches,
+                name: levelName,
+                groupName: group.name || null  // Preserve group name separately for reference
               })
             } else {
               // Add to qualifying
@@ -161,51 +173,100 @@ export function convertNewFormatToOld(data) {
         }
 
         // Process standings
-        if (group.standings && Array.isArray(group.standings) && !isElimination) {
-          if (converted.qualifying.length === 0) {
-            converted.qualifying.push({ standings: [] })
-          }
-          const qualifying = converted.qualifying[0]
-          if (!qualifying.standings) qualifying.standings = []
-
-          group.standings.forEach(standing => {
-            const participant = participantsMap.get(standing.entryId)
-            if (!participant) return
-
-            // Get player name(s)
-            let playerName = null
-            if (participant.type === 'team' && Array.isArray(participant.name)) {
-              // For teams, use first player name (or join them)
-              playerName = participant.name[0] || participant.name.join(' / ')
-            } else if (participant.type === 'player' && Array.isArray(participant.name) && participant.name.length > 0) {
-              playerName = participant.name[0]
+        if (group.standings && Array.isArray(group.standings)) {
+          if (isElimination) {
+            // Process elimination standings
+            if (converted.eliminations.length === 0) {
+              converted.eliminations.push({ standings: [] })
             }
+            const elimination = converted.eliminations[0]
+            if (!elimination.standings) elimination.standings = []
 
-            if (!playerName) return
+            group.standings.forEach(standing => {
+              const participant = participantsMap.get(standing.entryId)
+              if (!participant) return
 
-            // Convert standing to old format
-            qualifying.standings.push({
-              _id: standing._id || standing.entryId,
-              name: playerName,
-              deactivated: standing.deactivated || false,
-              removed: standing.removed || false,
-              stats: {
-                place: standing.rank || standing.result || 0,
-                matches: standing.matches || 0,
-                points: standing.points || 0,
-                won: standing.matchesWon || 0,
-                lost: standing.matchesLost || 0,
-                goals: standing.goals || 0,
-                goals_in: standing.goalsIn || 0,
-                goal_diff: standing.goalsDiff || 0,
-                points_per_game: standing.pointsPerMatch || 0,
-                corrected_points_per_game: standing.correctedPointsPerMatch || 0,
-                bh1: standing.bh1 || 0,
-                bh2: standing.bh2 || 0
-              },
-              external: participant.guest || false
+              // Get player name(s)
+              let playerName = null
+              if (participant.type === 'team' && Array.isArray(participant.name)) {
+                // For teams, join all player names so we can split them later
+                playerName = participant.name.filter(Boolean).join(' / ')
+              } else if (participant.type === 'player' && Array.isArray(participant.name) && participant.name.length > 0) {
+                playerName = participant.name[0]
+              }
+
+              if (!playerName) return
+
+              // Convert standing to old format
+              elimination.standings.push({
+                _id: standing._id || standing.entryId,
+                name: playerName,
+                deactivated: standing.deactivated || false,
+                removed: standing.removed || false,
+                stats: {
+                  place: standing.rank || standing.result || 0,
+                  matches: standing.matches || 0,
+                  points: standing.points || 0,
+                  won: standing.matchesWon || 0,
+                  lost: standing.matchesLost || 0,
+                  goals: standing.goals || 0,
+                  goals_in: standing.goalsIn || 0,
+                  goal_diff: standing.goalsDiff || 0,
+                  points_per_game: standing.pointsPerMatch || 0,
+                  corrected_points_per_game: standing.correctedPointsPerMatch || 0,
+                  bh1: standing.bh1 || 0,
+                  bh2: standing.bh2 || 0
+                },
+                external: participant.guest || false
+              })
             })
-          })
+          } else {
+            // Process qualifying standings
+            if (converted.qualifying.length === 0) {
+              converted.qualifying.push({ standings: [] })
+            }
+            const qualifying = converted.qualifying[0]
+            if (!qualifying.standings) qualifying.standings = []
+
+            group.standings.forEach(standing => {
+              const participant = participantsMap.get(standing.entryId)
+              if (!participant) return
+
+              // Get player name(s)
+              let playerName = null
+              if (participant.type === 'team' && Array.isArray(participant.name)) {
+                // For teams, join all player names so we can split them later
+                playerName = participant.name.filter(Boolean).join(' / ')
+              } else if (participant.type === 'player' && Array.isArray(participant.name) && participant.name.length > 0) {
+                playerName = participant.name[0]
+              }
+
+              if (!playerName) return
+
+              // Convert standing to old format
+              qualifying.standings.push({
+                _id: standing._id || standing.entryId,
+                name: playerName,
+                deactivated: standing.deactivated || false,
+                removed: standing.removed || false,
+                stats: {
+                  place: standing.rank || standing.result || 0,
+                  matches: standing.matches || 0,
+                  points: standing.points || 0,
+                  won: standing.matchesWon || 0,
+                  lost: standing.matchesLost || 0,
+                  goals: standing.goals || 0,
+                  goals_in: standing.goalsIn || 0,
+                  goal_diff: standing.goalsDiff || 0,
+                  points_per_game: standing.pointsPerMatch || 0,
+                  corrected_points_per_game: standing.correctedPointsPerMatch || 0,
+                  bh1: standing.bh1 || 0,
+                  bh2: standing.bh2 || 0
+                },
+                external: participant.guest || false
+              })
+            })
+          }
         }
       })
     })

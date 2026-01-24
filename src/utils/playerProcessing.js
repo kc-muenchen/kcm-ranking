@@ -34,12 +34,28 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
         if (!match.valid || match.skipped || !match.result || !match.team1 || !match.team2) return
         if (!match.team1.players || !match.team2.players) return
         
-        // Get player names instead of IDs
+        // Get player names - handle both old format (IDs) and new format (names already present)
         const team1PlayerNames = match.team1.players
-          .map(p => playerIdToName.get(p._id || p.id))
+          .map(p => {
+            // If name is already present (converted format), use it directly
+            if (p.name) {
+              return normalizePlayerNameSync(p.name)
+            }
+            // Otherwise, look up by ID (old format)
+            const name = playerIdToName.get(p._id || p.id)
+            return name ? normalizePlayerNameSync(name) : null
+          })
           .filter(Boolean)
         const team2PlayerNames = match.team2.players
-          .map(p => playerIdToName.get(p._id || p.id))
+          .map(p => {
+            // If name is already present (converted format), use it directly
+            if (p.name) {
+              return normalizePlayerNameSync(p.name)
+            }
+            // Otherwise, look up by ID (old format)
+            const name = playerIdToName.get(p._id || p.id)
+            return name ? normalizePlayerNameSync(name) : null
+          })
           .filter(Boolean)
         const team1Score = match.result[0]
         const team2Score = match.result[1]
@@ -124,14 +140,15 @@ export const processTournamentPlayers = (tournamentData) => {
   
   // Create a map to aggregate stats by player name (not ID, to handle merged tournaments)
   const playerStatsMap = new Map()
+  // Also create a case-insensitive lookup map as a fallback
+  const playerStatsMapLowercase = new Map()
   
   // Process qualifying round
   qualifyingStandings.forEach(player => {
     if (player.deactivated || player.removed) return
     
     const normalizedName = normalizePlayerNameSync(player.name)
-    
-    playerStatsMap.set(normalizedName, {
+    const playerData = {
       id: player._id,
       name: normalizedName,
       qualifyingPlace: player.stats.place,
@@ -150,7 +167,14 @@ export const processTournamentPlayers = (tournamentData) => {
       eliminationPlace: null,
       buchholz: 0,
       sonnebornBerger: 0
-    })
+    }
+    
+    playerStatsMap.set(normalizedName, playerData)
+    // Also store by lowercase key for fallback lookup
+    const lowerKey = normalizedName.toLowerCase().trim()
+    if (!playerStatsMapLowercase.has(lowerKey)) {
+      playerStatsMapLowercase.set(lowerKey, normalizedName)
+    }
   })
   
   // Process elimination rounds if they exist
@@ -161,46 +185,132 @@ export const processTournamentPlayers = (tournamentData) => {
       eliminationStandings.forEach(player => {
         if (player.deactivated || player.removed) return
         
-        const normalizedName = normalizePlayerNameSync(player.name)
-        const existingPlayer = playerStatsMap.get(normalizedName)
+        const playerName = player.name
+        const eliminationPlace = player.stats.place
         
-        if (existingPlayer) {
-          // Add elimination stats to existing player
-          existingPlayer.matches += player.stats.matches
-          existingPlayer.points += player.stats.points
-          existingPlayer.won += player.stats.won
-          existingPlayer.lost += player.stats.lost
-          existingPlayer.goalsFor += player.stats.goals
-          existingPlayer.goalsAgainst += player.stats.goals_in
-          existingPlayer.goalDiff = existingPlayer.goalsFor - existingPlayer.goalsAgainst
-          existingPlayer.eliminationPlace = player.stats.place
-          
-          // Recalculate points per game
-          if (existingPlayer.matches > 0) {
-            existingPlayer.pointsPerGame = (existingPlayer.points / existingPlayer.matches).toFixed(2)
+        // Check if this is a team name (contains " / " or " | ")
+        const teamNameSeparators = [' / ', ' | ', ' & ']
+        const isTeamName = teamNameSeparators.some(sep => playerName.includes(sep))
+        
+        if (isTeamName) {
+          // Split team name into individual players
+          let playerNames = []
+          if (playerName.includes(' / ')) {
+            playerNames = playerName.split(' / ').map(n => n.trim())
+          } else if (playerName.includes(' | ')) {
+            playerNames = playerName.split(' | ').map(n => n.trim())
+          } else if (playerName.includes(' & ')) {
+            playerNames = playerName.split(' & ').map(n => n.trim())
           }
-        } else {
-          // New player in elimination (shouldn't happen often, but handle it)
-          playerStatsMap.set(normalizedName, {
-            id: player._id,
-            name: normalizedName,
-            qualifyingPlace: null,
-            matches: player.stats.matches,
-            points: player.stats.points,
-            won: player.stats.won,
-            lost: player.stats.lost,
-            goalsFor: player.stats.goals,
-            goalsAgainst: player.stats.goals_in,
-            goalDiff: player.stats.goal_diff,
-            pointsPerGame: player.stats.points_per_game || '0.00',
-            correctedPointsPerGame: player.stats.corrected_points_per_game || '0.00',
-            bh1: player.stats.bh1,
-            bh2: player.stats.bh2,
-            external: player.external,
-            eliminationPlace: player.stats.place,
-            buchholz: 0,
-            sonnebornBerger: 0
+          
+          // Set elimination place for all players in the team
+          playerNames.forEach(name => {
+            const normalizedName = normalizePlayerNameSync(name)
+            let existingPlayer = playerStatsMap.get(normalizedName)
+            
+            // Fallback: try case-insensitive lookup if exact match not found
+            if (!existingPlayer) {
+              const lowerKey = normalizedName.toLowerCase().trim()
+              const matchingKey = playerStatsMapLowercase.get(lowerKey)
+              if (matchingKey) {
+                existingPlayer = playerStatsMap.get(matchingKey)
+              }
+            }
+            
+            if (existingPlayer) {
+              // Add elimination stats to existing player (only add once per team)
+              if (existingPlayer.eliminationPlace === null || existingPlayer.eliminationPlace === undefined) {
+                existingPlayer.matches += player.stats.matches
+                existingPlayer.points += player.stats.points
+                existingPlayer.won += player.stats.won
+                existingPlayer.lost += player.stats.lost
+                existingPlayer.goalsFor += player.stats.goals
+                existingPlayer.goalsAgainst += player.stats.goals_in
+                existingPlayer.goalDiff = existingPlayer.goalsFor - existingPlayer.goalsAgainst
+                
+                // Recalculate points per game
+                if (existingPlayer.matches > 0) {
+                  existingPlayer.pointsPerGame = (existingPlayer.points / existingPlayer.matches).toFixed(2)
+                }
+              }
+              // Set elimination place for this player (both players get the same place)
+              existingPlayer.eliminationPlace = eliminationPlace
+            } else {
+              // New player in elimination (shouldn't happen often, but handle it)
+              playerStatsMap.set(normalizedName, {
+                id: player._id,
+                name: normalizedName,
+                qualifyingPlace: null,
+                matches: player.stats.matches,
+                points: player.stats.points,
+                won: player.stats.won,
+                lost: player.stats.lost,
+                goalsFor: player.stats.goals,
+                goalsAgainst: player.stats.goals_in,
+                goalDiff: player.stats.goal_diff,
+                pointsPerGame: player.stats.points_per_game || '0.00',
+                correctedPointsPerGame: player.stats.corrected_points_per_game || '0.00',
+                bh1: player.stats.bh1,
+                bh2: player.stats.bh2,
+                external: player.external,
+                eliminationPlace: eliminationPlace,
+                buchholz: 0,
+                sonnebornBerger: 0
+              })
+            }
           })
+        } else {
+          // Single player (not a team)
+          const normalizedName = normalizePlayerNameSync(playerName)
+          let existingPlayer = playerStatsMap.get(normalizedName)
+          
+          // Fallback: try case-insensitive lookup if exact match not found
+          if (!existingPlayer) {
+            const lowerKey = normalizedName.toLowerCase().trim()
+            const matchingKey = playerStatsMapLowercase.get(lowerKey)
+            if (matchingKey) {
+              existingPlayer = playerStatsMap.get(matchingKey)
+            }
+          }
+          
+          if (existingPlayer) {
+            // Add elimination stats to existing player
+            existingPlayer.matches += player.stats.matches
+            existingPlayer.points += player.stats.points
+            existingPlayer.won += player.stats.won
+            existingPlayer.lost += player.stats.lost
+            existingPlayer.goalsFor += player.stats.goals
+            existingPlayer.goalsAgainst += player.stats.goals_in
+            existingPlayer.goalDiff = existingPlayer.goalsFor - existingPlayer.goalsAgainst
+            existingPlayer.eliminationPlace = eliminationPlace
+            
+            // Recalculate points per game
+            if (existingPlayer.matches > 0) {
+              existingPlayer.pointsPerGame = (existingPlayer.points / existingPlayer.matches).toFixed(2)
+            }
+          } else {
+            // New player in elimination (shouldn't happen often, but handle it)
+            playerStatsMap.set(normalizedName, {
+              id: player._id,
+              name: normalizedName,
+              qualifyingPlace: null,
+              matches: player.stats.matches,
+              points: player.stats.points,
+              won: player.stats.won,
+              lost: player.stats.lost,
+              goalsFor: player.stats.goals,
+              goalsAgainst: player.stats.goals_in,
+              goalDiff: player.stats.goal_diff,
+              pointsPerGame: player.stats.points_per_game || '0.00',
+              correctedPointsPerGame: player.stats.corrected_points_per_game || '0.00',
+              bh1: player.stats.bh1,
+              bh2: player.stats.bh2,
+              external: player.external,
+              eliminationPlace: eliminationPlace,
+              buchholz: 0,
+              sonnebornBerger: 0
+            })
+          }
         }
       })
     })
@@ -210,27 +320,84 @@ export const processTournamentPlayers = (tournamentData) => {
   calculateTieBreakers(tournamentData, playerStatsMap)
   
   // Convert map to array and calculate final stats
-  return Array.from(playerStatsMap.values())
+  const players = Array.from(playerStatsMap.values())
     .map(player => ({
       ...player,
       winRate: player.matches > 0 
         ? ((player.won / player.matches) * 100).toFixed(1)
         : 0,
-      // Use elimination place if available, otherwise qualifying place
-      finalPlace: player.eliminationPlace !== null ? player.eliminationPlace : player.qualifyingPlace,
       // Format tie-breakers to 2 decimal places
       buchholz: player.buchholz ? parseFloat(player.buchholz.toFixed(2)) : 0,
       sonnebornBerger: player.sonnebornBerger ? parseFloat(player.sonnebornBerger.toFixed(2)) : 0
     }))
     .sort((a, b) => {
-      // Sort by final place (elimination > qualifying)
+      // Sort by elimination place first (if both have it), then by qualifying place
+      // This ensures knockout players are sorted by their knockout results
       if (a.eliminationPlace !== null && b.eliminationPlace !== null) {
         return a.eliminationPlace - b.eliminationPlace
       }
-      if (a.eliminationPlace !== null) return -1
-      if (b.eliminationPlace !== null) return 1
-      return a.qualifyingPlace - b.qualifyingPlace
+      if (a.eliminationPlace !== null && a.eliminationPlace !== undefined) return -1
+      if (b.eliminationPlace !== null && b.eliminationPlace !== undefined) return 1
+      return (a.qualifyingPlace ?? Infinity) - (b.qualifyingPlace ?? Infinity)
     })
+  
+  // Calculate unified combined ranking
+  // Strategy: Knockout players get ranks 1-N (from knockout results)
+  // Qualifying-only players get ranks (N+1)+, re-ranked sequentially by qualifying position
+  
+  // Filter players: knockout players have a valid eliminationPlace (number >= 1)
+  const knockoutPlayers = players.filter(p => 
+    p.eliminationPlace !== null && 
+    p.eliminationPlace !== undefined && 
+    typeof p.eliminationPlace === 'number' &&
+    p.eliminationPlace >= 1
+  )
+  const qualifyingOnlyPlayers = players.filter(p => 
+    p.eliminationPlace === null || 
+    p.eliminationPlace === undefined || 
+    (typeof p.eliminationPlace !== 'number') ||
+    p.eliminationPlace < 1
+  )
+  const numKnockoutPlayers = knockoutPlayers.length
+  
+  // Sort qualifying-only players by their qualifying place
+  const sortedQualifyingOnly = [...qualifyingOnlyPlayers].sort((a, b) => {
+    const aPlace = a.qualifyingPlace ?? Infinity
+    const bPlace = b.qualifyingPlace ?? Infinity
+    return aPlace - bPlace
+  })
+  
+  // Create a map for quick lookup: player name -> index in sorted qualifying-only list
+  const qualifyingOnlyIndexMap = new Map()
+  sortedQualifyingOnly.forEach((player, index) => {
+    qualifyingOnlyIndexMap.set(player.name, index)
+  })
+  
+  // Assign final places to all players
+  const playersWithFinalPlace = players.map(player => {
+    if (player.eliminationPlace !== null && player.eliminationPlace !== undefined) {
+      // Player made it to knockout - use knockout place as final place (1-N)
+      return {
+        ...player,
+        finalPlace: player.eliminationPlace
+      }
+    } else {
+      // Player only in qualifying - assign sequential rank starting after knockout players
+      const indexInQualifyingOnly = qualifyingOnlyIndexMap.get(player.name) ?? sortedQualifyingOnly.length
+      const calculatedFinalPlace = numKnockoutPlayers + indexInQualifyingOnly + 1
+      return {
+        ...player,
+        finalPlace: calculatedFinalPlace
+      }
+    }
+  })
+  
+  // Re-sort by finalPlace to ensure correct display order
+  return playersWithFinalPlace.sort((a, b) => {
+    const aPlace = a.finalPlace ?? Infinity
+    const bPlace = b.finalPlace ?? Infinity
+    return aPlace - bPlace
+  })
 }
 
 /**
@@ -240,16 +407,17 @@ const getPlayerFinalPlacements = (tournament) => {
   const qualifyingStandings = tournament.data.qualifying?.[0]?.standings || []
   const eliminationStandings = tournament.data.eliminations?.[0]?.standings || []
   
-  // Create a map to track final placements (elimination takes precedence)
-  const playerFinalPlacement = new Map()
+  // Create a map to track placements and stats
+  const playerData = new Map()
   
   // First, add all qualifying placements
   qualifyingStandings.forEach(player => {
     if (!player.removed && player.stats.matches > 0) {
       const normalizedName = normalizePlayerNameSync(player.name)
-      playerFinalPlacement.set(normalizedName, {
-        place: player.stats.place,
-        stats: player.stats,
+      playerData.set(normalizedName, {
+        qualifyingPlace: player.stats.place,
+        eliminationPlace: null,
+        stats: { ...player.stats },
         external: player.external
       })
     }
@@ -259,33 +427,146 @@ const getPlayerFinalPlacements = (tournament) => {
   // Also ADD elimination stats to qualifying stats (not replace them)
   eliminationStandings.forEach(player => {
     if (!player.removed) {
-      const normalizedName = normalizePlayerNameSync(player.name)
-      const existing = playerFinalPlacement.get(normalizedName)
-      if (existing) {
-        // Add elimination stats to qualifying stats
-        playerFinalPlacement.set(normalizedName, {
-          ...existing,
-          place: player.stats.place, // Use elimination place as final place
-          stats: {
-            ...existing.stats,
-            matches: existing.stats.matches + player.stats.matches,
-            points: existing.stats.points + player.stats.points,
-            won: existing.stats.won + player.stats.won,
-            lost: existing.stats.lost + player.stats.lost,
-            goals: existing.stats.goals + player.stats.goals,
-            goals_in: existing.stats.goals_in + player.stats.goals_in,
-            goal_diff: (existing.stats.goals + player.stats.goals) - (existing.stats.goals_in + player.stats.goals_in)
+      const playerName = player.name
+      const eliminationPlace = player.stats.place
+      
+      // Check if this is a team name (contains " / " or " | ")
+      const teamNameSeparators = [' / ', ' | ', ' & ']
+      const isTeamName = teamNameSeparators.some(sep => playerName.includes(sep))
+      
+      if (isTeamName) {
+        // Split team name into individual players
+        let playerNames = []
+        if (playerName.includes(' / ')) {
+          playerNames = playerName.split(' / ').map(n => n.trim())
+        } else if (playerName.includes(' | ')) {
+          playerNames = playerName.split(' | ').map(n => n.trim())
+        } else if (playerName.includes(' & ')) {
+          playerNames = playerName.split(' & ').map(n => n.trim())
+        }
+        
+        // Set elimination place for all players in the team
+        // Track if we've added stats to avoid double-counting
+        let statsAdded = false
+        playerNames.forEach((name, index) => {
+          const normalizedName = normalizePlayerNameSync(name)
+          const existing = playerData.get(normalizedName)
+          
+          if (existing) {
+            // Update elimination place and stats
+            if (!statsAdded) {
+              existing.eliminationPlace = eliminationPlace
+              existing.stats.matches += player.stats.matches
+              existing.stats.points += player.stats.points
+              existing.stats.won += player.stats.won
+              existing.stats.lost += player.stats.lost
+              existing.stats.goals += player.stats.goals
+              existing.stats.goals_in += player.stats.goals_in
+              existing.stats.goal_diff = existing.stats.goals - existing.stats.goals_in
+              statsAdded = true
+            } else {
+              // For other players in team, just set elimination place
+              existing.eliminationPlace = eliminationPlace
+            }
+          } else {
+            // Player only in elimination (didn't play qualifying)
+            if (!statsAdded) {
+              playerData.set(normalizedName, {
+                qualifyingPlace: null,
+                eliminationPlace: eliminationPlace,
+                stats: { ...player.stats },
+                external: player.external
+              })
+              statsAdded = true
+            } else {
+              // For other players, just set elimination place
+              playerData.set(normalizedName, {
+                qualifyingPlace: null,
+                eliminationPlace: eliminationPlace,
+                stats: {
+                  matches: 0,
+                  points: 0,
+                  won: 0,
+                  lost: 0,
+                  goals: 0,
+                  goals_in: 0,
+                  goal_diff: 0
+                },
+                external: player.external
+              })
+            }
           }
         })
       } else {
-        // Player only in elimination (didn't play qualifying)
-        playerFinalPlacement.set(normalizedName, {
-          place: player.stats.place,
-          stats: player.stats,
-          external: player.external
-        })
+        // Single player (not a team)
+        const normalizedName = normalizePlayerNameSync(playerName)
+        const existing = playerData.get(normalizedName)
+        
+        if (existing) {
+          // Add elimination stats to qualifying stats
+          existing.eliminationPlace = eliminationPlace
+          existing.stats.matches += player.stats.matches
+          existing.stats.points += player.stats.points
+          existing.stats.won += player.stats.won
+          existing.stats.lost += player.stats.lost
+          existing.stats.goals += player.stats.goals
+          existing.stats.goals_in += player.stats.goals_in
+          existing.stats.goal_diff = existing.stats.goals - existing.stats.goals_in
+        } else {
+          // Player only in elimination (didn't play qualifying)
+          playerData.set(normalizedName, {
+            qualifyingPlace: null,
+            eliminationPlace: eliminationPlace,
+            stats: { ...player.stats },
+            external: player.external
+          })
+        }
       }
     }
+  })
+  
+  // Calculate combined ranking (finalPlace) for season points
+  // Knockout players get ranks 1-N, qualifying-only players get ranks (N+1)+
+  const allPlayerEntries = Array.from(playerData.entries())
+  const knockoutPlayers = allPlayerEntries.filter(([name, data]) => 
+    data.eliminationPlace !== null && data.eliminationPlace !== undefined
+  )
+  const qualifyingOnlyPlayers = allPlayerEntries.filter(([name, data]) => 
+    data.eliminationPlace === null || data.eliminationPlace === undefined
+  )
+  const numKnockoutPlayers = knockoutPlayers.length
+  
+  // Sort qualifying-only players by their qualifying place
+  const sortedQualifyingOnly = [...qualifyingOnlyPlayers].sort((a, b) => {
+    const aPlace = a[1].qualifyingPlace ?? Infinity
+    const bPlace = b[1].qualifyingPlace ?? Infinity
+    return aPlace - bPlace
+  })
+  
+  // Create a map for quick lookup: player name -> index in sorted qualifying-only list
+  const qualifyingOnlyIndexMap = new Map()
+  sortedQualifyingOnly.forEach(([name, data], index) => {
+    qualifyingOnlyIndexMap.set(name, index)
+  })
+  
+  // Convert to final placement map with combined ranking
+  const playerFinalPlacement = new Map()
+  playerData.forEach((data, normalizedName) => {
+    let finalPlace
+    if (data.eliminationPlace !== null && data.eliminationPlace !== undefined) {
+      // Player made it to knockout - use knockout place (1-N)
+      finalPlace = data.eliminationPlace
+    } else {
+      // Player only in qualifying - assign sequential rank starting after knockout players
+      const indexInQualifyingOnly = qualifyingOnlyIndexMap.get(normalizedName) ?? sortedQualifyingOnly.length
+      finalPlace = numKnockoutPlayers + indexInQualifyingOnly + 1
+    }
+    
+    playerFinalPlacement.set(normalizedName, {
+      place: finalPlace, // Use combined ranking for season points
+      stats: data.stats,
+      external: data.external
+    })
   })
   
   return playerFinalPlacement
@@ -342,7 +623,36 @@ const aggregatePlayerStats = (tournaments) => {
  * Convert aggregated stats to player array with derived stats
  */
 const convertToPlayerArray = (playerStats, trueSkillRatings) => {
-  return Array.from(playerStats.values())
+  // Deduplicate by normalized name (in case of normalization issues)
+  // Use case-insensitive matching as a safety net
+  const deduplicatedMap = new Map()
+  const keyToOriginalName = new Map() // lowercase key -> first normalized name seen
+  
+  playerStats.forEach((player, normalizedName) => {
+    const key = normalizedName.toLowerCase().trim()
+    
+    if (!keyToOriginalName.has(key)) {
+      // First time seeing this player (case-insensitive)
+      keyToOriginalName.set(key, normalizedName)
+      deduplicatedMap.set(normalizedName, player)
+    } else {
+      // Duplicate found - merge with existing player
+      const existingName = keyToOriginalName.get(key)
+      const existing = deduplicatedMap.get(existingName)
+      existing.matches += player.matches
+      existing.points += player.points
+      existing.won += player.won
+      existing.lost += player.lost
+      existing.goalsFor += player.goalsFor
+      existing.goalsAgainst += player.goalsAgainst
+      existing.tournaments += player.tournaments
+      existing.bestPlace = Math.min(existing.bestPlace, player.bestPlace)
+      existing.places.push(...player.places)
+      existing.seasonPoints += player.seasonPoints
+    }
+  })
+  
+  return Array.from(deduplicatedMap.values())
     .filter(player => player.matches > 0)
     .map(player => {
       const rating = trueSkillRatings.get(player.name)

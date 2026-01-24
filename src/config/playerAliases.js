@@ -20,7 +20,15 @@ export async function loadAliasesFromAPI() {
     // Build a map: alias -> canonicalName
     const map = new Map()
     aliases.forEach(alias => {
-      map.set(alias.alias, alias.canonicalName)
+      const trimmedAlias = alias.alias.trim()
+      const trimmedCanonical = alias.canonicalName.trim()
+      map.set(trimmedAlias, trimmedCanonical)
+      // Also ensure canonical name maps to itself (for consistency)
+      // This ensures that if a player appears with their canonical name,
+      // it normalizes to the same canonical name
+      if (!map.has(trimmedCanonical)) {
+        map.set(trimmedCanonical, trimmedCanonical)
+      }
     })
     
     aliasesCache = aliases
@@ -72,13 +80,16 @@ export async function normalizePlayerName(name) {
 export function normalizePlayerNameSync(name) {
   if (!name) return name
   
+  // Trim whitespace first
+  const trimmed = name.trim()
+  
   // Use cached map if available
-  if (aliasesMap && aliasesMap.has(name)) {
-    return aliasesMap.get(name)
+  if (aliasesMap && aliasesMap.has(trimmed)) {
+    return aliasesMap.get(trimmed)
   }
   
-  // Return original if no cache or no mapping
-  return name
+  // Return trimmed name if no cache or no mapping
+  return trimmed
 }
 
 /**
