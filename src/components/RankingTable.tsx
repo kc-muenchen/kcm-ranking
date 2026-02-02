@@ -141,9 +141,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           id: 'seasonPoints',
           header: viewMode === 'overall' ? 'Total Points' : 'Season Points',
           size: 50,
-          minSize: 40,
-          minSize: 50,
-          minSize: 60,
+          minSize: 80,
           minSize: 80,
           Cell: ({ cell }) => (
             <div className="season-points-cell">
@@ -158,9 +156,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           id: 'trueSkill',
           header: 'TrueSkill',
           size: 50,
-          minSize: 40,
-          minSize: 50,
-          minSize: 60,
+          minSize: 80,
           Cell: ({ cell }) => (
             <div className="trueskill-cell">
               <span className="trueskill-rating" title={`TrueSkill: ${cell.getValue().toFixed(1)}`}>
@@ -180,9 +176,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           id: 'bestPlace',
           header: 'Best Place',
           size: 50,
-          minSize: 40,
-          minSize: 50,
-          minSize: 60,
+          minSize: 80,
           Cell: ({ cell }) => (
             <span className="best-place">
               {getMedalEmoji(cell.getValue())}
@@ -205,9 +199,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           id: 'qualifyingPlace',
           header: 'Qualifying',
           size: 50,
-          minSize: 40,
-          minSize: 50,
-          minSize: 60,
+          minSize: 80,
           Cell: ({ cell }) => getMedalEmoji(cell.getValue())
         },
         {
@@ -215,9 +207,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           id: 'eliminationPlace',
           header: 'Knockout',
           size: 50,
-          minSize: 40,
-          minSize: 50,
-          minSize: 60,
+          minSize: 80,
           Cell: ({ cell }) => cell.getValue() !== null ? getMedalEmoji(cell.getValue()) : '-'
         },
         {
@@ -225,9 +215,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           id: 'buchholz',
           header: 'Buchholz',
           size: 50,
-          minSize: 40,
-          minSize: 50,
-          minSize: 60,
+          minSize: 80,
           Cell: ({ cell }) => cell.getValue() || 0
         },
         {
@@ -235,9 +223,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           id: 'sonnebornBerger',
           header: 'SB',
           size: 50,
-          minSize: 40,
-          minSize: 50,
-          minSize: 60,
+          minSize: 80,
           Cell: ({ cell }) => cell.getValue() || 0
         }
       )

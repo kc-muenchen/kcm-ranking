@@ -2,12 +2,19 @@ import { useState, useEffect } from 'react'
 import { API_ENDPOINTS, apiFetch } from '../config/api'
 import { preloadAliases } from '../config/playerAliases'
 import { convertNewFormatToOld } from '../utils/format-converter'
+import type { Tournament, APITournament, TournamentData } from '../types/tournament'
+
+interface UseTournamentsReturn {
+  tournaments: Tournament[]
+  loading: boolean
+  reloadTournaments: () => Promise<void>
+}
 
 /**
  * Custom hook to load and manage tournaments
  */
-export const useTournaments = () => {
-  const [tournaments, setTournaments] = useState([])
+export const useTournaments = (): UseTournamentsReturn => {
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

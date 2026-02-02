@@ -3,7 +3,7 @@
  * This file provides a fallback and utility functions
  */
 
-import { API_ENDPOINTS, apiFetch } from './api.js'
+import { API_ENDPOINTS, apiFetch } from './api.ts'
 
 // Cache for aliases loaded from API
 let aliasesCache = null

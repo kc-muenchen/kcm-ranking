@@ -1,5 +1,5 @@
 // Season points distribution
-export const SEASON_POINTS_MAP = {
+export const SEASON_POINTS_MAP: Record<number, number> = {
   1: 25,
   2: 20,
   3: 16,
@@ -14,12 +14,12 @@ export const MAX_TOURNAMENT_POINTS = 26
 export const ATTENDANCE_POINT = 1
 
 // Calculate effective place for season points (places 5-16 are treated as place 5)
-export const getEffectivePlace = (place) => {
+export const getEffectivePlace = (place: number): number => {
   return (place >= 5 && place <= 16) ? 5 : place
 }
 
 // Calculate season points for a given placement
-export const calculateSeasonPoints = (place) => {
+export const calculateSeasonPoints = (place: number): number => {
   const effectivePlace = getEffectivePlace(place)
   const placePoints = effectivePlace <= 5 ? (SEASON_POINTS_MAP[effectivePlace] || 0) : 0
   return placePoints + ATTENDANCE_POINT
