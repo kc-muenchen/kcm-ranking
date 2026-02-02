@@ -46,7 +46,7 @@ export const useTournaments = (): UseTournamentsReturn => {
             data: convertedData || tournament.rawData
           }
         })
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .sort((a: any, b: any) => new Date(b.date) - new Date(a.date))
 
       console.log(`Loaded ${loadedTournaments.length} tournaments from API`)
       
@@ -96,7 +96,7 @@ export const useTournaments = (): UseTournamentsReturn => {
       // Filter out any failed loads and sort by date (most recent first)
       const validTournaments = loadedTournaments
         .filter(t => t !== null)
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .sort((a: any, b: any) => new Date(b.date) - new Date(a.date))
 
       console.log(`Loaded ${validTournaments.length} tournaments from files`)
       

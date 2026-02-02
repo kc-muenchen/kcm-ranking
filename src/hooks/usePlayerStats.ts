@@ -145,7 +145,7 @@ export const usePlayerStats = (
   const allPlayers = useMemo(() => {
     return aggregatedPlayers
       .filter(p => p.name !== playerName)
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name))
   }, [aggregatedPlayers, playerName])
   
   return {

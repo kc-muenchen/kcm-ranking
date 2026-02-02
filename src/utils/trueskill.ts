@@ -98,7 +98,7 @@ export function calculateTrueSkillRatings(tournaments) {
   })
   
   // Sort matches by date (chronological order)
-  allMatches.sort((a, b) => a.date - b.date)
+  allMatches.sort((a: any, b: any) => a.date - b.date)
   
   // Initialize history for all players with their starting rating
   allMatches.forEach(match => {
@@ -117,7 +117,7 @@ export function calculateTrueSkillRatings(tournaments) {
   })
   
   // Process each match and update ratings
-  allMatches.forEach((match, matchIndex) => {
+  allMatches.forEach((match: any, matchIndex: any) => {
     // Get or create ratings for all players
     const team1Ratings = match.team1Players.map(playerName => {
       if (!playerRatings.has(playerName)) {
@@ -149,7 +149,7 @@ export function calculateTrueSkillRatings(tournaments) {
       const [newTeam1Ratings, newTeam2Ratings] = result
       
       // Update player ratings and history
-      match.team1Players.forEach((playerName, index) => {
+      match.team1Players.forEach((playerName: any, index: any) => {
         if (index < newTeam1Ratings.length) {
           const newRating = newTeam1Ratings[index]
           playerRatings.set(playerName, newRating)
@@ -172,7 +172,7 @@ export function calculateTrueSkillRatings(tournaments) {
         }
       })
       
-      match.team2Players.forEach((playerName, index) => {
+      match.team2Players.forEach((playerName: any, index: any) => {
         if (index < newTeam2Ratings.length) {
           const newRating = newTeam2Ratings[index]
           playerRatings.set(playerName, newRating)
@@ -220,7 +220,7 @@ export function getConservativeRating(rating) {
  */
 export function exportRatings(playerRatings) {
   const ratings = {}
-  playerRatings.forEach((rating, playerName) => {
+  playerRatings.forEach((rating: any, playerName: any) => {
     ratings[playerName] = {
       skill: getConservativeRating(rating),
       mu: rating.mu,

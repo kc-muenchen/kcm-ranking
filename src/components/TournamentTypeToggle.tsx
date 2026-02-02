@@ -1,6 +1,6 @@
 import './TournamentTypeToggle.css'
 
-function TournamentTypeToggle({ tournamentType, onTournamentTypeChange }) {
+function TournamentTypeToggle({ tournamentType, onTournamentTypeChange  }: { tournamentType: any, onTournamentTypeChange: any }) {
   return (
     <div className="tournament-type-toggle">
       <button

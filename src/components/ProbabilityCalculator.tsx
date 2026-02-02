@@ -9,12 +9,12 @@ import './ProbabilityCalculator.css'
  */
 function calculateWinProbability(team1Ratings, team2Ratings) {
   // Calculate team skill (sum of player skills)
-  const team1Mu = team1Ratings.reduce((sum, rating) => sum + rating.mu, 0)
-  const team2Mu = team2Ratings.reduce((sum, rating) => sum + rating.mu, 0)
+  const team1Mu = team1Ratings.reduce((sum: any, rating: any) => sum + rating.mu, 0)
+  const team2Mu = team2Ratings.reduce((sum: any, rating: any) => sum + rating.mu, 0)
   
   // Calculate team uncertainty (combined variance)
-  const team1Sigma = Math.sqrt(team1Ratings.reduce((sum, rating) => sum + rating.sigma ** 2, 0))
-  const team2Sigma = Math.sqrt(team2Ratings.reduce((sum, rating) => sum + rating.sigma ** 2, 0))
+  const team1Sigma = Math.sqrt(team1Ratings.reduce((sum: any, rating: any) => sum + rating.sigma ** 2, 0))
+  const team2Sigma = Math.sqrt(team2Ratings.reduce((sum: any, rating: any) => sum + rating.sigma ** 2, 0))
   
   // Total uncertainty
   const beta = 25 / 6 // Default beta from TrueSkill
@@ -47,7 +47,7 @@ function cumulativeNormal(x) {
 /**
  * Probability Calculator Component
  */
-export const ProbabilityCalculator = ({ players }) => {
+export const ProbabilityCalculator = ({ players  }: { players: any }) => {
   const [team1Player1, setTeam1Player1] = useState(null)
   const [team1Player2, setTeam1Player2] = useState(null)
   const [team2Player1, setTeam2Player1] = useState(null)
@@ -56,7 +56,7 @@ export const ProbabilityCalculator = ({ players }) => {
   // Create player options for dropdowns
   const playerOptions = useMemo(() => {
     return players
-      .sort((a, b) => b.trueSkill - a.trueSkill)
+      .sort((a: any, b: any) => b.trueSkill - a.trueSkill)
       .map(player => ({
         value: player.name,
         label: `${player.name} (${player.trueSkill.toFixed(1)})`,
@@ -66,7 +66,7 @@ export const ProbabilityCalculator = ({ players }) => {
   }, [players])
 
   // Get player rating
-  const getPlayerRating = (playerName) => {
+  const getPlayerRating = (playerName: any) => {
     const player = players.find(p => p.name === playerName)
     if (!player) return new Rating()
     
@@ -100,7 +100,7 @@ export const ProbabilityCalculator = ({ players }) => {
   }, [team1Player1, team1Player2, team2Player1, team2Player2, players])
 
   // Get filtered options (exclude already selected players)
-  const getFilteredOptions = (excludePlayers) => {
+  const getFilteredOptions = (excludePlayers: any) => {
     return playerOptions.filter(option => !excludePlayers.includes(option.value))
   }
 

@@ -9,9 +9,17 @@ export const SearchableSelect = ({
   value = '',
   onChange,
   placeholder = 'Select...',
-  getOptionLabel = (option) => option.name || option,
-  getOptionValue = (option) => option.name || option,
+  getOptionLabel = (option: any) => option.name || option,
+  getOptionValue = (option: any) => option.name || option,
   className = ''
+}: {
+  options?: any[];
+  value?: string;
+  onChange: any;
+  placeholder?: string;
+  getOptionLabel?: (option: any) => string;
+  getOptionValue?: (option: any) => string;
+  className?: string;
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -39,7 +47,7 @@ export const SearchableSelect = ({
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = (event: any) => {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
         setIsOpen(false)
         setSearchTerm('')
@@ -63,7 +71,7 @@ export const SearchableSelect = ({
     }
   }, [highlightedIndex, isOpen])
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: any) => {
     setSearchTerm(e.target.value)
     setHighlightedIndex(-1)
     if (!isOpen) {
@@ -76,7 +84,7 @@ export const SearchableSelect = ({
     setSearchTerm('')
   }
 
-  const handleSelect = (option) => {
+  const handleSelect = (option: any) => {
     const optionValue = getOptionValue(option)
     onChange(optionValue)
     setIsOpen(false)
@@ -90,7 +98,7 @@ export const SearchableSelect = ({
     }
   }
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: any) => {
     if (!isOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) {
       setIsOpen(true)
       return
@@ -127,7 +135,7 @@ export const SearchableSelect = ({
     }
   }
 
-  const handleClear = (e) => {
+  const handleClear = (e: any) => {
     e.stopPropagation()
     onChange('')
     setSearchTerm('')
@@ -168,7 +176,7 @@ export const SearchableSelect = ({
       {isOpen && (
         <div className="searchable-select-dropdown" ref={dropdownRef}>
           {filteredOptions.length > 0 ? (
-            filteredOptions.map((option, index) => {
+            filteredOptions.map((option: any, index: any) => {
               const optionValue = getOptionValue(option)
               const optionLabel = getOptionLabel(option)
               const isSelected = optionValue === value

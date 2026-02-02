@@ -4,7 +4,7 @@ import ScrollToTop from './ScrollToTop'
 /**
  * App layout component with header and footer
  */
-export const AppLayout = ({ children }) => {
+export const AppLayout = ({ children  }: { children: any }) => {
   return (
     <div className="app">
       <header className="header">

@@ -4,15 +4,14 @@ import { calculateWinProbability } from '../../utils/trueskill'
 /**
  * Comparison tab component for head-to-head and teammate statistics
  */
-export const ComparisonTab = ({ 
-  playerName,
+export const ComparisonTab = ({ playerName,
   currentPlayer,
   allPlayers, 
   selectedComparePlayer, 
   onPlayerSelect, 
   headToHeadStats, 
   teammateStats 
-}) => {
+ }: { playerName: any, currentPlayer: any, allPlayers: any, selectedComparePlayer: any, onPlayerSelect: any, headToHeadStats: any, teammateStats: any }) => {
   // Get TrueSkill ratings for both players
   const player1 = currentPlayer
   const player2 = allPlayers.find(p => p.name === selectedComparePlayer)

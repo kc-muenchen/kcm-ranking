@@ -3,10 +3,10 @@ import { useState } from 'react'
 /**
  * Overview tab component showing best rankings, top partners, and opponent stats
  */
-export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTournamentClick }) => {
+export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTournamentClick  }: { bestRankingStats: any, topPartners: any, opponentStats: any, onTournamentClick: any }) => {
   const [expandedPlaces, setExpandedPlaces] = useState(new Set())
 
-  const togglePlace = (place) => {
+  const togglePlace = (place: any) => {
     setExpandedPlaces(prev => {
       const newSet = new Set(prev)
       if (newSet.has(place)) {
@@ -18,7 +18,7 @@ export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTo
     })
   }
 
-  const getMedalEmoji = (place) => {
+  const getMedalEmoji = (place: any) => {
     if (place === 1) return '🥇'
     if (place === 2) return '🥈'
     if (place === 3) return '🥉'
@@ -37,7 +37,7 @@ export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTo
           <h3 className="insight-title">🏅 Podium Finishes</h3>
           {podiumFinishes.length > 0 ? (
             <div className="rankings-list">
-              {podiumFinishes.map((ranking) => (
+              {podiumFinishes.map((ranking: any) => (
                 <div key={ranking.place} className={`ranking-item rank-level-${ranking.place}`}>
                   <div 
                     className="ranking-header clickable" 
@@ -56,7 +56,7 @@ export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTo
                   </div>
                   {expandedPlaces.has(ranking.place) && (
                     <div className="ranking-tournaments expanded">
-                      {ranking.tournaments.map((t, i) => (
+                      {ranking.tournaments.map((t: any, i: any) => (
                         <div 
                           key={i} 
                           className="tournament-badge-clickable"
@@ -81,7 +81,7 @@ export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTo
           <h3 className="insight-title">🤝 Top Partners</h3>
           {topPartners.length > 0 ? (
             <div className="partners-list">
-              {topPartners.map((partner, index) => (
+              {topPartners.map((partner: any, index: any) => (
                 <div key={partner.name} className={`partner-item rank-${index + 1}`}>
                   <div className="partner-rank">#{index + 1}</div>
                   <div className="partner-info">
@@ -107,7 +107,7 @@ export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTo
           <h3 className="insight-title">💪 Won Most Against</h3>
           {opponentStats.wonMostAgainst.length > 0 ? (
             <div className="opponent-list">
-              {opponentStats.wonMostAgainst.map((opponent, index) => (
+              {opponentStats.wonMostAgainst.map((opponent: any, index: any) => (
                 <div key={opponent.name} className="opponent-item win-opponent">
                   <div className="opponent-rank">#{index + 1}</div>
                   <div className="opponent-info">
@@ -130,7 +130,7 @@ export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTo
           <h3 className="insight-title">😓 Lost Most Against</h3>
           {opponentStats.lostMostAgainst.length > 0 ? (
             <div className="opponent-list">
-              {opponentStats.lostMostAgainst.map((opponent, index) => (
+              {opponentStats.lostMostAgainst.map((opponent: any, index: any) => (
                 <div key={opponent.name} className="opponent-item loss-opponent">
                   <div className="opponent-rank">#{index + 1}</div>
                   <div className="opponent-info">

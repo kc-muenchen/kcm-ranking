@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import './ViewToggle.css'
 
-function ViewToggle({ viewMode, onViewModeChange }) {
+function ViewToggle({ viewMode, onViewModeChange  }: { viewMode: any, onViewModeChange: any }) {
   const [isToolsOpen, setIsToolsOpen] = useState(false)
   const toolsRef = useRef(null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = (event: any) => {
       if (toolsRef.current && !toolsRef.current.contains(event.target)) {
         setIsToolsOpen(false)
       }
@@ -19,7 +19,7 @@ function ViewToggle({ viewMode, onViewModeChange }) {
     }
   }, [isToolsOpen])
 
-  const handleToolSelect = (tool) => {
+  const handleToolSelect = (tool: any) => {
     onViewModeChange(tool)
     setIsToolsOpen(false)
   }

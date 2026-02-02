@@ -6,7 +6,7 @@ import { ACHIEVEMENT_DEFINITIONS } from '../constants/achievements'
  * Calculate best ranking statistics (top 3)
  * Only counts final tournament placements from elimination rounds
  */
-export const calculateBestRanking = (playerName, tournaments) => {
+export const calculateBestRanking = (playerName: any, tournaments: any) => {
   const rankings = []
   const normalizedPlayerName = normalizePlayerNameSync(playerName)
   
@@ -53,7 +53,7 @@ export const calculateBestRanking = (playerName, tournaments) => {
   })
   
   // Get unique places sorted ascending
-  const uniquePlaces = Array.from(placeMap.keys()).sort((a, b) => a - b)
+  const uniquePlaces = Array.from(placeMap.keys()).sort((a: any, b: any) => a - b)
   
   // Return top 3 unique places with their tournaments
   return uniquePlaces.slice(0, 3).map(place => ({
@@ -66,7 +66,7 @@ export const calculateBestRanking = (playerName, tournaments) => {
 /**
  * Calculate top partners
  */
-export const calculateTopPartners = (matchHistory, playerName) => {
+export const calculateTopPartners = (matchHistory: any, playerName: any) => {
   const partnerStats = new Map()
   
   matchHistory.forEach(entry => {
@@ -103,7 +103,7 @@ export const calculateTopPartners = (matchHistory, playerName) => {
       ...partner,
       winRate: partner.matches > 0 ? ((partner.wins / partner.matches) * 100).toFixed(1) : 0
     }))
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       // Sort by wins first, then by win rate
       if (b.wins !== a.wins) return b.wins - a.wins
       return parseFloat(b.winRate) - parseFloat(a.winRate)
@@ -115,7 +115,7 @@ export const calculateTopPartners = (matchHistory, playerName) => {
 /**
  * Calculate opponent statistics
  */
-export const calculateOpponentStats = (matchHistory, playerName) => {
+export const calculateOpponentStats = (matchHistory: any, playerName: any) => {
   const opponentStats = new Map()
   
   matchHistory.forEach(entry => {
@@ -153,7 +153,7 @@ export const calculateOpponentStats = (matchHistory, playerName) => {
   
   // Get top 3 opponents player won most against
   const wonMostAgainst = [...opponentsArray]
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       if (b.wins !== a.wins) return b.wins - a.wins
       return parseFloat(b.winRate) - parseFloat(a.winRate)
     })
@@ -161,7 +161,7 @@ export const calculateOpponentStats = (matchHistory, playerName) => {
   
   // Get top 3 opponents player lost most against
   const lostMostAgainst = [...opponentsArray]
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       if (b.losses !== a.losses) return b.losses - a.losses
       return parseFloat(a.winRate) - parseFloat(b.winRate) // Lower win rate is worse
     })
@@ -176,7 +176,7 @@ export const calculateOpponentStats = (matchHistory, playerName) => {
 /**
  * Calculate tournament participation list
  */
-export const calculateTournamentList = (playerName, tournaments) => {
+export const calculateTournamentList = (playerName: any, tournaments: any) => {
   const normalizedPlayerName = normalizePlayerNameSync(playerName)
   const tournamentList = []
   
@@ -234,7 +234,7 @@ export const calculateTournamentList = (playerName, tournaments) => {
   })
   
   // Sort by date (most recent first)
-  tournamentList.sort((a, b) => new Date(b.date) - new Date(a.date))
+  tournamentList.sort((a: any, b: any) => new Date(b.date) - new Date(a.date))
   
   return tournamentList
 }

@@ -104,7 +104,7 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
   // This ensures fair comparison since knockout brackets are based on qualifying results
   
   // Calculate Buchholz and Sonneborn-Berger for each player
-  playerStatsMap.forEach((player, playerName) => {
+  playerStatsMap.forEach((player: any, playerName: any) => {
     let buchholz = 0
     let sonnebornBerger = 0
     
@@ -130,7 +130,7 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
 /**
  * Process players for a single tournament view
  */
-export const processTournamentPlayers = (tournamentData) => {
+export const processTournamentPlayers = (tournamentData: any) => {
   if (!tournamentData.qualifying || tournamentData.qualifying.length === 0) {
     return []
   }
@@ -330,7 +330,7 @@ export const processTournamentPlayers = (tournamentData) => {
       buchholz: player.buchholz ? parseFloat(player.buchholz.toFixed(2)) : 0,
       sonnebornBerger: player.sonnebornBerger ? parseFloat(player.sonnebornBerger.toFixed(2)) : 0
     }))
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       // Sort by elimination place first (if both have it), then by qualifying place
       // This ensures knockout players are sorted by their knockout results
       if (a.eliminationPlace !== null && b.eliminationPlace !== null) {
@@ -361,7 +361,7 @@ export const processTournamentPlayers = (tournamentData) => {
   const numKnockoutPlayers = knockoutPlayers.length
   
   // Sort qualifying-only players by their qualifying place
-  const sortedQualifyingOnly = [...qualifyingOnlyPlayers].sort((a, b) => {
+  const sortedQualifyingOnly = [...qualifyingOnlyPlayers].sort((a: any, b: any) => {
     const aPlace = a.qualifyingPlace ?? Infinity
     const bPlace = b.qualifyingPlace ?? Infinity
     return aPlace - bPlace
@@ -369,7 +369,7 @@ export const processTournamentPlayers = (tournamentData) => {
   
   // Create a map for quick lookup: player name -> index in sorted qualifying-only list
   const qualifyingOnlyIndexMap = new Map()
-  sortedQualifyingOnly.forEach((player, index) => {
+  sortedQualifyingOnly.forEach((player: any, index: any) => {
     qualifyingOnlyIndexMap.set(player.name, index)
   })
   
@@ -393,7 +393,7 @@ export const processTournamentPlayers = (tournamentData) => {
   })
   
   // Re-sort by finalPlace to ensure correct display order
-  return playersWithFinalPlace.sort((a, b) => {
+  return playersWithFinalPlace.sort((a: any, b: any) => {
     const aPlace = a.finalPlace ?? Infinity
     const bPlace = b.finalPlace ?? Infinity
     return aPlace - bPlace
@@ -403,7 +403,7 @@ export const processTournamentPlayers = (tournamentData) => {
 /**
  * Process player final placements from tournament data
  */
-const getPlayerFinalPlacements = (tournament) => {
+const getPlayerFinalPlacements = (tournament: any) => {
   const qualifyingStandings = tournament.data.qualifying?.[0]?.standings || []
   const eliminationStandings = tournament.data.eliminations?.[0]?.standings || []
   
@@ -448,7 +448,7 @@ const getPlayerFinalPlacements = (tournament) => {
         // Set elimination place for all players in the team
         // Track if we've added stats to avoid double-counting
         let statsAdded = false
-        playerNames.forEach((name, index) => {
+        playerNames.forEach((name: any, index: any) => {
           const normalizedName = normalizePlayerNameSync(name)
           const existing = playerData.get(normalizedName)
           
@@ -537,7 +537,7 @@ const getPlayerFinalPlacements = (tournament) => {
   const numKnockoutPlayers = knockoutPlayers.length
   
   // Sort qualifying-only players by their qualifying place
-  const sortedQualifyingOnly = [...qualifyingOnlyPlayers].sort((a, b) => {
+  const sortedQualifyingOnly = [...qualifyingOnlyPlayers].sort((a: any, b: any) => {
     const aPlace = a[1].qualifyingPlace ?? Infinity
     const bPlace = b[1].qualifyingPlace ?? Infinity
     return aPlace - bPlace
@@ -551,7 +551,7 @@ const getPlayerFinalPlacements = (tournament) => {
   
   // Convert to final placement map with combined ranking
   const playerFinalPlacement = new Map()
-  playerData.forEach((data, normalizedName) => {
+  playerData.forEach((data: any, normalizedName: any) => {
     let finalPlace
     if (data.eliminationPlace !== null && data.eliminationPlace !== undefined) {
       // Player made it to knockout - use knockout place (1-N)
@@ -575,14 +575,14 @@ const getPlayerFinalPlacements = (tournament) => {
 /**
  * Aggregate player stats from multiple tournaments
  */
-const aggregatePlayerStats = (tournaments) => {
+const aggregatePlayerStats = (tournaments: any) => {
   const playerStats = new Map()
 
   tournaments.forEach(tournament => {
     const playerFinalPlacement = getPlayerFinalPlacements(tournament)
     
     // Process each player's tournament result
-    playerFinalPlacement.forEach((playerData, normalizedName) => {
+    playerFinalPlacement.forEach((playerData: any, normalizedName: any) => {
       if (!playerStats.has(normalizedName)) {
         playerStats.set(normalizedName, {
           name: normalizedName,
@@ -622,13 +622,13 @@ const aggregatePlayerStats = (tournaments) => {
 /**
  * Convert aggregated stats to player array with derived stats
  */
-const convertToPlayerArray = (playerStats, trueSkillRatings) => {
+const convertToPlayerArray = (playerStats: any, trueSkillRatings: any) => {
   // Deduplicate by normalized name (in case of normalization issues)
   // Use case-insensitive matching as a safety net
   const deduplicatedMap = new Map()
   const keyToOriginalName = new Map() // lowercase key -> first normalized name seen
   
-  playerStats.forEach((player, normalizedName) => {
+  playerStats.forEach((player: any, normalizedName: any) => {
     const key = normalizedName.toLowerCase().trim()
     
     if (!keyToOriginalName.has(key)) {
@@ -670,7 +670,7 @@ const convertToPlayerArray = (playerStats, trueSkillRatings) => {
         goalDiff: player.goalsFor - player.goalsAgainst,
         tournaments: player.tournaments,
         bestPlace: player.bestPlace,
-        avgPlace: (player.places.reduce((a, b) => a + b, 0) / player.places.length).toFixed(1),
+        avgPlace: (player.places.reduce((a: any, b: any) => a + b, 0) / player.places.length).toFixed(1),
         pointsPerGame: player.matches > 0 ? (player.points / player.matches).toFixed(2) : 0,
         winRate: player.matches > 0 
           ? ((player.won / player.matches) * 100).toFixed(1)
@@ -682,7 +682,7 @@ const convertToPlayerArray = (playerStats, trueSkillRatings) => {
         external: player.external
       }
     })
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       // Sort by season points (primary), then TrueSkill, then total points
       const seasonPointsDiff = b.seasonPoints - a.seasonPoints
       if (seasonPointsDiff !== 0) return seasonPointsDiff
@@ -692,7 +692,7 @@ const convertToPlayerArray = (playerStats, trueSkillRatings) => {
       
       return b.points - a.points
     })
-    .map((player, index) => ({
+    .map((player: any, index: any) => ({
       ...player,
       place: index + 1
     }))
@@ -737,7 +737,7 @@ async function fetchTrueSkillRatings() {
  * @param {Array} tournaments - Array of tournament data
  * @returns {Promise<Object>} Object with players array and playerHistory Map
  */
-export const processAggregatedPlayers = async (tournaments) => {
+export const processAggregatedPlayers = async (tournaments: any) => {
   const playerStats = aggregatePlayerStats(tournaments)
   const { playerRatings: trueSkillRatings, playerHistory } = await fetchTrueSkillRatings()
   

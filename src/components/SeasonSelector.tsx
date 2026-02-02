@@ -1,6 +1,6 @@
 import './SeasonSelector.css'
 
-function SeasonSelector({ seasons, selectedSeason, onSelectSeason, showFinaleQualifiers, onToggleFinaleQualifiers }) {
+function SeasonSelector({ seasons, selectedSeason, onSelectSeason, showFinaleQualifiers, onToggleFinaleQualifiers  }: { seasons: any, selectedSeason: any, onSelectSeason: any, showFinaleQualifiers: any, onToggleFinaleQualifiers: any }) {
   return (
     <div className="season-selector">
       <div className="selector-row">
@@ -11,7 +11,7 @@ function SeasonSelector({ seasons, selectedSeason, onSelectSeason, showFinaleQua
           id="season-select"
           className="selector-dropdown"
           value={selectedSeason || ''}
-          onChange={(e) => {
+          onChange={(e: any) => {
             onSelectSeason(e.target.value)
           }}
         >

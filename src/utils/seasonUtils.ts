@@ -3,7 +3,7 @@ import { DEFAULT_SEASON_END, DEFAULT_SEASON_START, SEASON_DATE_OVERRIDES } from 
 
 const pad = (value) => value.toString().padStart(2, '0')
 
-const getSeasonDateRange = (seasonYear) => {
+const getSeasonDateRange = (seasonYear: any) => {
   const yearNumber = parseInt(seasonYear, 10)
   const override = SEASON_DATE_OVERRIDES[seasonYear]
 
@@ -23,13 +23,13 @@ const getSeasonDateRange = (seasonYear) => {
   return { startDate, endDate }
 }
 
-export const isTournamentInSeasonWindow = (tournamentDate, seasonYear) => {
+export const isTournamentInSeasonWindow = (tournamentDate: any, seasonYear: any) => {
   const { startDate, endDate } = getSeasonDateRange(seasonYear)
   const date = new Date(tournamentDate)
   return date >= startDate && date <= endDate
 }
 
-export const getSeasonYearForDate = (date) => {
+export const getSeasonYearForDate = (date: any) => {
   const year = date.getFullYear()
   const yearString = year.toString()
 
@@ -50,13 +50,13 @@ export const getSeasonYearForDate = (date) => {
 /**
  * Get available seasons (years) from tournaments
  */
-export const getAvailableSeasons = (tournaments) => {
+export const getAvailableSeasons = (tournaments: any) => {
   const years = new Set()
   tournaments.forEach(tournament => {
     const year = getSeasonYearForDate(new Date(tournament.date))
     years.add(year)
   })
-  return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)) // Most recent first
+  return Array.from(years).sort((a: any, b: any) => parseInt(b) - parseInt(a)) // Most recent first
 }
 
 /**
@@ -64,7 +64,7 @@ export const getAvailableSeasons = (tournaments) => {
  * Note: Season finals can be held outside the regular season window
  * (e.g., after the points earning cutoff), so we don't check isTournamentInSeasonWindow
  */
-export const getSeasonFinal = (tournaments, seasonYear) => {
+export const getSeasonFinal = (tournaments: any, seasonYear: any) => {
   return tournaments.find(tournament => {
     if (tournament.isSeasonFinal !== true) return false
     const tournamentDate = new Date(tournament.date)
@@ -77,7 +77,7 @@ export const getSeasonFinal = (tournaments, seasonYear) => {
 /**
  * Calculate which players are "surely qualified" (will remain in top 20 even if they skip next tournament)
  */
-export const calculateSurelyQualified = (players) => {
+export const calculateSurelyQualified = (players: any) => {
   // Only consider players with 10+ tournaments (eligible for finale)
   const eligiblePlayers = players.filter(player => player.tournaments >= 10)
   
@@ -87,7 +87,7 @@ export const calculateSurelyQualified = (players) => {
   }
   
   // Sort eligible players by current ranking (season points, then TrueSkill, then points)
-  const sortedEligible = [...eligiblePlayers].sort((a, b) => {
+  const sortedEligible = [...eligiblePlayers].sort((a: any, b: any) => {
     const seasonPointsDiff = b.seasonPoints - a.seasonPoints
     if (seasonPointsDiff !== 0) return seasonPointsDiff
     const trueSkillDiff = b.trueSkill - a.trueSkill
@@ -112,7 +112,7 @@ export const calculateSurelyQualified = (players) => {
   })
   
   // Re-sort with simulated points
-  const simulatedSorted = simulatedPlayers.sort((a, b) => {
+  const simulatedSorted = simulatedPlayers.sort((a: any, b: any) => {
     const seasonPointsDiff = b.simulatedSeasonPoints - a.simulatedSeasonPoints
     if (seasonPointsDiff !== 0) return seasonPointsDiff
     const trueSkillDiff = b.trueSkill - a.trueSkill

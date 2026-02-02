@@ -1,7 +1,7 @@
 import './TournamentSelector.css'
 
-function TournamentSelector({ tournaments, selectedTournament, onSelectTournament }) {
-  const formatDate = (dateString) => {
+function TournamentSelector({ tournaments, selectedTournament, onSelectTournament  }: { tournaments: any, selectedTournament: any, onSelectTournament: any }) {
+  const formatDate = (dateString: any) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('de-DE', {
       year: 'numeric',
@@ -19,7 +19,7 @@ function TournamentSelector({ tournaments, selectedTournament, onSelectTournamen
         id="tournament-select"
         className="selector-dropdown"
         value={selectedTournament?.id || ''}
-        onChange={(e) => {
+        onChange={(e: any) => {
           const tournament = tournaments.find(t => t.id === e.target.value)
           onSelectTournament(tournament)
         }}

@@ -1,7 +1,7 @@
 /**
  * Tab navigation component for player detail
  */
-export const PlayerTabs = ({ activeTab, onTabChange }) => {
+export const PlayerTabs = ({ activeTab, onTabChange  }: { activeTab: any, onTabChange: any }) => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'achievements', label: 'Achievements', icon: '🏆' },

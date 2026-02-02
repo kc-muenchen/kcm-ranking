@@ -15,9 +15,9 @@ export function convertNewFormatToOld(data) {
   if (data.qualifying || data.eliminations) {
     // Ensure elimination levels have names if they're missing
     if (data.eliminations && Array.isArray(data.eliminations)) {
-      data.eliminations.forEach((elimination, elimIndex) => {
+      data.eliminations.forEach((elimination: any, elimIndex: any) => {
         if (elimination.levels && Array.isArray(elimination.levels)) {
-          elimination.levels.forEach((level, levelIndex) => {
+          elimination.levels.forEach((level: any, levelIndex: any) => {
             // If name is missing, use groupName if available, otherwise generate one
             if (!level.name) {
               level.name = level.groupName || 
@@ -50,7 +50,7 @@ export function convertNewFormatToOld(data) {
   }
 
   // Helper to get player names from entry IDs
-  const getPlayerNames = (entryIds) => {
+  const getPlayerNames = (entryIds: any) => {
     if (!Array.isArray(entryIds)) return []
     
     const names = []

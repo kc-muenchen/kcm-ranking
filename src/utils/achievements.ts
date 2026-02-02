@@ -24,9 +24,9 @@ export const calculateAchievements = (
   const progress = []
   
   // Tournament wins count
-  const tournamentWins = bestRankingStats.filter(r => r.place === 1).reduce((sum, r) => sum + r.count, 0)
-  const top3Count = bestRankingStats.filter(r => r.place <= 3).reduce((sum, r) => sum + r.count, 0)
-  const top5Count = bestRankingStats.filter(r => r.place <= 5).reduce((sum, r) => sum + r.count, 0)
+  const tournamentWins = bestRankingStats.filter(r => r.place === 1).reduce((sum: any, r: any) => sum + r.count, 0)
+  const top3Count = bestRankingStats.filter(r => r.place <= 3).reduce((sum: any, r: any) => sum + r.count, 0)
+  const top5Count = bestRankingStats.filter(r => r.place <= 5).reduce((sum: any, r: any) => sum + r.count, 0)
   
   // Find achievement unlock dates from tournament dates
   const getUnlockDate = (count, targetCount, rankingStats) => {
@@ -40,7 +40,7 @@ export const calculateAchievements = (
         })
       }
     })
-    sortedWins.sort((a, b) => a - b) // Sort chronologically
+    sortedWins.sort((a: any, b: any) => a - b) // Sort chronologically
     return sortedWins.length >= targetCount ? sortedWins[targetCount - 1] : null
   }
   
@@ -228,7 +228,7 @@ export const calculateAchievements = (
   else progress.push({ ...ACHIEVEMENT_DEFINITIONS.seasonPoints200, current: bestSeasonPoints, next: 200 })
   
   return {
-    unlocked: achievements.sort((a, b) => {
+    unlocked: achievements.sort((a: any, b: any) => {
       // Sort by category, then by tier
       const categoryOrder = { tournament: 1, milestone: 2, performance: 3, trueskill: 4, streak: 5, partnership: 6, season: 7 }
       if (categoryOrder[a.category] !== categoryOrder[b.category]) {
@@ -236,7 +236,7 @@ export const calculateAchievements = (
       }
       return a.tier - b.tier
     }),
-    progress: progress.sort((a, b) => {
+    progress: progress.sort((a: any, b: any) => {
       // Sort by progress percentage (closest to completion first)
       const aProgress = (a.current / a.next) * 100
       const bProgress = (b.current / b.next) * 100
@@ -248,7 +248,7 @@ export const calculateAchievements = (
 /**
  * Calculate season rankings for achievement purposes
  */
-const calculateSeasonRankings = (normalizedPlayerName, tournaments) => {
+const calculateSeasonRankings = (normalizedPlayerName: any, tournaments: any) => {
   // Group tournaments by season (year), excluding season finals and tournaments after season final
   const tournamentsBySeason = new Map()
   const seasonFinalsByYear = new Map()
@@ -288,7 +288,7 @@ const calculateSeasonRankings = (normalizedPlayerName, tournaments) => {
   let bestSeasonPoints = 0
   let bestSeasonRankingPlace = Infinity
   
-  tournamentsBySeason.forEach((seasonTournaments, year) => {
+  tournamentsBySeason.forEach((seasonTournaments: any, year: any) => {
     // Calculate season points for all players in this season
     const playerSeasonStats = new Map()
     
@@ -321,7 +321,7 @@ const calculateSeasonRankings = (normalizedPlayerName, tournaments) => {
       })
       
       // Process each player's tournament result
-      playerFinalPlacement.forEach((playerData, normalizedName) => {
+      playerFinalPlacement.forEach((playerData: any, normalizedName: any) => {
         if (!playerSeasonStats.has(normalizedName)) {
           playerSeasonStats.set(normalizedName, {
             name: normalizedName,
@@ -336,11 +336,11 @@ const calculateSeasonRankings = (normalizedPlayerName, tournaments) => {
     
     // Sort players by season points to determine ranking
     const seasonRanking = Array.from(playerSeasonStats.values())
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         if (b.seasonPoints !== a.seasonPoints) return b.seasonPoints - a.seasonPoints
         return 0
       })
-      .map((player, index) => ({
+      .map((player: any, index: any) => ({
         ...player,
         rankingPlace: index + 1
       }))

@@ -1,7 +1,7 @@
 /**
  * Achievements display component
  */
-export const AchievementsDisplay = ({ achievements }) => {
+export const AchievementsDisplay = ({ achievements  }: { achievements: any }) => {
   const { unlocked, progress } = achievements
   
   return (

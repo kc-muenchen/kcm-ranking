@@ -9,11 +9,11 @@ import { ComparisonTab } from './playerDetail/ComparisonTab'
 import { AchievementsDisplay } from './playerDetail/AchievementsDisplay'
 import './PlayerDetail.css'
 
-function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayers, onBack, onTournamentSelect }) {
+function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayers, onBack, onTournamentSelect  }: { playerName: any, playerHistory: any, tournaments: any, aggregatedPlayers: any, onBack: any, onTournamentSelect: any }) {
   const [selectedComparePlayer, setSelectedComparePlayer] = useState('')
   const [activeTab, setActiveTab] = useState('overview')
 
-  const handleTournamentClick = (tournamentData) => {
+  const handleTournamentClick = (tournamentData: any) => {
     // Find the full tournament object
     const tournament = tournaments.find(t => 
       t.name === tournamentData.tournament || 

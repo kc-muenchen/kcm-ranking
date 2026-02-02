@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { MaterialReactTable } from 'material-react-table'
 import './RankingTable.css'
 
-function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
+function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { players: any, viewMode: any, onPlayerSelect: any, selectedSeason: any }) {
   const [copied, setCopied] = useState(false)
 
-  const getMedalEmoji = (place) => {
+  const getMedalEmoji = (place: any) => {
     if (place === 1) return '🥇'
     if (place === 2) return '🥈'
     if (place === 3) return '🥉'
@@ -14,13 +14,13 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
 
   const exportToWhatsApp = async () => {
     // Sort players by place (ascending) for export, limit to first 25
-    const sortedForExport = [...players].sort((a, b) => a.place - b.place).slice(0, 25)
+    const sortedForExport = [...players].sort((a: any, b: any) => a.place - b.place).slice(0, 25)
     
     // Format as WhatsApp message
     const seasonText = selectedSeason ? ` ${selectedSeason}` : ''
     let message = `🏆 *Season Rankings${seasonText}*\n\n`
     
-    sortedForExport.forEach((player, index) => {
+    sortedForExport.forEach((player: any, index: any) => {
       const place = player.place
       const medal = getMedalEmoji(place)
       const name = player.name
@@ -114,7 +114,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
               <a 
                 href={`?player=${encodeURIComponent(player.name)}`}
                 className="player-name clickable" 
-                onClick={(e) => {
+                onClick={(e: any) => {
                   e.preventDefault()
                   onPlayerSelect && onPlayerSelect(player.name)
                 }}

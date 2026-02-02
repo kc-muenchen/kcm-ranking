@@ -41,7 +41,7 @@ export const QualificationInfoBox = () => {
 /**
  * Season final banner component
  */
-export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
+export const SeasonFinalBanner = ({ seasonFinal, onViewFinal  }: { seasonFinal: any, onViewFinal: any }) => {
   if (!seasonFinal) return null
 
   // Get top 3 teams from elimination standings
@@ -64,7 +64,7 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
     
     // Convert to team format (sorted by place)
     Array.from(playersByPlace.entries())
-      .sort((a, b) => a[0] - b[0]) // Sort by place
+      .sort((a: any, b: any) => a[0] - b[0]) // Sort by place
       .forEach(([place, players]) => {
         topTeams.push({
           place,
@@ -73,7 +73,7 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
       })
   }
   
-  const getMedalEmoji = (place) => {
+  const getMedalEmoji = (place: any) => {
     if (place === 1) return '🥇'
     if (place === 2) return '🥈'
     if (place === 3) return '🥉'
@@ -110,7 +110,7 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
                     <span className="podium-rank-number">{team.place}</span>
                   </div>
                   <div className="podium-team-name">
-                    {team.players.map((player, idx) => (
+                    {team.players.map((player: any, idx: any) => (
                       <span key={idx} className="team-player">
                         {player}
                       </span>
@@ -144,12 +144,11 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }) => {
 /**
  * Main season view component
  */
-export const SeasonView = ({ 
-  tournaments, 
+export const SeasonView = ({ tournaments, 
   selectedSeason, 
   seasonFinal, 
   onViewFinal 
-}) => {
+ }: { tournaments: any, selectedSeason: any, seasonFinal: any, onViewFinal: any }) => {
   return (
     <>
       <QualificationInfoBox />

@@ -1,7 +1,7 @@
 /**
  * Player header component with name and summary stats
  */
-export const PlayerHeader = ({ playerName, currentSkill, skillChange, totalMatches, winRate, wins, losses }) => {
+export const PlayerHeader = ({ playerName, currentSkill, skillChange, totalMatches, winRate, wins, losses  }: { playerName: any, currentSkill: any, skillChange: any, totalMatches: any, winRate: any, wins: any, losses: any }) => {
   return (
     <div className="player-header">
       <h1 className="player-title">{playerName}</h1>

@@ -3,8 +3,7 @@ import { useEffect, useCallback, useRef } from 'react'
 /**
  * Custom hook to manage URL state and browser history
  */
-export const useURLState = ({
-  viewMode,
+export const useURLState = ({ viewMode,
   selectedTournament,
   selectedPlayer,
   selectedSeason,
@@ -15,10 +14,10 @@ export const useURLState = ({
   onPlayerChange,
   onSeasonChange,
   onFiltersChange
-}) => {
+ }: { viewMode: any, selectedTournament: any, selectedPlayer: any, selectedSeason: any, showFinaleQualifiers: any, tournaments: any, onViewModeChange: any, onTournamentChange: any, onPlayerChange: any, onSeasonChange: any, onFiltersChange: any }) => {
   const initializedRef = useRef(false)
   // Helper function to update URL
-  const updateURL = useCallback((updates) => {
+  const updateURL = useCallback((updates: any) => {
     const params = new URLSearchParams(window.location.search)
     
     if (updates.view !== undefined) {
@@ -59,7 +58,7 @@ export const useURLState = ({
   }, [viewMode, selectedTournament, selectedPlayer, selectedSeason, showFinaleQualifiers])
 
   useEffect(() => {
-    const handlePopState = (event) => {
+    const handlePopState = (event: any) => {
       if (event.state) {
         // Browser went back/forward - the URL is already updated by the browser
         // We just need to sync our app state to match the URL

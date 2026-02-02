@@ -1,12 +1,12 @@
 import './EliminationBracket.css'
 
-function EliminationBracket({ eliminationData }) {
+function EliminationBracket({ eliminationData  }: { eliminationData: any }) {
   if (!eliminationData || eliminationData.length === 0) {
     return null
   }
 
   // Convert technical group names to readable names
-  const getReadableLevelName = (name, levelIndex) => {
+  const getReadableLevelName = (name: any, levelIndex: any) => {
     if (!name) {
       // Fallback to index-based names if no name provided
       return levelIndex === 0 ? 'Quarterfinal' : 
@@ -45,7 +45,7 @@ function EliminationBracket({ eliminationData }) {
     return name
   }
 
-  const renderMatch = (match) => {
+  const renderMatch = (match: any) => {
     if (!match || !match.team1 || !match.team2) return null
 
     const team1Won = match.result && match.result[0] > match.result[1]
@@ -72,12 +72,12 @@ function EliminationBracket({ eliminationData }) {
         <p className="bracket-subtitle">Finals and Playoffs</p>
       </div>
 
-      {eliminationData.map((elimination, index) => (
+      {eliminationData.map((elimination: any, index: any) => (
         <div key={`elimination-${index}`} className="elimination-section">
 
           <div className="bracket-container">
             {/* Render levels (rounds) */}
-            {elimination.levels && elimination.levels.map((level, levelIndex) => {
+            {elimination.levels && elimination.levels.map((level: any, levelIndex: any) => {
             // Try multiple sources for the level name (group.name from export might be in different fields)
               const rawName = level.name || level.groupName || level.group?.name || null
               const levelName = getReadableLevelName(rawName, levelIndex)
@@ -109,8 +109,8 @@ function EliminationBracket({ eliminationData }) {
               <div className="podium">
                 {elimination.standings
                   .filter(player => player.stats.finalResult && player.stats.place <= 4)
-                  .sort((a, b) => a.stats.place - b.stats.place)
-                  .map((player) => (
+                  .sort((a: any, b: any) => a.stats.place - b.stats.place)
+                  .map((player: any) => (
                     <div key={player._id} className={`podium-place place-${player.stats.place}`}>
                       <div className="podium-rank">
                         {player.stats.place === 1 && '🥇'}

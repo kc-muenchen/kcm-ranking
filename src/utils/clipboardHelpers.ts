@@ -38,7 +38,7 @@ export function copySeasonTop25(showPlace = true) {
   // Format for WhatsApp with medal emojis for top 3
   let whatsappText = '🏆 *Top 25 Season Ranking* 🏆\n\n';
   
-  players.forEach((name, index) => {
+  players.forEach((name: any, index: any) => {
     const position = index + 1;
     let prefix = '';
     
@@ -145,7 +145,7 @@ export function copySeasonPlayers(start = 1, end = 25, showPlace = true) {
   // Format for WhatsApp
   let whatsappText = `🏆 *Season Ranking ${start}-${start + players.length - 1}* 🏆\n\n`;
   
-  players.forEach((name, index) => {
+  players.forEach((name: any, index: any) => {
     const position = start + index;
     let prefix = '';
     
@@ -270,7 +270,7 @@ export function copyPlayerStatsCSV(players) {
   let csvContent = 'Name,TrueSkill,Mu,Sigma,Matches\n';
 
   // Sort by TrueSkill descending (same as ranking)
-  const sortedPlayers = [...players].sort((a, b) => b.trueSkill - a.trueSkill);
+  const sortedPlayers = [...players].sort((a: any, b: any) => b.trueSkill - a.trueSkill);
 
   sortedPlayers.forEach(player => {
     const name = `"${player.name.replace(/"/g, '""')}"`; // Escape quotes for CSV

@@ -16,7 +16,7 @@ const PLAYER_COLORS = [
 /**
  * TrueSkill evolution chart component with multi-player support
  */
-export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) => {
+export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName  }: { playerHistories: any, allPlayers: any, mainPlayerName: any }) => {
   const [selectedPlayers, setSelectedPlayers] = useState(() => {
     // Start with the main player if provided, otherwise first player with history
     if (mainPlayerName && playerHistories.has(mainPlayerName)) {
@@ -54,21 +54,21 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
   allHistories.forEach(history => {
     history.forEach(entry => allDates.add(entry.date))
   })
-  const sortedDates = Array.from(allDates).sort((a, b) => a - b)
+  const sortedDates = Array.from(allDates).sort((a: any, b: any) => a - b)
   const dateRange = sortedDates.length > 1 ? sortedDates[sortedDates.length - 1] - sortedDates[0] : 1
   
   // Create points for each selected player
-  const playerLines = selectedPlayers.map((playerName, playerIndex) => {
+  const playerLines = selectedPlayers.map((playerName: any, playerIndex: any) => {
     const history = playerHistories.get(playerName) || []
     if (history.length === 0) return null
 
-    const points = history.map((entry) => {
+    const points = history.map((entry: any) => {
       const x = padding + ((entry.date - sortedDates[0]) / dateRange) * chartWidth
       const y = padding + chartHeight - ((entry.skill - minSkill) / skillRange) * chartHeight
       return { x, y, skill: entry.skill, index: entry.matchIndex, date: entry.date }
-    }).sort((a, b) => a.date - b.date) // Ensure points are sorted by date
+    }).sort((a: any, b: any) => a.date - b.date) // Ensure points are sorted by date
 
-    const pathD = points.map((point, index) => 
+    const pathD = points.map((point: any, index: any) => 
       `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
     ).join(' ')
 
@@ -82,7 +82,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
 
   // Create grid lines
   const numGridLines = 6
-  const gridLines = Array.from({ length: numGridLines }, (_, i) => {
+  const gridLines = Array.from({ length: numGridLines }, (_: any, i: any) => {
     const value = minSkill + (skillRange * i / (numGridLines - 1))
     const y = padding + chartHeight - ((value - minSkill) / skillRange) * chartHeight
     return { y, value }
@@ -90,7 +90,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
 
   // Create date labels for x-axis
   const numDateLabels = 6
-  const dateLabels = Array.from({ length: numDateLabels }, (_, i) => {
+  const dateLabels = Array.from({ length: numDateLabels }, (_: any, i: any) => {
     const dateValue = sortedDates[0] + (dateRange * i / (numDateLabels - 1))
     const x = padding + (i / (numDateLabels - 1)) * chartWidth
     const date = new Date(dateValue)
@@ -108,13 +108,13 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
     return { x, date: dateValue, label: dateFormat }
   })
 
-  const handleAddPlayer = (playerName) => {
+  const handleAddPlayer = (playerName: any) => {
     if (!selectedPlayers.includes(playerName)) {
       setSelectedPlayers([...selectedPlayers, playerName])
     }
   }
 
-  const handleRemovePlayer = (playerName) => {
+  const handleRemovePlayer = (playerName: any) => {
     if (selectedPlayers.length > 1) {
       setSelectedPlayers(selectedPlayers.filter(p => p !== playerName))
     }
@@ -130,7 +130,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
       {/* Player selector */}
       <div className="chart-player-selector">
         <div className="selected-players">
-          {selectedPlayers.map((playerName, index) => (
+          {selectedPlayers.map((playerName: any, index: any) => (
             <div key={playerName} className="player-tag" style={{ borderColor: PLAYER_COLORS[index % PLAYER_COLORS.length] }}>
               <span style={{ color: PLAYER_COLORS[index % PLAYER_COLORS.length] }}>
                 {playerName}
@@ -153,7 +153,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
               .filter(name => !selectedPlayers.includes(name))
               .map(name => ({ name }))}
             value=""
-            onChange={(value) => {
+            onChange={(value: any) => {
               if (value) {
                 handleAddPlayer(value)
               }
@@ -170,7 +170,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
       <div className="trueskill-chart">
         <svg width={width} height={height} className="chart-svg">
           {/* Grid lines */}
-          {gridLines.map((line, i) => (
+          {gridLines.map((line: any, i: any) => (
             <g key={i}>
               <line
                 x1={padding}
@@ -203,7 +203,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
           />
           
           {/* Date labels on x-axis */}
-          {dateLabels.map((label, i) => (
+          {dateLabels.map((label: any, i: any) => (
             <g key={i}>
               <line
                 x1={label.x}
@@ -248,7 +248,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName }) 
                 opacity="0.9"
               />
               {/* Data points */}
-              {points.map((point, index) => (
+              {points.map((point: any, index: any) => (
                 <circle
                   key={index}
                   cx={point.x}

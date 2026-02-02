@@ -1,7 +1,7 @@
 /**
  * Tournaments tab component showing tournament participation list
  */
-export const TournamentsTab = ({ tournamentList }) => {
+export const TournamentsTab = ({ tournamentList  }: { tournamentList: any }) => {
   return (
     <div className="tab-panel">
       {/* Tournament Participation List */}
@@ -10,7 +10,7 @@ export const TournamentsTab = ({ tournamentList }) => {
         <p className="section-subtitle">Participated in {tournamentList.length} tournament{tournamentList.length !== 1 ? 's' : ''}</p>
         
         <div className="tournament-grid">
-          {tournamentList.map((tournament, index) => (
+          {tournamentList.map((tournament: any, index: any) => (
             <div key={index} className="tournament-card">
               <div className="tournament-card-header">
                 <span className="tournament-name">{tournament.name}</span>

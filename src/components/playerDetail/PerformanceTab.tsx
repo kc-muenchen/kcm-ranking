@@ -3,7 +3,7 @@ import { TrueSkillChart } from './TrueSkillChart'
 /**
  * Performance tab component showing TrueSkill chart and match history
  */
-export const PerformanceTab = ({ history, playerName, matchHistory, initialSkill, playerHistory, allPlayers }) => {
+export const PerformanceTab = ({ history, playerName, matchHistory, initialSkill, playerHistory, allPlayers  }: { history: any, playerName: any, matchHistory: any, initialSkill: any, playerHistory: any, allPlayers: any }) => {
   return (
     <div className="tab-panel">
       {/* TrueSkill Evolution Chart */}
@@ -22,7 +22,7 @@ export const PerformanceTab = ({ history, playerName, matchHistory, initialSkill
         <p className="section-subtitle">Showing {matchHistory.length} matches</p>
         
         <div className="match-list">
-          {matchHistory.map((entry, index) => {
+          {matchHistory.map((entry: any, index: any) => {
             const { match } = entry
             const playerTeam = match.team1Players.includes(playerName) ? 'team1' : 'team2'
             const teammates = playerTeam === 'team1' ? match.team1Players : match.team2Players

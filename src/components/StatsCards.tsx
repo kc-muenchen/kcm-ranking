@@ -1,11 +1,11 @@
 import './StatsCards.css'
 
-function StatsCards({ players, viewMode, tournaments }) {
+function StatsCards({ players, viewMode, tournaments  }: { players: any, viewMode: any, tournaments: any }) {
   const totalPlayers = players.length
 
   // Count unique matches from tournament data
   // Matches are nested: qualifying[0].rounds[].matches and eliminations[].levels[].matches
-  const totalMatches = tournaments?.reduce((sum, tournament) => {
+  const totalMatches = tournaments?.reduce((sum: any, tournament: any) => {
     let matchCount = 0
     
     // Count qualifying matches (nested in rounds)
@@ -32,12 +32,12 @@ function StatsCards({ players, viewMode, tournaments }) {
     
     return sum + matchCount
   }, 0) || 0
-  const topScorer = players.reduce((max, p) => 
+  const topScorer = players.reduce((max: any, p: any) => 
     p.goalsFor > max.goalsFor ? p : max
   , players[0])
   const bestWinRate = players
     .filter(p => p.matches >= 3)
-    .reduce((max, p) => 
+    .reduce((max: any, p: any) => 
       parseFloat(p.winRate) > parseFloat(max.winRate) ? p : max
     , players[0])
 
@@ -99,7 +99,7 @@ function StatsCards({ players, viewMode, tournaments }) {
 
   return (
     <div className="stats-cards">
-      {cards.map((card, index) => (
+      {cards.map((card: any, index: any) => (
         <div key={index} className={`stat-card ${card.color}`}>
           <div className="stat-icon">{card.icon}</div>
           <div className="stat-content">

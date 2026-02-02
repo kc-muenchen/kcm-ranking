@@ -53,7 +53,7 @@ function App() {
   const [showFinaleQualifiers, setShowFinaleQualifiers] = useState(false)
 
   // Processing functions - defined before useEffects that use them
-  const processPlayers = (tournamentData) => {
+  const processPlayers = (tournamentData: any) => {
     const processed = processTournamentPlayers(tournamentData)
     setPlayers(processed)
   }
@@ -70,7 +70,7 @@ function App() {
     setPlayerHistory(history)
   }, [tournaments])
 
-  const processSeasonPlayersData = useCallback(async (loadedTournaments, seasonYear) => {
+  const processSeasonPlayersData = useCallback(async (loadedTournaments: any, seasonYear: any) => {
     const seasonFinal = getSeasonFinal(loadedTournaments, seasonYear)
     const { players: season, playerHistory: history } = await processSeasonPlayers(loadedTournaments, seasonYear, seasonFinal)
     setSeasonPlayers(season)
@@ -133,19 +133,19 @@ function App() {
     tournaments,
     // These callbacks are ONLY called by popstate (browser back/forward)
     // They should ONLY update state, NOT call updateURL (which would push new history)
-    onViewModeChange: (newViewMode) => {
+    onViewModeChange: (newViewMode: any) => {
       setViewMode(newViewMode)
     },
-    onTournamentChange: (tournament) => {
+    onTournamentChange: (tournament: any) => {
       setSelectedTournament(tournament)
     },
-    onPlayerChange: (playerName) => {
+    onPlayerChange: (playerName: any) => {
       setSelectedPlayer(playerName)
     },
-    onSeasonChange: (season) => {
+    onSeasonChange: (season: any) => {
       setSelectedSeason(season)
     },
-    onFiltersChange: (filters) => {
+    onFiltersChange: (filters: any) => {
       if (filters.showFinaleQualifiers !== undefined) {
         setShowFinaleQualifiers(filters.showFinaleQualifiers)
       }
@@ -153,18 +153,18 @@ function App() {
   })
 
   // Event handlers
-  const handleTournamentChange = (tournament) => {
+  const handleTournamentChange = (tournament: any) => {
     setSelectedTournament(tournament)
     updateURL({ tournament: tournament.id, player: null })
   }
 
-  const handleSeasonChange = (season) => {
+  const handleSeasonChange = (season: any) => {
     setSelectedSeason(season)
     processSeasonPlayersData(tournaments, season)
     updateURL({ season, player: null })
   }
 
-  const handlePlayerSelect = (playerName) => {
+  const handlePlayerSelect = (playerName: any) => {
     // Set viewMode to 'player' to indicate we want to view player details
     // Update URL first with explicit values to avoid closure issues
     // Clear tournament and season when viewing player
@@ -187,17 +187,17 @@ function App() {
     updateURL({ player: null, view: 'overall' })
   }
 
-  const handleFinaleQualifiersToggle = (enabled) => {
+  const handleFinaleQualifiersToggle = (enabled: any) => {
     setShowFinaleQualifiers(enabled)
     updateURL({ finaleQualifiers: enabled })
   }
 
-  const handleViewModeChange = (newViewMode) => {
+  const handleViewModeChange = (newViewMode: any) => {
     setViewMode(newViewMode)
     updateURL({ view: newViewMode, player: null })
   }
 
-  const handleViewSeasonFinal = (seasonFinal) => {
+  const handleViewSeasonFinal = (seasonFinal: any) => {
     setViewMode('tournament')
     setSelectedTournament(seasonFinal)
     updateURL({ 
@@ -254,7 +254,7 @@ function App() {
           tournaments={tournaments}
           aggregatedPlayers={aggregatedPlayers}
           onBack={handleBackFromPlayer}
-          onTournamentSelect={(tournament) => {
+          onTournamentSelect={(tournament: any) => {
             // Navigate to tournament with clean URL (no player param)
             // Browser history will naturally restore player view on back button
             setViewMode('tournament')
