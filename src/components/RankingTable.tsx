@@ -142,7 +142,6 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason }) {
           header: viewMode === 'overall' ? 'Total Points' : 'Season Points',
           size: 50,
           minSize: 80,
-          minSize: 80,
           Cell: ({ cell }) => (
             <div className="season-points-cell">
               <span className="season-points-value" title={`Season Points: ${cell.getValue()}`}>
