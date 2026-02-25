@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { API_ENDPOINTS, apiFetch } from '../config/api'
 import { preloadAliases } from '../config/playerAliases'
 import { convertNewFormatToOld } from '../utils/format-converter'
-import type { Tournament, APITournament, TournamentData } from '../types/tournament'
+import type { Tournament, APITournament } from '../types/tournament'
 
 interface UseTournamentsReturn {
   tournaments: Tournament[]
@@ -33,7 +33,7 @@ export const useTournaments = (): UseTournamentsReturn => {
       
       // Transform API response to match the expected format
       const loadedTournaments = tournamentsData
-        .map(tournament => {
+        .map((tournament: APITournament) => {
           // Convert new format to old format if needed (safety net in case backend didn't convert)
           const convertedData = tournament.rawData ? convertNewFormatToOld(tournament.rawData) : null
           
@@ -46,7 +46,7 @@ export const useTournaments = (): UseTournamentsReturn => {
             data: convertedData || tournament.rawData
           }
         })
-        .sort((a: any, b: any) => new Date(b.date) - new Date(a.date))
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
       console.log(`Loaded ${loadedTournaments.length} tournaments from API`)
       
@@ -69,7 +69,7 @@ export const useTournaments = (): UseTournamentsReturn => {
       const tournamentModules = import.meta.glob('../dummy_data/*.json')
       
       const loadedTournaments = await Promise.all(
-        Object.entries(tournamentModules).map(async ([path, importFn]) => {
+        Object.entries(tournamentModules).map(async ([path, importFn]: [string, any]) => {
           try {
             const module = await importFn()
             const data = module.default
@@ -95,8 +95,8 @@ export const useTournaments = (): UseTournamentsReturn => {
 
       // Filter out any failed loads and sort by date (most recent first)
       const validTournaments = loadedTournaments
-        .filter(t => t !== null)
-        .sort((a: any, b: any) => new Date(b.date) - new Date(a.date))
+        .filter((t): t is Tournament => t !== null)
+        .sort((a: Tournament, b: Tournament) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
       console.log(`Loaded ${validTournaments.length} tournaments from files`)
       

@@ -13,17 +13,17 @@ import { calculateAchievements } from '../utils/achievements'
  * Custom hook to calculate all player statistics
  */
 export const usePlayerStats = (
-  playerName,
-  playerHistory,
-  tournaments,
-  aggregatedPlayers,
-  selectedComparePlayer
+  playerName: string,
+  playerHistory: Map<string, any[]>,
+  tournaments: any[],
+  aggregatedPlayers: any[],
+  selectedComparePlayer: string | null
 ) => {
   const history = playerHistory.get(playerName) || []
   
   // Filter out the initial rating entry and reverse to show most recent first
   const matchHistory = useMemo(() => {
-    return history.filter(entry => entry.matchIndex >= 0).reverse()
+    return history.filter((entry: any) => entry.matchIndex >= 0).reverse()
   }, [history])
   
   const tournamentList = useMemo(() => {
@@ -65,7 +65,7 @@ export const usePlayerStats = (
   // Calculate summary stats
   const summaryStats = useMemo(() => {
     const totalMatches = matchHistory.length
-    const wins = matchHistory.filter(entry => entry.match.won).length
+    const wins = matchHistory.filter((entry: any) => entry.match.won).length
     const losses = totalMatches - wins
     const winRate = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(1) : 0
     const currentSkill = history.length > 0 ? history[history.length - 1].skill : 0
@@ -85,7 +85,7 @@ export const usePlayerStats = (
   
   // Find player's aggregated stats
   const playerAggregated = useMemo(() => {
-    return aggregatedPlayers.find(p => p.name === playerName)
+    return aggregatedPlayers.find((p: any) => p.name === playerName)
   }, [aggregatedPlayers, playerName])
   
   // Calculate statistics
@@ -144,7 +144,7 @@ export const usePlayerStats = (
   // Get list of all players for comparison dropdown
   const allPlayers = useMemo(() => {
     return aggregatedPlayers
-      .filter(p => p.name !== playerName)
+      .filter((p: any) => p.name !== playerName)
       .sort((a: any, b: any) => a.name.localeCompare(b.name))
   }, [aggregatedPlayers, playerName])
   

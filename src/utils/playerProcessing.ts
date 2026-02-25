@@ -9,11 +9,11 @@ import { Rating } from 'ts-trueskill'
  * Calculate Buchholz and Sonneborn-Berger tie-breakers from match data
  * Only uses qualifying matches (excludes knockout/elimination stages)
  */
-function calculateTieBreakers(tournamentData, playerStatsMap) {
+function calculateTieBreakers(tournamentData: any, playerStatsMap: Map<string, any>) {
   // Create a map from player ID to normalized name for lookup
   const playerIdToName = new Map()
   if (tournamentData.qualifying && tournamentData.qualifying[0] && tournamentData.qualifying[0].standings) {
-    tournamentData.qualifying[0].standings.forEach(player => {
+    tournamentData.qualifying[0].standings.forEach((player: any) => {
       if (!player.deactivated && !player.removed) {
         const normalizedName = normalizePlayerNameSync(player.name)
         playerIdToName.set(player._id, normalizedName)
@@ -27,16 +27,16 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
   
   // Process qualifying matches only (exclude elimination/knockout stages)
   if (tournamentData.qualifying && tournamentData.qualifying[0] && tournamentData.qualifying[0].rounds) {
-    tournamentData.qualifying[0].rounds.forEach(round => {
+    tournamentData.qualifying[0].rounds.forEach((round: any) => {
       if (!round.matches) return
       
-      round.matches.forEach(match => {
+      round.matches.forEach((match: any) => {
         if (!match.valid || match.skipped || !match.result || !match.team1 || !match.team2) return
         if (!match.team1.players || !match.team2.players) return
         
         // Get player names - handle both old format (IDs) and new format (names already present)
         const team1PlayerNames = match.team1.players
-          .map(p => {
+          .map((p: any) => {
             // If name is already present (converted format), use it directly
             if (p.name) {
               return normalizePlayerNameSync(p.name)
@@ -47,7 +47,7 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
           })
           .filter(Boolean)
         const team2PlayerNames = match.team2.players
-          .map(p => {
+          .map((p: any) => {
             // If name is already present (converted format), use it directly
             if (p.name) {
               return normalizePlayerNameSync(p.name)
@@ -75,23 +75,23 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
         }
         
         // Record opponents and results for each player (by name)
-        team1PlayerNames.forEach(playerName => {
+        team1PlayerNames.forEach((playerName: any) => {
           if (!playerOpponents.has(playerName)) {
             playerOpponents.set(playerName, new Set())
             playerResults.set(playerName, new Map())
           }
-          team2PlayerNames.forEach(opponentName => {
+          team2PlayerNames.forEach((opponentName: any) => {
             playerOpponents.get(playerName).add(opponentName)
             playerResults.get(playerName).set(opponentName, team1Result)
           })
         })
         
-        team2PlayerNames.forEach(playerName => {
+        team2PlayerNames.forEach((playerName: any) => {
           if (!playerOpponents.has(playerName)) {
             playerOpponents.set(playerName, new Set())
             playerResults.set(playerName, new Map())
           }
-          team1PlayerNames.forEach(opponentName => {
+          team1PlayerNames.forEach((opponentName: any) => {
             playerOpponents.get(playerName).add(opponentName)
             playerResults.get(playerName).set(opponentName, team2Result)
           })
@@ -111,7 +111,7 @@ function calculateTieBreakers(tournamentData, playerStatsMap) {
     const opponents = playerOpponents.get(playerName) || new Set()
     const results = playerResults.get(playerName) || new Map()
     
-    opponents.forEach(opponentName => {
+    opponents.forEach((opponentName: any) => {
       const opponent = playerStatsMap.get(opponentName)
       if (opponent) {
         const opponentPoints = opponent.points || 0
@@ -144,10 +144,10 @@ export const processTournamentPlayers = (tournamentData: any) => {
   const playerStatsMapLowercase = new Map()
   
   // Process qualifying round
-  qualifyingStandings.forEach(player => {
+  qualifyingStandings.forEach((player: any) => {
     if (player.deactivated || player.removed) return
     
-    const normalizedName = normalizePlayerNameSync(player.name)
+    const normalizedName = normalizePlayerNameSync(String(player.name ?? ''))
     const playerData = {
       id: player._id,
       name: normalizedName,
@@ -179,10 +179,10 @@ export const processTournamentPlayers = (tournamentData: any) => {
   
   // Process elimination rounds if they exist
   if (tournamentData.eliminations && tournamentData.eliminations.length > 0) {
-    tournamentData.eliminations.forEach(elimination => {
+    tournamentData.eliminations.forEach((elimination: any) => {
       const eliminationStandings = elimination.standings || []
       
-      eliminationStandings.forEach(player => {
+      eliminationStandings.forEach((player: any) => {
         if (player.deactivated || player.removed) return
         
         const playerName = player.name
@@ -196,16 +196,16 @@ export const processTournamentPlayers = (tournamentData: any) => {
           // Split team name into individual players
           let playerNames = []
           if (playerName.includes(' / ')) {
-            playerNames = playerName.split(' / ').map(n => n.trim())
+            playerNames = playerName.split(' / ').map((n: any) => n.trim())
           } else if (playerName.includes(' | ')) {
-            playerNames = playerName.split(' | ').map(n => n.trim())
+            playerNames = playerName.split(' | ').map((n: any) => n.trim())
           } else if (playerName.includes(' & ')) {
-            playerNames = playerName.split(' & ').map(n => n.trim())
+            playerNames = playerName.split(' & ').map((n: any) => n.trim())
           }
           
           // Set elimination place for all players in the team
-          playerNames.forEach(name => {
-            const normalizedName = normalizePlayerNameSync(name)
+          playerNames.forEach((name: any) => {
+            const normalizedName = normalizePlayerNameSync(String(name ?? ''))
             let existingPlayer = playerStatsMap.get(normalizedName)
             
             // Fallback: try case-insensitive lookup if exact match not found
@@ -261,7 +261,7 @@ export const processTournamentPlayers = (tournamentData: any) => {
           })
         } else {
           // Single player (not a team)
-          const normalizedName = normalizePlayerNameSync(playerName)
+          const normalizedName = normalizePlayerNameSync(String(playerName ?? ''))
           let existingPlayer = playerStatsMap.get(normalizedName)
           
           // Fallback: try case-insensitive lookup if exact match not found
@@ -411,7 +411,7 @@ const getPlayerFinalPlacements = (tournament: any) => {
   const playerData = new Map()
   
   // First, add all qualifying placements
-  qualifyingStandings.forEach(player => {
+  qualifyingStandings.forEach((player: any) => {
     if (!player.removed && player.stats.matches > 0) {
       const normalizedName = normalizePlayerNameSync(player.name)
       playerData.set(normalizedName, {
@@ -425,7 +425,7 @@ const getPlayerFinalPlacements = (tournament: any) => {
   
   // Override with elimination placements (these are the final tournament results)
   // Also ADD elimination stats to qualifying stats (not replace them)
-  eliminationStandings.forEach(player => {
+  eliminationStandings.forEach((player: any) => {
     if (!player.removed) {
       const playerName = player.name
       const eliminationPlace = player.stats.place
@@ -438,17 +438,17 @@ const getPlayerFinalPlacements = (tournament: any) => {
         // Split team name into individual players
         let playerNames = []
         if (playerName.includes(' / ')) {
-          playerNames = playerName.split(' / ').map(n => n.trim())
+          playerNames = playerName.split(' / ').map((n: any) => n.trim())
         } else if (playerName.includes(' | ')) {
-          playerNames = playerName.split(' | ').map(n => n.trim())
+          playerNames = playerName.split(' | ').map((n: any) => n.trim())
         } else if (playerName.includes(' & ')) {
-          playerNames = playerName.split(' & ').map(n => n.trim())
+          playerNames = playerName.split(' & ').map((n: any) => n.trim())
         }
         
         // Set elimination place for all players in the team
         // Track if we've added stats to avoid double-counting
         let statsAdded = false
-        playerNames.forEach((name: any, index: any) => {
+        playerNames.forEach((name: any) => {
           const normalizedName = normalizePlayerNameSync(name)
           const existing = playerData.get(normalizedName)
           
@@ -528,10 +528,10 @@ const getPlayerFinalPlacements = (tournament: any) => {
   // Calculate combined ranking (finalPlace) for season points
   // Knockout players get ranks 1-N, qualifying-only players get ranks (N+1)+
   const allPlayerEntries = Array.from(playerData.entries())
-  const knockoutPlayers = allPlayerEntries.filter(([name, data]) => 
+  const knockoutPlayers = allPlayerEntries.filter(([, data]) => 
     data.eliminationPlace !== null && data.eliminationPlace !== undefined
   )
-  const qualifyingOnlyPlayers = allPlayerEntries.filter(([name, data]) => 
+  const qualifyingOnlyPlayers = allPlayerEntries.filter(([, data]) => 
     data.eliminationPlace === null || data.eliminationPlace === undefined
   )
   const numKnockoutPlayers = knockoutPlayers.length
@@ -545,7 +545,7 @@ const getPlayerFinalPlacements = (tournament: any) => {
   
   // Create a map for quick lookup: player name -> index in sorted qualifying-only list
   const qualifyingOnlyIndexMap = new Map()
-  sortedQualifyingOnly.forEach(([name, data], index) => {
+  sortedQualifyingOnly.forEach(([name], index) => {
     qualifyingOnlyIndexMap.set(name, index)
   })
   
@@ -578,7 +578,7 @@ const getPlayerFinalPlacements = (tournament: any) => {
 const aggregatePlayerStats = (tournaments: any) => {
   const playerStats = new Map()
 
-  tournaments.forEach(tournament => {
+  tournaments.forEach((tournament: any) => {
     const playerFinalPlacement = getPlayerFinalPlacements(tournament)
     
     // Process each player's tournament result
@@ -709,13 +709,13 @@ async function fetchTrueSkillRatings() {
     
     // Convert ratings object to Map of Rating objects
     const playerRatings = new Map()
-    Object.entries(ratings).forEach(([playerName, ratingData]) => {
+    Object.entries(ratings as Record<string, any>).forEach(([playerName, ratingData]) => {
       playerRatings.set(playerName, new Rating(ratingData.mu, ratingData.sigma))
     })
     
     // Convert history object to Map
     const playerHistory = new Map()
-    Object.entries(history).forEach(([playerName, historyArray]) => {
+    Object.entries(history as Record<string, any[]>).forEach(([playerName, historyArray]) => {
       // Convert rating objects back to Rating instances
       const convertedHistory = historyArray.map(entry => ({
         ...entry,
@@ -756,9 +756,9 @@ export const processAggregatedPlayers = async (tournaments: any) => {
  * @param {Object} seasonFinal - Season final tournament (optional)
  * @returns {Promise<Object>} Object with players array
  */
-export const processSeasonPlayers = async (tournaments, seasonYear, seasonFinal) => {
+export const processSeasonPlayers = async (tournaments: any[], seasonYear: string, seasonFinal: any) => {
   // Filter tournaments by configured season window, exclude season finals, and exclude tournaments after season final date
-  const seasonTournaments = tournaments.filter(tournament => {
+  const seasonTournaments = tournaments.filter((tournament: any) => {
     const tournamentDate = new Date(tournament.date)
     const tournamentSeason = getSeasonYearForDate(tournamentDate)
     if (tournamentSeason !== seasonYear) return false

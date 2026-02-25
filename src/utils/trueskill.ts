@@ -1,4 +1,4 @@
-import { Rating, TrueSkill } from 'ts-trueskill'
+import { TrueSkill } from 'ts-trueskill'
 import { normalizePlayerNameSync } from '../config/playerAliases'
 
 /**
@@ -23,15 +23,15 @@ const trueskill = new TrueSkill(TRUESKILL_CONFIG.mu, TRUESKILL_CONFIG.sigma, TRU
  * @param {Array} tournaments - Array of tournament objects with match data
  * @returns {Object} Object with playerRatings Map and playerHistory Map
  */
-export function calculateTrueSkillRatings(tournaments) {
+export function calculateTrueSkillRatings(tournaments: any[]) {
   // Initialize player ratings with custom config
-  const playerRatings = new Map()
-  const playerHistory = new Map() // Track rating history per player
+  const playerRatings = new Map<string, any>()
+  const playerHistory = new Map<string, any[]>() // Track rating history per player
   
   // Collect all matches across all tournaments with timestamps
-  const allMatches = []
+  const allMatches: any[] = []
   
-  tournaments.forEach(tournament => {
+  tournaments.forEach((tournament: any) => {
     const tournamentDate = new Date(tournament.date)
     
     // Process qualifying rounds
@@ -39,14 +39,14 @@ export function calculateTrueSkillRatings(tournaments) {
       const qualifying = tournament.data.qualifying[0]
       
       if (qualifying.rounds) {
-        qualifying.rounds.forEach(round => {
+        qualifying.rounds.forEach((round: any) => {
           if (round.matches) {
-            round.matches.forEach(match => {
+            round.matches.forEach((match: any) => {
               if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
                 allMatches.push({
                   date: match.timeStart || tournamentDate.getTime(),
-                  team1Players: match.team1.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
-                  team2Players: match.team2.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
+                  team1Players: match.team1.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
+                  team2Players: match.team2.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
                   team1Score: match.result[0],
                   team2Score: match.result[1]
                 })
@@ -59,17 +59,17 @@ export function calculateTrueSkillRatings(tournaments) {
     
     // Process elimination rounds
     if (tournament.data.eliminations) {
-      tournament.data.eliminations.forEach(elimination => {
+      tournament.data.eliminations.forEach((elimination: any) => {
         // Process all levels (rounds)
         if (elimination.levels) {
-          elimination.levels.forEach(level => {
+          elimination.levels.forEach((level: any) => {
             if (level.matches) {
-              level.matches.forEach(match => {
+              level.matches.forEach((match: any) => {
                 if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
                   allMatches.push({
                     date: match.timeStart || tournamentDate.getTime(),
-                    team1Players: match.team1.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
-                    team2Players: match.team2.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
+                    team1Players: match.team1.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
+                    team2Players: match.team2.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
                     team1Score: match.result[0],
                     team2Score: match.result[1]
                   })
@@ -81,12 +81,12 @@ export function calculateTrueSkillRatings(tournaments) {
         
         // Process third place match
         if (elimination.third && elimination.third.matches) {
-          elimination.third.matches.forEach(match => {
+          elimination.third.matches.forEach((match: any) => {
             if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
               allMatches.push({
                 date: match.timeStart || tournamentDate.getTime(),
-                team1Players: match.team1.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
-                team2Players: match.team2.players.map(p => normalizePlayerNameSync(p.name)).filter(name => name),
+                team1Players: match.team1.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
+                team2Players: match.team2.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
                 team1Score: match.result[0],
                 team2Score: match.result[1]
               })
@@ -101,8 +101,8 @@ export function calculateTrueSkillRatings(tournaments) {
   allMatches.sort((a: any, b: any) => a.date - b.date)
   
   // Initialize history for all players with their starting rating
-  allMatches.forEach(match => {
-    [...match.team1Players, ...match.team2Players].forEach(playerName => {
+  allMatches.forEach((match: any) => {
+    [...match.team1Players, ...match.team2Players].forEach((playerName: string) => {
       if (!playerHistory.has(playerName)) {
         const initialRating = trueskill.createRating()
         playerHistory.set(playerName, [{
@@ -119,14 +119,14 @@ export function calculateTrueSkillRatings(tournaments) {
   // Process each match and update ratings
   allMatches.forEach((match: any, matchIndex: any) => {
     // Get or create ratings for all players
-    const team1Ratings = match.team1Players.map(playerName => {
+    const team1Ratings = match.team1Players.map((playerName: any) => {
       if (!playerRatings.has(playerName)) {
         playerRatings.set(playerName, trueskill.createRating())
       }
       return playerRatings.get(playerName)
     })
     
-    const team2Ratings = match.team2Players.map(playerName => {
+    const team2Ratings = match.team2Players.map((playerName: any) => {
       if (!playerRatings.has(playerName)) {
         playerRatings.set(playerName, trueskill.createRating())
       }
@@ -155,7 +155,7 @@ export function calculateTrueSkillRatings(tournaments) {
           playerRatings.set(playerName, newRating)
           
           // Add to history
-          const history = playerHistory.get(playerName)
+          const history = playerHistory.get(playerName) || []
           history.push({
             matchIndex,
             date: match.date,
@@ -169,6 +169,7 @@ export function calculateTrueSkillRatings(tournaments) {
               won: match.team1Score > match.team2Score
             }
           })
+          playerHistory.set(playerName, history)
         }
       })
       
@@ -178,7 +179,7 @@ export function calculateTrueSkillRatings(tournaments) {
           playerRatings.set(playerName, newRating)
           
           // Add to history
-          const history = playerHistory.get(playerName)
+          const history = playerHistory.get(playerName) || []
           history.push({
             matchIndex,
             date: match.date,
@@ -192,6 +193,7 @@ export function calculateTrueSkillRatings(tournaments) {
               won: match.team2Score > match.team1Score
             }
           })
+          playerHistory.set(playerName, history)
         }
       })
     } catch (error) {
@@ -208,7 +210,7 @@ export function calculateTrueSkillRatings(tournaments) {
  * @param {Rating} rating - TrueSkill Rating object
  * @returns {number} Conservative skill estimate
  */
-export function getConservativeRating(rating) {
+export function getConservativeRating(rating: any) {
   if (!rating) return 0
   return rating.mu - 3 * rating.sigma
 }
@@ -218,8 +220,8 @@ export function getConservativeRating(rating) {
  * @param {Map} playerRatings - Map of player names to Rating objects
  * @returns {Object} Object with player names as keys and skill estimates as values
  */
-export function exportRatings(playerRatings) {
-  const ratings = {}
+export function exportRatings(playerRatings: Map<string, any>) {
+  const ratings: Record<string, { skill: number; mu: number; sigma: number }> = {}
   playerRatings.forEach((rating: any, playerName: any) => {
     ratings[playerName] = {
       skill: getConservativeRating(rating),
@@ -237,7 +239,7 @@ export function exportRatings(playerRatings) {
  * @param {number} player2Skill - TrueSkill rating of player 2
  * @returns {Object} Object with player1WinProb and player2WinProb (0-1 range)
  */
-export function calculateWinProbability(player1Skill, player2Skill) {
+export function calculateWinProbability(player1Skill: number, player2Skill: number) {
   // Validate inputs
   if (typeof player1Skill !== 'number' || typeof player2Skill !== 'number') {
     return { player1WinProb: 0.5, player2WinProb: 0.5 }

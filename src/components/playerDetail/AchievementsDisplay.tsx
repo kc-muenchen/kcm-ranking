@@ -14,7 +14,7 @@ export const AchievementsDisplay = ({ achievements  }: { achievements: any }) =>
         </h3>
         {unlocked.length > 0 ? (
           <div className="achievements-grid">
-            {unlocked.map(achievement => (
+            {unlocked.map((achievement: any) => (
               <div key={achievement.id} className={`achievement-badge unlocked tier-${achievement.tier}`}>
                 <div className="achievement-emoji">{achievement.emoji}</div>
                 <div className="achievement-info">
@@ -42,7 +42,7 @@ export const AchievementsDisplay = ({ achievements  }: { achievements: any }) =>
             In Progress
           </h3>
           <div className="progress-list">
-            {progress.map(achievement => {
+            {progress.map((achievement: any) => {
               const progressPercent = Math.min((achievement.current / achievement.next) * 100, 100)
               const displayCurrent = achievement.id.includes('winRate') 
                 ? achievement.current.toFixed(1) + '%'

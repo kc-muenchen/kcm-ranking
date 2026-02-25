@@ -17,7 +17,7 @@ export function copySeasonTop25(showPlace = true) {
     return;
   }
   
-  const players = [];
+  const players: string[] = [];
   const maxPlayers = Math.min(25, playerRows.length);
   
   for (let i = 0; i < maxPlayers; i++) {
@@ -25,7 +25,7 @@ export function copySeasonTop25(showPlace = true) {
     const nameCell = row.querySelector('td:nth-child(2)'); // Name is usually 2nd column (after place)
     
     if (nameCell) {
-      const name = nameCell.textContent.trim();
+      const name = (nameCell.textContent || '').trim();
       players.push(name);
     }
   }
@@ -123,7 +123,7 @@ export function copySeasonPlayers(start = 1, end = 25, showPlace = true) {
     return;
   }
   
-  const players = [];
+  const players: string[] = [];
   const startIdx = Math.max(0, start - 1);
   const endIdx = Math.min(end, playerRows.length);
   
@@ -132,7 +132,7 @@ export function copySeasonPlayers(start = 1, end = 25, showPlace = true) {
     const nameCell = row.querySelector('td:nth-child(2)');
     
     if (nameCell) {
-      const name = nameCell.textContent.trim();
+      const name = (nameCell.textContent || '').trim();
       players.push(name);
     }
   }
@@ -260,7 +260,7 @@ Make sure you're on the Season view before using these commands!
  * Copy all players' stats to clipboard in CSV format
  * @param {Array} players - Array of player objects
  */
-export function copyPlayerStatsCSV(players) {
+export function copyPlayerStatsCSV(players: any[]) {
   if (!players || players.length === 0) {
     console.error('❌ No player data available to export.');
     return;
@@ -272,7 +272,7 @@ export function copyPlayerStatsCSV(players) {
   // Sort by TrueSkill descending (same as ranking)
   const sortedPlayers = [...players].sort((a: any, b: any) => b.trueSkill - a.trueSkill);
 
-  sortedPlayers.forEach(player => {
+  sortedPlayers.forEach((player: any) => {
     const name = `"${player.name.replace(/"/g, '""')}"`; // Escape quotes for CSV
     const trueSkill = player.trueSkill.toFixed(2);
     const mu = (player.mu || 0).toFixed(2);

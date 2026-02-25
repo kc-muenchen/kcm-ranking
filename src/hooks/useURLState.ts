@@ -1,4 +1,9 @@
 import { useEffect, useCallback, useRef } from 'react'
+import { URLStateOptions, URLStateUpdates } from '../types/components'
+
+const isViewMode = (value: string | null): value is URLStateOptions['viewMode'] => {
+  return value === 'overall' || value === 'tournament' || value === 'season' || value === 'probability' || value === 'player'
+}
 
 /**
  * Custom hook to manage URL state and browser history
@@ -14,10 +19,10 @@ export const useURLState = ({ viewMode,
   onPlayerChange,
   onSeasonChange,
   onFiltersChange
- }: { viewMode: any, selectedTournament: any, selectedPlayer: any, selectedSeason: any, showFinaleQualifiers: any, tournaments: any, onViewModeChange: any, onTournamentChange: any, onPlayerChange: any, onSeasonChange: any, onFiltersChange: any }) => {
+ }: URLStateOptions) => {
   const initializedRef = useRef(false)
   // Helper function to update URL
-  const updateURL = useCallback((updates: any) => {
+  const updateURL = useCallback((updates: URLStateUpdates) => {
     const params = new URLSearchParams(window.location.search)
     
     if (updates.view !== undefined) {
@@ -58,7 +63,7 @@ export const useURLState = ({ viewMode,
   }, [viewMode, selectedTournament, selectedPlayer, selectedSeason, showFinaleQualifiers])
 
   useEffect(() => {
-    const handlePopState = (event: any) => {
+    const handlePopState = (event: PopStateEvent) => {
       if (event.state) {
         // Browser went back/forward - the URL is already updated by the browser
         // We just need to sync our app state to match the URL
@@ -71,14 +76,14 @@ export const useURLState = ({ viewMode,
         const finaleQualifiers = params.get('finaleQualifiers')
         
         // Restore state from URL (which browser already restored for us)
-        if (view) {
+        if (isViewMode(view)) {
           onViewModeChange(view)
         } else {
           onViewModeChange(null)
         }
         
         if (tournamentId) {
-          const tournament = tournaments.find(t => t.id === tournamentId)
+          const tournament = tournaments.find((t) => t.id === tournamentId)
           if (tournament) onTournamentChange(tournament)
         }
         
@@ -117,7 +122,7 @@ export const useURLState = ({ viewMode,
       const finaleQualifiers = params.get('finaleQualifiers')
 
       // Set view mode
-      if (view) {
+      if (isViewMode(view)) {
         onViewModeChange(view)
       }
       
@@ -127,7 +132,7 @@ export const useURLState = ({ viewMode,
       }
       
       if (tournamentId) {
-        const tournament = tournaments.find(t => t.id === tournamentId)
+        const tournament = tournaments.find((t) => t.id === tournamentId)
         if (tournament) onTournamentChange(tournament)
       }
       if (season) {

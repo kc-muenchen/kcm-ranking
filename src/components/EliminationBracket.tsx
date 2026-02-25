@@ -108,7 +108,7 @@ function EliminationBracket({ eliminationData  }: { eliminationData: any }) {
               <h4>Final Results</h4>
               <div className="podium">
                 {elimination.standings
-                  .filter(player => player.stats.finalResult && player.stats.place <= 4)
+                  .filter((player: any) => player.stats.finalResult && player.stats.place <= 4)
                   .sort((a: any, b: any) => a.stats.place - b.stats.place)
                   .map((player: any) => (
                     <div key={player._id} className={`podium-place place-${player.stats.place}`}>

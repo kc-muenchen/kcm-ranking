@@ -16,8 +16,8 @@ const PLAYER_COLORS = [
 /**
  * TrueSkill evolution chart component with multi-player support
  */
-export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName  }: { playerHistories: any, allPlayers: any, mainPlayerName: any }) => {
-  const [selectedPlayers, setSelectedPlayers] = useState(() => {
+export const TrueSkillChart = ({ playerHistories, allPlayers: _allPlayers, mainPlayerName  }: { playerHistories: any, allPlayers: any, mainPlayerName: any }) => {
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>(() => {
     // Start with the main player if provided, otherwise first player with history
     if (mainPlayerName && playerHistories.has(mainPlayerName)) {
       return [mainPlayerName]
@@ -30,7 +30,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName  }:
   }
 
   // Get all histories to calculate global min/max
-  const allHistories = Array.from(playerHistories.values())
+  const allHistories: any[][] = Array.from(playerHistories.values())
   const allSkills = allHistories.flatMap(history => history.map(h => h.skill))
   
   if (allSkills.length === 0) {
@@ -50,15 +50,15 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName  }:
   const skillRange = maxSkill - minSkill
 
   // Get all dates across all histories for x-axis normalization
-  const allDates = new Set()
-  allHistories.forEach(history => {
-    history.forEach(entry => allDates.add(entry.date))
+  const allDates = new Set<number>()
+  allHistories.forEach((history: any[]) => {
+    history.forEach((entry: any) => allDates.add(entry.date))
   })
-  const sortedDates = Array.from(allDates).sort((a: any, b: any) => a - b)
+  const sortedDates = Array.from(allDates).sort((a, b) => a - b)
   const dateRange = sortedDates.length > 1 ? sortedDates[sortedDates.length - 1] - sortedDates[0] : 1
   
   // Create points for each selected player
-  const playerLines = selectedPlayers.map((playerName: any, playerIndex: any) => {
+  const playerLines = selectedPlayers.map((playerName: string, playerIndex: number) => {
     const history = playerHistories.get(playerName) || []
     if (history.length === 0) return null
 
@@ -78,7 +78,7 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName  }:
       points,
       pathD
     }
-  }).filter(Boolean)
+  }).filter((line): line is { playerName: string; color: string; points: any[]; pathD: string } => line !== null)
 
   // Create grid lines
   const numGridLines = 6
@@ -108,13 +108,13 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName  }:
     return { x, date: dateValue, label: dateFormat }
   })
 
-  const handleAddPlayer = (playerName: any) => {
+  const handleAddPlayer = (playerName: string) => {
     if (!selectedPlayers.includes(playerName)) {
       setSelectedPlayers([...selectedPlayers, playerName])
     }
   }
 
-  const handleRemovePlayer = (playerName: any) => {
+  const handleRemovePlayer = (playerName: string) => {
     if (selectedPlayers.length > 1) {
       setSelectedPlayers(selectedPlayers.filter(p => p !== playerName))
     }
@@ -122,7 +122,10 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName  }:
 
   // Get available players (those with history)
   const availablePlayers = Array.from(playerHistories.keys())
-    .filter(name => playerHistories.get(name)?.length > 0)
+    .filter((name: unknown) => {
+      if (typeof name !== 'string') return false
+      return (playerHistories.get(name)?.length ?? 0) > 0
+    })
     .sort()
 
   return (
@@ -150,17 +153,17 @@ export const TrueSkillChart = ({ playerHistories, allPlayers, mainPlayerName  }:
         {availablePlayers.length > selectedPlayers.length && (
           <SearchableSelect
             options={availablePlayers
-              .filter(name => !selectedPlayers.includes(name))
+              .filter((name: any) => !selectedPlayers.includes(name))
               .map(name => ({ name }))}
             value=""
-            onChange={(value: any) => {
+            onChange={(value: string) => {
               if (value) {
                 handleAddPlayer(value)
               }
             }}
             placeholder="+ Add player to compare..."
-            getOptionLabel={(option) => option.name}
-            getOptionValue={(option) => option.name}
+            getOptionLabel={(option: any) => option.name}
+            getOptionValue={(option: any) => option.name}
             className="add-player-select"
           />
         )}

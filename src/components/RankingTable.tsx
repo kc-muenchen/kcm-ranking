@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
+import type { MouseEvent } from 'react'
 import { MaterialReactTable } from 'material-react-table'
+import { PlayerRecord, ViewMode } from '../types/components'
 import './RankingTable.css'
 
-function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { players: any, viewMode: any, onPlayerSelect: any, selectedSeason: any }) {
+function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { players: PlayerRecord[], viewMode: ViewMode, onPlayerSelect?: (playerName: string) => void, selectedSeason: string | null }) {
   const [copied, setCopied] = useState(false)
 
-  const getMedalEmoji = (place: any) => {
+  const getMedalEmoji = (place: number | string | null | undefined) => {
     if (place === 1) return '🥇'
     if (place === 2) return '🥈'
     if (place === 3) return '🥉'
@@ -14,17 +16,17 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
 
   const exportToWhatsApp = async () => {
     // Sort players by place (ascending) for export, limit to first 25
-    const sortedForExport = [...players].sort((a: any, b: any) => a.place - b.place).slice(0, 25)
+    const sortedForExport = [...players].sort((a, b) => (a.place ?? 999) - (b.place ?? 999)).slice(0, 25)
     
     // Format as WhatsApp message
     const seasonText = selectedSeason ? ` ${selectedSeason}` : ''
     let message = `🏆 *Season Rankings${seasonText}*\n\n`
     
-    sortedForExport.forEach((player: any, index: any) => {
+    sortedForExport.forEach((player: any) => {
       const place = player.place
       const medal = getMedalEmoji(place)
       const name = player.name
-      const points = player.seasonPoints
+      const points = player.seasonPoints ?? 0
       
       // Add qualification badges if applicable
       let statusBadge = ''
@@ -70,8 +72,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
   }
 
   // Define columns based on viewMode
-  const columns = useMemo(() => {
-    const cols = []
+  const columns = useMemo<any[]>(() => {
+    const cols: any[] = []
 
     // Rank column
     cols.push({
@@ -80,7 +82,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
       header: viewMode === 'tournament' ? 'Final' : 'Rank',
       size: 60,
       minSize: 50,
-      Cell: ({ row }) => {
+      Cell: ({ row }: { row: any }) => {
         const player = row.original
         const displayPlace = viewMode === 'tournament' ? player.finalPlace : player.place
         return (
@@ -106,7 +108,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
       header: 'Player',
       size: 150,
       minSize: 120,
-      Cell: ({ row }) => {
+      Cell: ({ row }: { row: any }) => {
         const player = row.original
         return (
           <div className="name-cell">
@@ -114,7 +116,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
               <a 
                 href={`?player=${encodeURIComponent(player.name)}`}
                 className="player-name clickable" 
-                onClick={(e: any) => {
+                onClick={(e: MouseEvent<HTMLAnchorElement>) => {
                   e.preventDefault()
                   onPlayerSelect && onPlayerSelect(player.name)
                 }}
@@ -142,7 +144,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
           header: viewMode === 'overall' ? 'Total Points' : 'Season Points',
           size: 50,
           minSize: 80,
-          Cell: ({ cell }) => (
+          Cell: ({ cell }: { cell: any }) => (
             <div className="season-points-cell">
               <span className="season-points-value" title={`Season Points: ${cell.getValue()}`}>
                 {cell.getValue()}
@@ -156,7 +158,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
           header: 'TrueSkill',
           size: 50,
           minSize: 80,
-          Cell: ({ cell }) => (
+          Cell: ({ cell }: { cell: any }) => (
             <div className="trueskill-cell">
               <span className="trueskill-rating" title={`TrueSkill: ${cell.getValue().toFixed(1)}`}>
                 {cell.getValue().toFixed(1)}
@@ -176,7 +178,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
           header: 'Best Place',
           size: 50,
           minSize: 80,
-          Cell: ({ cell }) => (
+          Cell: ({ cell }: { cell: any }) => (
             <span className="best-place">
               {getMedalEmoji(cell.getValue())}
             </span>
@@ -199,7 +201,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
           header: 'Qualifying',
           size: 50,
           minSize: 80,
-          Cell: ({ cell }) => getMedalEmoji(cell.getValue())
+          Cell: ({ cell }: { cell: any }) => getMedalEmoji(cell.getValue())
         },
         {
           accessorKey: 'eliminationPlace',
@@ -207,7 +209,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
           header: 'Knockout',
           size: 50,
           minSize: 80,
-          Cell: ({ cell }) => cell.getValue() !== null ? getMedalEmoji(cell.getValue()) : '-'
+          Cell: ({ cell }: { cell: any }) => cell.getValue() !== null ? getMedalEmoji(cell.getValue()) : '-'
         },
         {
           accessorKey: 'buchholz',
@@ -215,7 +217,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
           header: 'Buchholz',
           size: 50,
           minSize: 80,
-          Cell: ({ cell }) => cell.getValue() || 0
+          Cell: ({ cell }: { cell: any }) => cell.getValue() || 0
         },
         {
           accessorKey: 'sonnebornBerger',
@@ -223,7 +225,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
           header: 'SB',
           size: 50,
           minSize: 80,
-          Cell: ({ cell }) => cell.getValue() || 0
+          Cell: ({ cell }: { cell: any }) => cell.getValue() || 0
         }
       )
     }
@@ -241,7 +243,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
         id: 'points',
         header: 'Points',
         size: 80,
-        Cell: ({ cell }) => (
+        Cell: ({ cell }: { cell: any }) => (
           <div className="points-cell">
             <strong>{cell.getValue()}</strong>
           </div>
@@ -252,21 +254,21 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
         id: 'won',
         header: 'Won',
         size: 80,
-        Cell: ({ cell }) => <span className="positive">{cell.getValue()}</span>
+        Cell: ({ cell }: { cell: any }) => <span className="positive">{cell.getValue()}</span>
       },
       {
         accessorKey: 'lost',
         id: 'lost',
         header: 'Lost',
         size: 80,
-        Cell: ({ cell }) => <span className="negative">{cell.getValue()}</span>
+        Cell: ({ cell }: { cell: any }) => <span className="negative">{cell.getValue()}</span>
       },
       {
         accessorKey: 'winRate',
         id: 'winRate',
         header: 'Win %',
         size: 80,
-        Cell: ({ cell }) => {
+        Cell: ({ cell }: { cell: any }) => {
           const rate = parseFloat(cell.getValue())
           return (
             <span className={`win-rate ${
@@ -295,7 +297,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
         id: 'goalDiff',
         header: 'GD',
         size: 60,
-        Cell: ({ cell }) => {
+        Cell: ({ cell }: { cell: any }) => {
           const diff = cell.getValue()
           return (
             <span className={diff >= 0 ? 'positive' : 'negative'}>
@@ -309,7 +311,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
         id: 'pointsPerGame',
         header: 'PPG',
         size: 80,
-        Cell: ({ cell }) => {
+        Cell: ({ cell }: { cell: any }) => {
           const value = cell.getValue()
           return typeof value === 'number' ? value.toFixed(2) : value
         }
@@ -321,7 +323,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
 
   // Define default column visibility based on view mode
   const defaultColumnVisibility = useMemo(() => {
-    const visibility = {
+    const visibility: Record<string, boolean> = {
       rank: true,
       name: true,
       matches: false,
@@ -372,8 +374,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
                 ? `Showing ${players.length} players across all tournaments`
                 : viewMode === 'season'
                 ? (() => {
-                    const qualified = players.filter(p => p.finaleStatus === 'qualified').length
-                    const successors = players.filter(p => p.finaleStatus === 'successor').length
+                    const qualified = players.filter((p) => p.finaleStatus === 'qualified').length
+                    const successors = players.filter((p) => p.finaleStatus === 'successor').length
                     if (qualified > 0 || successors > 0) {
                       return `Showing ${qualified} qualified players${successors > 0 ? ` + ${successors} potential successors` : ''} (min. 10 games)`
                     }
@@ -514,7 +516,7 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
           }}
           muiTableBodyRowProps={({ row }) => {
             const player = row.original
-            const displayPlace = viewMode === 'tournament' ? player.finalPlace : player.place
+            const displayPlace = viewMode === 'tournament' ? (player.finalPlace ?? 999) : (player.place ?? 999)
             const finaleClass = player.finaleStatus === 'qualified' ? 'finale-qualified' : 
                                player.finaleStatus === 'successor' ? 'finale-successor' : ''
             return {

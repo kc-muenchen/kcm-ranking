@@ -520,6 +520,7 @@ async function getOrCreatePlayer(tx, playerData) {
 async function processStandings(tx, tournamentId, standings, type, incomingStandingKeys = null) {
   for (const standing of standings) {
     if (standing.removed) continue;
+    const stats = standing.stats || {}
 
     // Get or create player
     const player = await getOrCreatePlayer(tx, standing);
@@ -539,15 +540,15 @@ async function processStandings(tx, tournamentId, standings, type, incomingStand
         }
       },
       update: {
-        place: standing.stats.place,
-        points: standing.stats.points || 0,
-        matchesWon: standing.stats.matchesWon || 0,
-        matchesLost: standing.stats.matchesLost || 0,
-        matchesDrawn: standing.stats.matchesDrawn || 0,
-        setsWon: standing.stats.setsWon || 0,
-        setsLost: standing.stats.setsLost || 0,
-        ballsWon: standing.stats.ballsWon || 0,
-        ballsLost: standing.stats.ballsLost || 0,
+        place: stats.place,
+        points: stats.points || 0,
+        matchesWon: stats.won ?? stats.matchesWon ?? 0,
+        matchesLost: stats.lost ?? stats.matchesLost ?? 0,
+        matchesDrawn: stats.draws ?? stats.matchesDrawn ?? 0,
+        setsWon: stats.sets_won ?? stats.setsWon ?? 0,
+        setsLost: stats.sets_lost ?? stats.setsLost ?? 0,
+        ballsWon: stats.goals ?? stats.ballsWon ?? 0,
+        ballsLost: stats.goals_in ?? stats.ballsLost ?? 0,
         deactivated: standing.deactivated || false,
         removed: false // Reset removed flag if player is back
       },
@@ -555,15 +556,15 @@ async function processStandings(tx, tournamentId, standings, type, incomingStand
         tournamentId,
         playerId: player.id,
         type,
-        place: standing.stats.place,
-        points: standing.stats.points || 0,
-        matchesWon: standing.stats.matchesWon || 0,
-        matchesLost: standing.stats.matchesLost || 0,
-        matchesDrawn: standing.stats.matchesDrawn || 0,
-        setsWon: standing.stats.setsWon || 0,
-        setsLost: standing.stats.setsLost || 0,
-        ballsWon: standing.stats.ballsWon || 0,
-        ballsLost: standing.stats.ballsLost || 0,
+        place: stats.place,
+        points: stats.points || 0,
+        matchesWon: stats.won ?? stats.matchesWon ?? 0,
+        matchesLost: stats.lost ?? stats.matchesLost ?? 0,
+        matchesDrawn: stats.draws ?? stats.matchesDrawn ?? 0,
+        setsWon: stats.sets_won ?? stats.setsWon ?? 0,
+        setsLost: stats.sets_lost ?? stats.setsLost ?? 0,
+        ballsWon: stats.goals ?? stats.ballsWon ?? 0,
+        ballsLost: stats.goals_in ?? stats.ballsLost ?? 0,
         deactivated: standing.deactivated || false
       }
     });

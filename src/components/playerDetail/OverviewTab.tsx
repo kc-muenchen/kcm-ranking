@@ -26,7 +26,7 @@ export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTo
   }
 
   // Get podium finishes (1st, 2nd, 3rd) with full tournament lists
-  const podiumFinishes = bestRankingStats.filter(ranking => ranking.place <= 3)
+  const podiumFinishes = bestRankingStats.filter((ranking: any) => ranking.place <= 3)
 
   return (
     <div className="tab-panel">

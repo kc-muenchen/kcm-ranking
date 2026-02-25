@@ -1,25 +1,37 @@
 import './StatsCards.css'
+import { PlayerRecord, ViewMode } from '../types/components'
+import { Tournament } from '../types/tournament'
 
-function StatsCards({ players, viewMode, tournaments  }: { players: any, viewMode: any, tournaments: any }) {
+interface StatsCardItem {
+  title: string
+  value: string | number | undefined
+  subtitle?: string
+  icon: string
+  color: 'primary' | 'secondary' | 'warning' | 'success'
+}
+
+function StatsCards({ players, viewMode, tournaments  }: { players: PlayerRecord[], viewMode: ViewMode, tournaments: Tournament[] }) {
   const totalPlayers = players.length
 
   // Count unique matches from tournament data
   // Matches are nested: qualifying[0].rounds[].matches and eliminations[].levels[].matches
-  const totalMatches = tournaments?.reduce((sum: any, tournament: any) => {
+  const totalMatches = tournaments?.reduce((sum: number, tournament: Tournament) => {
     let matchCount = 0
+    const tournamentData = tournament.data as any
     
     // Count qualifying matches (nested in rounds)
-    if (tournament.data?.qualifying?.[0]?.rounds) {
-      tournament.data.qualifying[0].rounds.forEach(round => {
+    if (tournamentData?.qualifying?.[0]?.rounds) {
+      const qualifying = tournamentData.qualifying as any[]
+      ;(qualifying[0]?.rounds as any[]).forEach((round) => {
         matchCount += round.matches?.length || 0
       })
     }
     
     // Count elimination matches (nested in levels)
-    if (tournament.data?.eliminations) {
-      tournament.data.eliminations.forEach(elim => {
+    if (tournamentData?.eliminations) {
+      ;(tournamentData.eliminations as any[]).forEach((elim) => {
         if (elim.levels) {
-          elim.levels.forEach(level => {
+          ;(elim.levels as any[]).forEach((level) => {
             matchCount += level.matches?.length || 0
           })
         }
@@ -32,16 +44,16 @@ function StatsCards({ players, viewMode, tournaments  }: { players: any, viewMod
     
     return sum + matchCount
   }, 0) || 0
-  const topScorer = players.reduce((max: any, p: any) => 
+  const topScorer = players.reduce((max: PlayerRecord, p: PlayerRecord) => 
     p.goalsFor > max.goalsFor ? p : max
   , players[0])
   const bestWinRate = players
-    .filter(p => p.matches >= 3)
-    .reduce((max: any, p: any) => 
-      parseFloat(p.winRate) > parseFloat(max.winRate) ? p : max
+    .filter((p) => p.matches >= 3)
+    .reduce((max: PlayerRecord, p: PlayerRecord) => 
+      parseFloat(String(p.winRate)) > parseFloat(String(max.winRate)) ? p : max
     , players[0])
 
-  const cards = viewMode === 'overall' ? [
+  const cards: StatsCardItem[] = viewMode === 'overall' ? [
     {
       title: 'Total Players',
       value: totalPlayers,
@@ -99,7 +111,7 @@ function StatsCards({ players, viewMode, tournaments  }: { players: any, viewMod
 
   return (
     <div className="stats-cards">
-      {cards.map((card: any, index: any) => (
+      {cards.map((card, index) => (
         <div key={index} className={`stat-card ${card.color}`}>
           <div className="stat-icon">{card.icon}</div>
           <div className="stat-content">

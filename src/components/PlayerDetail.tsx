@@ -15,7 +15,7 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
 
   const handleTournamentClick = (tournamentData: any) => {
     // Find the full tournament object
-    const tournament = tournaments.find(t => 
+    const tournament = tournaments.find((t: any) => 
       t.name === tournamentData.tournament || 
       (t.data && t.data.name === tournamentData.tournament)
     )

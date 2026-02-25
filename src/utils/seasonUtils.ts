@@ -1,7 +1,7 @@
 import { MAX_TOURNAMENT_POINTS } from '../constants/seasonPoints'
 import { DEFAULT_SEASON_END, DEFAULT_SEASON_START, SEASON_DATE_OVERRIDES } from '../constants/seasonDates'
 
-const pad = (value) => value.toString().padStart(2, '0')
+const pad = (value: number) => value.toString().padStart(2, '0')
 
 const getSeasonDateRange = (seasonYear: any) => {
   const yearNumber = parseInt(seasonYear, 10)
@@ -52,7 +52,7 @@ export const getSeasonYearForDate = (date: any) => {
  */
 export const getAvailableSeasons = (tournaments: any) => {
   const years = new Set()
-  tournaments.forEach(tournament => {
+  tournaments.forEach((tournament: any) => {
     const year = getSeasonYearForDate(new Date(tournament.date))
     years.add(year)
   })
@@ -65,7 +65,7 @@ export const getAvailableSeasons = (tournaments: any) => {
  * (e.g., after the points earning cutoff), so we don't check isTournamentInSeasonWindow
  */
 export const getSeasonFinal = (tournaments: any, seasonYear: any) => {
-  return tournaments.find(tournament => {
+  return tournaments.find((tournament: any) => {
     if (tournament.isSeasonFinal !== true) return false
     const tournamentDate = new Date(tournament.date)
     const tournamentYear = tournamentDate.getFullYear().toString()
@@ -79,11 +79,11 @@ export const getSeasonFinal = (tournaments: any, seasonYear: any) => {
  */
 export const calculateSurelyQualified = (players: any) => {
   // Only consider players with 10+ tournaments (eligible for finale)
-  const eligiblePlayers = players.filter(player => player.tournaments >= 10)
+  const eligiblePlayers = players.filter((player: any) => player.tournaments >= 10)
   
   if (eligiblePlayers.length <= 20) {
     // If there are 20 or fewer eligible players, all are surely qualified
-    return new Set(eligiblePlayers.map(p => p.name))
+    return new Set(eligiblePlayers.map((p: any) => p.name))
   }
   
   // Sort eligible players by current ranking (season points, then TrueSkill, then points)
@@ -99,8 +99,8 @@ export const calculateSurelyQualified = (players: any) => {
   const currentTop20 = sortedEligible.slice(0, 20)
   
   // Simulate worst-case scenario: top 20 get 0 points, players below get max points
-  const simulatedPlayers = sortedEligible.map(player => {
-    const isInTop20 = currentTop20.some(p => p.name === player.name)
+  const simulatedPlayers = sortedEligible.map((player: any) => {
+    const isInTop20 = currentTop20.some((p: any) => p.name === player.name)
     const simulatedPoints = isInTop20 
       ? player.seasonPoints // Top 20 get 0 additional points (don't attend)
       : player.seasonPoints + MAX_TOURNAMENT_POINTS // Below 20 get max points
@@ -122,13 +122,13 @@ export const calculateSurelyQualified = (players: any) => {
   
   // Get new top 20 after simulation
   const newTop20 = simulatedSorted.slice(0, 20)
-  const newTop20Names = new Set(newTop20.map(p => p.name))
+  const newTop20Names = new Set(newTop20.map((p: any) => p.name))
   
   // Players who are in both current top 20 and new top 20 are "surely qualified"
   const surelyQualifiedNames = new Set(
     currentTop20
-      .filter(p => newTop20Names.has(p.name))
-      .map(p => p.name)
+      .filter((p: any) => newTop20Names.has(p.name))
+      .map((p: any) => p.name)
   )
   
   return surelyQualifiedNames

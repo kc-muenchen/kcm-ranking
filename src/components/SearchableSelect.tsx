@@ -24,9 +24,9 @@ export const SearchableSelect = ({
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
-  const containerRef = useRef(null)
-  const inputRef = useRef(null)
-  const dropdownRef = useRef(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
 
   // Filter options based on search term
   const filteredOptions = options.filter(option => {
@@ -59,6 +59,7 @@ export const SearchableSelect = ({
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
+    return undefined
   }, [isOpen])
 
   // Scroll highlighted item into view

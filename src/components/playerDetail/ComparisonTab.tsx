@@ -14,7 +14,7 @@ export const ComparisonTab = ({ playerName,
  }: { playerName: any, currentPlayer: any, allPlayers: any, selectedComparePlayer: any, onPlayerSelect: any, headToHeadStats: any, teammateStats: any }) => {
   // Get TrueSkill ratings for both players
   const player1 = currentPlayer
-  const player2 = allPlayers.find(p => p.name === selectedComparePlayer)
+  const player2 = allPlayers.find((p: any) => p.name === selectedComparePlayer)
   
   // Calculate win probability if both players have TrueSkill ratings
   const prediction = (player1?.trueSkill && player2?.trueSkill) 
@@ -32,8 +32,8 @@ export const ComparisonTab = ({ playerName,
             value={selectedComparePlayer}
             onChange={onPlayerSelect}
             placeholder="Search for a player to compare..."
-            getOptionLabel={(player) => player.name}
-            getOptionValue={(player) => player.name}
+            getOptionLabel={(player: any) => player.name}
+            getOptionValue={(player: any) => player.name}
             className="player-select"
           />
         </div>

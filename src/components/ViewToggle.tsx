@@ -3,7 +3,7 @@ import './ViewToggle.css'
 
 function ViewToggle({ viewMode, onViewModeChange  }: { viewMode: any, onViewModeChange: any }) {
   const [isToolsOpen, setIsToolsOpen] = useState(false)
-  const toolsRef = useRef(null)
+  const toolsRef = useRef<HTMLDivElement | null>(null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -17,6 +17,7 @@ function ViewToggle({ viewMode, onViewModeChange  }: { viewMode: any, onViewMode
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
+    return undefined
   }, [isToolsOpen])
 
   const handleToolSelect = (tool: any) => {

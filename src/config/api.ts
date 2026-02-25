@@ -11,7 +11,7 @@
 // Check for runtime config first (set by config.js loaded in index.html)
 // Then fall back to build-time Vite env var, then default
 export const API_BASE_URL = 
-  (typeof window !== 'undefined' && window.APP_CONFIG?.API_URL) ||
+  (typeof window !== 'undefined' && (window as any).APP_CONFIG?.API_URL) ||
   import.meta.env.VITE_API_URL ||
   'http://localhost:3001';
 
@@ -26,13 +26,13 @@ export const API_ENDPOINTS = {
 /**
  * Fetch wrapper with error handling
  */
-export async function apiFetch(url, options = {}) {
+export async function apiFetch(url: string, options: RequestInit = {}) {
   try {
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(options.headers || {}),
       },
     });
 

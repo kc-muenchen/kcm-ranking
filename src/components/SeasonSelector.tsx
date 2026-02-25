@@ -15,7 +15,7 @@ function SeasonSelector({ seasons, selectedSeason, onSelectSeason, showFinaleQua
             onSelectSeason(e.target.value)
           }}
         >
-          {seasons.map(season => (
+          {seasons.map((season: any) => (
             <option key={season} value={season}>
               {season}
             </option>

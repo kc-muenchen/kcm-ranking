@@ -14,6 +14,8 @@ import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
 import { getAvailableSeasons, getSeasonFinal, isTournamentInSeasonWindow } from './utils/seasonUtils'
 import { copySeasonTop25, copySeasonPlayers, copyPlayerStatsCSV, showClipboardHelp } from './utils/clipboardHelpers'
+import { Tournament } from './types/tournament'
+import { MatchHistoryEntry, PlayerRecord, ViewMode } from './types/components'
 import './App.css'
 
 // Expose clipboard helper functions to window for console access
@@ -38,22 +40,22 @@ if (typeof window !== 'undefined') {
 function App() {
   // Data state
   const { tournaments, loading } = useTournaments()
-  const [selectedTournament, setSelectedTournament] = useState(null)
-  const [players, setPlayers] = useState([])
-  const [aggregatedPlayers, setAggregatedPlayers] = useState([])
-  const [seasonPlayers, setSeasonPlayers] = useState([])
-  const [playerHistory, setPlayerHistory] = useState(new Map())
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null)
+  const [players, setPlayers] = useState<PlayerRecord[]>([])
+  const [aggregatedPlayers, setAggregatedPlayers] = useState<PlayerRecord[]>([])
+  const [seasonPlayers, setSeasonPlayers] = useState<PlayerRecord[]>([])
+  const [playerHistory, setPlayerHistory] = useState<Map<string, MatchHistoryEntry[]>>(new Map())
 
   // View state
-  const [viewMode, setViewMode] = useState('overall')
-  const [selectedSeason, setSelectedSeason] = useState(null)
-  const [selectedPlayer, setSelectedPlayer] = useState(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('overall')
+  const [selectedSeason, setSelectedSeason] = useState<string | null>(null)
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
 
   // Filter state
   const [showFinaleQualifiers, setShowFinaleQualifiers] = useState(false)
 
   // Processing functions - defined before useEffects that use them
-  const processPlayers = (tournamentData: any) => {
+  const processPlayers = (tournamentData: unknown) => {
     const processed = processTournamentPlayers(tournamentData)
     setPlayers(processed)
   }
@@ -70,9 +72,9 @@ function App() {
     setPlayerHistory(history)
   }, [tournaments])
 
-  const processSeasonPlayersData = useCallback(async (loadedTournaments: any, seasonYear: any) => {
+  const processSeasonPlayersData = useCallback(async (loadedTournaments: Tournament[], seasonYear: string) => {
     const seasonFinal = getSeasonFinal(loadedTournaments, seasonYear)
-    const { players: season, playerHistory: history } = await processSeasonPlayers(loadedTournaments, seasonYear, seasonFinal)
+    const { players: season } = await processSeasonPlayers(loadedTournaments, seasonYear, seasonFinal)
     setSeasonPlayers(season)
     // Note: season processing doesn't return history, but we keep the aggregated history
   }, [])
@@ -105,7 +107,7 @@ function App() {
     // Set default season to the most recent year
     const seasons = getAvailableSeasons(tournaments)
     if (seasons.length > 0 && !selectedSeason) {
-      setSelectedSeason(seasons[0])
+      setSelectedSeason(String(seasons[0]))
     }
   }, [tournaments, processAggregatedPlayersData, selectedTournament, selectedSeason])
 
@@ -133,19 +135,19 @@ function App() {
     tournaments,
     // These callbacks are ONLY called by popstate (browser back/forward)
     // They should ONLY update state, NOT call updateURL (which would push new history)
-    onViewModeChange: (newViewMode: any) => {
-      setViewMode(newViewMode)
+    onViewModeChange: (newViewMode: ViewMode | null) => {
+      setViewMode(newViewMode ?? 'overall')
     },
-    onTournamentChange: (tournament: any) => {
+    onTournamentChange: (tournament: Tournament | null) => {
       setSelectedTournament(tournament)
     },
-    onPlayerChange: (playerName: any) => {
+    onPlayerChange: (playerName: string | null) => {
       setSelectedPlayer(playerName)
     },
-    onSeasonChange: (season: any) => {
+    onSeasonChange: (season: string | null) => {
       setSelectedSeason(season)
     },
-    onFiltersChange: (filters: any) => {
+    onFiltersChange: (filters: { showFinaleQualifiers?: boolean }) => {
       if (filters.showFinaleQualifiers !== undefined) {
         setShowFinaleQualifiers(filters.showFinaleQualifiers)
       }
@@ -153,18 +155,18 @@ function App() {
   })
 
   // Event handlers
-  const handleTournamentChange = (tournament: any) => {
+  const handleTournamentChange = (tournament: Tournament) => {
     setSelectedTournament(tournament)
     updateURL({ tournament: tournament.id, player: null })
   }
 
-  const handleSeasonChange = (season: any) => {
+  const handleSeasonChange = (season: string) => {
     setSelectedSeason(season)
     processSeasonPlayersData(tournaments, season)
     updateURL({ season, player: null })
   }
 
-  const handlePlayerSelect = (playerName: any) => {
+  const handlePlayerSelect = (playerName: string) => {
     // Set viewMode to 'player' to indicate we want to view player details
     // Update URL first with explicit values to avoid closure issues
     // Clear tournament and season when viewing player
@@ -178,7 +180,7 @@ function App() {
     setSelectedPlayer(playerName)
     setViewMode('player')
     // Scroll to top when selecting a player to prevent scrolling to bottom
-    window.scrollTo({ top: 0, behavior: 'instant' })
+    window.scrollTo({ top: 0, behavior: 'auto' })
   }
 
   const handleBackFromPlayer = () => {
@@ -187,17 +189,17 @@ function App() {
     updateURL({ player: null, view: 'overall' })
   }
 
-  const handleFinaleQualifiersToggle = (enabled: any) => {
+  const handleFinaleQualifiersToggle = (enabled: boolean) => {
     setShowFinaleQualifiers(enabled)
     updateURL({ finaleQualifiers: enabled })
   }
 
-  const handleViewModeChange = (newViewMode: any) => {
+  const handleViewModeChange = (newViewMode: ViewMode) => {
     setViewMode(newViewMode)
     updateURL({ view: newViewMode, player: null })
   }
 
-  const handleViewSeasonFinal = (seasonFinal: any) => {
+  const handleViewSeasonFinal = (seasonFinal: Tournament) => {
     setViewMode('tournament')
     setSelectedTournament(seasonFinal)
     updateURL({ 
@@ -215,7 +217,7 @@ function App() {
     }
     
     if (showFinaleQualifiers) {
-      const eligiblePlayers = seasonPlayers.filter(player => player.tournaments >= 10)
+      const eligiblePlayers = seasonPlayers.filter((player) => (player.tournaments ?? 0) >= 10)
       return eligiblePlayers.slice(0, 25)
     }
     
@@ -243,7 +245,7 @@ function App() {
   // Player detail view - show if player is selected and viewMode indicates player view
   // viewMode will be 'player' when viewing player details
   // viewMode will be 'tournament', 'season', or 'overall' when viewing rankings
-  const showPlayerDetail = selectedPlayer && viewMode === 'player'
+  const showPlayerDetail = Boolean(selectedPlayer && viewMode === 'player')
   
   if (showPlayerDetail) {
     return (
@@ -254,7 +256,7 @@ function App() {
           tournaments={tournaments}
           aggregatedPlayers={aggregatedPlayers}
           onBack={handleBackFromPlayer}
-          onTournamentSelect={(tournament: any) => {
+          onTournamentSelect={(tournament: Tournament) => {
             // Navigate to tournament with clean URL (no player param)
             // Browser history will naturally restore player view on back button
             setViewMode('tournament')
@@ -277,10 +279,10 @@ function App() {
   // The list of tournaments to be considered for stats.
   const tournamentListForStats = (() => {
     if (viewMode == 'tournament' && selectedTournament != null) {
-      return tournaments.filter(t => t.id == selectedTournament.id)
+      return tournaments.filter((t) => t.id === selectedTournament.id)
     }
     if (viewMode == 'season' && selectedSeason != null) {
-      return tournaments.filter(t => isTournamentInSeasonWindow(t.date, selectedSeason))
+      return tournaments.filter((t) => isTournamentInSeasonWindow(t.date, selectedSeason))
     }
     return tournaments
   })()
@@ -313,7 +315,7 @@ function App() {
             tournaments={tournaments}
             selectedSeason={selectedSeason}
             seasonFinal={seasonFinal}
-            onViewFinal={() => handleViewSeasonFinal(seasonFinal)}
+            onViewFinal={() => seasonFinal && handleViewSeasonFinal(seasonFinal)}
           />
         </>
       )}

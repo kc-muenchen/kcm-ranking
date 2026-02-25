@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { getSeasonFinal } from '../utils/seasonUtils'
 
 /**
  * Qualification info box component
@@ -46,15 +45,15 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal  }: { seasonFinal: 
 
   // Get top 3 teams from elimination standings
   // In doubles tournaments, multiple players share the same place (they're a team)
-  const topTeams = []
+  const topTeams: Array<{ place: number; players: string[] }> = []
   if (seasonFinal.data?.eliminations && Array.isArray(seasonFinal.data.eliminations) && seasonFinal.data.eliminations.length > 0) {
     const eliminationStandings = seasonFinal.data.eliminations[0].standings || []
     
     // Group players by place
     const playersByPlace = new Map()
     eliminationStandings
-      .filter(player => player && player.stats && !player.removed && player.stats.place <= 3)
-      .forEach(player => {
+      .filter((player: any) => player && player.stats && !player.removed && player.stats.place <= 3)
+      .forEach((player: any) => {
         const place = player.stats.place
         if (!playersByPlace.has(place)) {
           playersByPlace.set(place, [])
@@ -81,7 +80,7 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal  }: { seasonFinal: 
   }
   
   // Arrange teams for podium display (2nd, 1st, 3rd)
-  const arrangedTeams = []
+  const arrangedTeams: Array<{ place: number; players: string[] }> = []
   const firstPlace = topTeams.find(t => t.place === 1)
   const secondPlace = topTeams.find(t => t.place === 2)
   const thirdPlace = topTeams.find(t => t.place === 3)
@@ -149,6 +148,7 @@ export const SeasonView = ({ tournaments,
   seasonFinal, 
   onViewFinal 
  }: { tournaments: any, selectedSeason: any, seasonFinal: any, onViewFinal: any }) => {
+  void tournaments
   return (
     <>
       <QualificationInfoBox />

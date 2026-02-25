@@ -1,20 +1,19 @@
 import { normalizePlayerNameSync } from '../config/playerAliases'
 import { calculateSeasonPoints } from '../constants/seasonPoints'
-import { ACHIEVEMENT_DEFINITIONS } from '../constants/achievements'
 
 /**
  * Calculate best ranking statistics (top 3)
  * Only counts final tournament placements from elimination rounds
  */
 export const calculateBestRanking = (playerName: any, tournaments: any) => {
-  const rankings = []
+  const rankings: any[] = []
   const normalizedPlayerName = normalizePlayerNameSync(playerName)
   
   if (!tournaments || tournaments.length === 0) {
     return []
   }
   
-  tournaments.forEach(tournament => {
+  tournaments.forEach((tournament: any) => {
     // Skip if tournament data is missing
     if (!tournament || !tournament.data) {
       return
@@ -24,7 +23,7 @@ export const calculateBestRanking = (playerName: any, tournaments: any) => {
     // Qualifying standings are NOT counted as tournament wins
     if (tournament.data.eliminations && Array.isArray(tournament.data.eliminations) && tournament.data.eliminations.length > 0) {
       const eliminationStandings = tournament.data.eliminations[0].standings || []
-      const eliminationStanding = eliminationStandings.find(p => {
+      const eliminationStanding = eliminationStandings.find((p: any) => {
         if (!p || !p.name || p.removed) return false
         return normalizePlayerNameSync(p.name) === normalizedPlayerName
       })
@@ -69,15 +68,15 @@ export const calculateBestRanking = (playerName: any, tournaments: any) => {
 export const calculateTopPartners = (matchHistory: any, playerName: any) => {
   const partnerStats = new Map()
   
-  matchHistory.forEach(entry => {
+  matchHistory.forEach((entry: any) => {
     const { match } = entry
     const playerTeam = match.team1Players.includes(playerName) ? 'team1' : 'team2'
     const teammates = playerTeam === 'team1' ? match.team1Players : match.team2Players
     
     // Find partners (teammates who are not the player)
-    const partners = teammates.filter(p => p !== playerName)
+    const partners = teammates.filter((p: any) => p !== playerName)
     
-    partners.forEach(partner => {
+    partners.forEach((partner: any) => {
       if (!partnerStats.has(partner)) {
         partnerStats.set(partner, {
           name: partner,
@@ -118,12 +117,12 @@ export const calculateTopPartners = (matchHistory: any, playerName: any) => {
 export const calculateOpponentStats = (matchHistory: any, playerName: any) => {
   const opponentStats = new Map()
   
-  matchHistory.forEach(entry => {
+  matchHistory.forEach((entry: any) => {
     const { match } = entry
     const playerTeam = match.team1Players.includes(playerName) ? 'team1' : 'team2'
     const opponents = playerTeam === 'team1' ? match.team2Players : match.team1Players
     
-    opponents.forEach(opponent => {
+    opponents.forEach((opponent: any) => {
       if (!opponentStats.has(opponent)) {
         opponentStats.set(opponent, {
           name: opponent,
@@ -178,9 +177,9 @@ export const calculateOpponentStats = (matchHistory: any, playerName: any) => {
  */
 export const calculateTournamentList = (playerName: any, tournaments: any) => {
   const normalizedPlayerName = normalizePlayerNameSync(playerName)
-  const tournamentList = []
+  const tournamentList: any[] = []
   
-  tournaments.forEach(tournament => {
+  tournaments.forEach((tournament: any) => {
     // Skip if tournament data is missing
     if (!tournament || !tournament.data) {
       return
@@ -196,7 +195,7 @@ export const calculateTournamentList = (playerName: any, tournaments: any) => {
     if (tournament.data.qualifying && Array.isArray(tournament.data.qualifying) && tournament.data.qualifying.length > 0) {
       const qualifyingStandings = tournament.data.qualifying[0].standings || []
       const qualifyingStanding = qualifyingStandings.find(
-        p => p && p.name && !p.removed && normalizePlayerNameSync(p.name) === normalizedPlayerName
+        (p: any) => p && p.name && !p.removed && normalizePlayerNameSync(p.name) === normalizedPlayerName
       )
       
       if (qualifyingStanding && qualifyingStanding.stats && qualifyingStanding.stats.matches > 0) {
@@ -210,7 +209,7 @@ export const calculateTournamentList = (playerName: any, tournaments: any) => {
     if (tournament.data.eliminations && Array.isArray(tournament.data.eliminations) && tournament.data.eliminations.length > 0) {
       const eliminationStandings = tournament.data.eliminations[0].standings || []
       const eliminationStanding = eliminationStandings.find(
-        p => p && p.name && !p.removed && normalizePlayerNameSync(p.name) === normalizedPlayerName
+        (p: any) => p && p.name && !p.removed && normalizePlayerNameSync(p.name) === normalizedPlayerName
       )
       
       if (eliminationStanding) {
@@ -234,7 +233,7 @@ export const calculateTournamentList = (playerName: any, tournaments: any) => {
   })
   
   // Sort by date (most recent first)
-  tournamentList.sort((a: any, b: any) => new Date(b.date) - new Date(a.date))
+  tournamentList.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
   
   return tournamentList
 }
@@ -243,7 +242,7 @@ export const calculateTournamentList = (playerName: any, tournaments: any) => {
  * Calculate head-to-head statistics between two players
  * Only counts matches where they played AGAINST each other (as opponents)
  */
-export const calculateHeadToHead = (matchHistory, player1Name, player2Name) => {
+export const calculateHeadToHead = (matchHistory: any[], player1Name: string, player2Name: string) => {
   const normalizedPlayer1 = normalizePlayerNameSync(player1Name)
   const normalizedPlayer2 = normalizePlayerNameSync(player2Name)
   
@@ -251,18 +250,18 @@ export const calculateHeadToHead = (matchHistory, player1Name, player2Name) => {
   let player1Wins = 0
   let player2Wins = 0
   
-  matchHistory.forEach(entry => {
+  matchHistory.forEach((entry: any) => {
     const { match } = entry
     const allPlayers = [...match.team1Players, ...match.team2Players]
     
     // Check if both players were in this match
-    const player1InMatch = allPlayers.some(p => normalizePlayerNameSync(p) === normalizedPlayer1)
-    const player2InMatch = allPlayers.some(p => normalizePlayerNameSync(p) === normalizedPlayer2)
+    const player1InMatch = allPlayers.some((p: any) => normalizePlayerNameSync(p) === normalizedPlayer1)
+    const player2InMatch = allPlayers.some((p: any) => normalizePlayerNameSync(p) === normalizedPlayer2)
     
     if (player1InMatch && player2InMatch) {
       // Determine which team each player was on
-      const player1InTeam1 = match.team1Players.some(p => normalizePlayerNameSync(p) === normalizedPlayer1)
-      const player2InTeam1 = match.team1Players.some(p => normalizePlayerNameSync(p) === normalizedPlayer2)
+      const player1InTeam1 = match.team1Players.some((p: any) => normalizePlayerNameSync(p) === normalizedPlayer1)
+      const player2InTeam1 = match.team1Players.some((p: any) => normalizePlayerNameSync(p) === normalizedPlayer2)
       
       // Only count matches where they were OPPONENTS (not teammates)
       if (player1InTeam1 !== player2InTeam1) {
@@ -305,7 +304,7 @@ export const calculateHeadToHead = (matchHistory, player1Name, player2Name) => {
  * Calculate teammate statistics between two players
  * Only counts matches where they played TOGETHER (as teammates)
  */
-export const calculateTeammateStats = (matchHistory, player1Name, player2Name) => {
+export const calculateTeammateStats = (matchHistory: any[], player1Name: string, player2Name: string) => {
   const normalizedPlayer1 = normalizePlayerNameSync(player1Name)
   const normalizedPlayer2 = normalizePlayerNameSync(player2Name)
   
@@ -313,18 +312,18 @@ export const calculateTeammateStats = (matchHistory, player1Name, player2Name) =
   let wins = 0
   let losses = 0
   
-  matchHistory.forEach(entry => {
+  matchHistory.forEach((entry: any) => {
     const { match } = entry
     const allPlayers = [...match.team1Players, ...match.team2Players]
     
     // Check if both players were in this match
-    const player1InMatch = allPlayers.some(p => normalizePlayerNameSync(p) === normalizedPlayer1)
-    const player2InMatch = allPlayers.some(p => normalizePlayerNameSync(p) === normalizedPlayer2)
+    const player1InMatch = allPlayers.some((p: any) => normalizePlayerNameSync(p) === normalizedPlayer1)
+    const player2InMatch = allPlayers.some((p: any) => normalizePlayerNameSync(p) === normalizedPlayer2)
     
     if (player1InMatch && player2InMatch) {
       // Determine which team each player was on
-      const player1InTeam1 = match.team1Players.some(p => normalizePlayerNameSync(p) === normalizedPlayer1)
-      const player2InTeam1 = match.team1Players.some(p => normalizePlayerNameSync(p) === normalizedPlayer2)
+      const player1InTeam1 = match.team1Players.some((p: any) => normalizePlayerNameSync(p) === normalizedPlayer1)
+      const player2InTeam1 = match.team1Players.some((p: any) => normalizePlayerNameSync(p) === normalizedPlayer2)
       
       // Only count matches where they were TEAMMATES (on the same team)
       if (player1InTeam1 === player2InTeam1) {

@@ -20,11 +20,11 @@ function TournamentSelector({ tournaments, selectedTournament, onSelectTournamen
         className="selector-dropdown"
         value={selectedTournament?.id || ''}
         onChange={(e: any) => {
-          const tournament = tournaments.find(t => t.id === e.target.value)
+          const tournament = tournaments.find((t: any) => t.id === e.target.value)
           onSelectTournament(tournament)
         }}
       >
-        {tournaments.map(tournament => (
+        {tournaments.map((tournament: any) => (
           <option key={tournament.id} value={tournament.id}>
             {tournament.name} - {formatDate(tournament.date)}
           </option>

@@ -6,8 +6,8 @@
 import { API_ENDPOINTS, apiFetch } from './api.ts'
 
 // Cache for aliases loaded from API
-let aliasesCache = null
-let aliasesMap = null
+let aliasesCache: any[] | null = null
+let aliasesMap: Map<string, string> | null = null
 
 /**
  * Loads aliases from the backend API
@@ -15,11 +15,11 @@ let aliasesMap = null
  */
 export async function loadAliasesFromAPI() {
   try {
-    const aliases = await apiFetch(API_ENDPOINTS.aliases)
+    const aliases = (await apiFetch(API_ENDPOINTS.aliases)) as any[]
     
     // Build a map: alias -> canonicalName
-    const map = new Map()
-    aliases.forEach(alias => {
+    const map = new Map<string, string>()
+    aliases.forEach((alias: any) => {
       const trimmedAlias = alias.alias.trim()
       const trimmedCanonical = alias.canonicalName.trim()
       map.set(trimmedAlias, trimmedCanonical)
@@ -58,7 +58,7 @@ export async function getAliasesMap() {
  * @param {string} name - The player name to normalize
  * @returns {Promise<string>} - The canonical name
  */
-export async function normalizePlayerName(name) {
+export async function normalizePlayerName(name: string) {
   if (!name) return name
   
   const map = await getAliasesMap()
@@ -77,7 +77,7 @@ export async function normalizePlayerName(name) {
  * @param {string} name - The player name to normalize
  * @returns {string} - The canonical name
  */
-export function normalizePlayerNameSync(name) {
+export function normalizePlayerNameSync(name: string) {
   if (!name) return name
   
   // Trim whitespace first
@@ -85,7 +85,7 @@ export function normalizePlayerNameSync(name) {
   
   // Use cached map if available
   if (aliasesMap && aliasesMap.has(trimmed)) {
-    return aliasesMap.get(trimmed)
+    return aliasesMap.get(trimmed) || trimmed
   }
   
   // Return trimmed name if no cache or no mapping
@@ -97,7 +97,7 @@ export function normalizePlayerNameSync(name) {
  * @param {string} canonicalName - The canonical player name
  * @returns {Promise<string[]>} - Array of all aliases including the canonical name
  */
-export async function getPlayerAliases(canonicalName) {
+export async function getPlayerAliases(canonicalName: string) {
   if (!aliasesCache) {
     await loadAliasesFromAPI()
   }
@@ -105,7 +105,7 @@ export async function getPlayerAliases(canonicalName) {
   const aliases = [canonicalName]
   
   if (aliasesCache) {
-    aliasesCache.forEach(alias => {
+    aliasesCache.forEach((alias: any) => {
       if (alias.canonicalName === canonicalName && alias.alias !== canonicalName) {
         aliases.push(alias.alias)
       }

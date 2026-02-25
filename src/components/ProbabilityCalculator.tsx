@@ -7,7 +7,7 @@ import './ProbabilityCalculator.css'
  * Calculate win probability for team1 vs team2 using TrueSkill ratings
  * Based on the TrueSkill algorithm's win probability formula
  */
-function calculateWinProbability(team1Ratings, team2Ratings) {
+function calculateWinProbability(team1Ratings: any[], team2Ratings: any[]) {
   // Calculate team skill (sum of player skills)
   const team1Mu = team1Ratings.reduce((sum: any, rating: any) => sum + rating.mu, 0)
   const team2Mu = team2Ratings.reduce((sum: any, rating: any) => sum + rating.mu, 0)
@@ -35,7 +35,7 @@ function calculateWinProbability(team1Ratings, team2Ratings) {
 /**
  * Cumulative normal distribution function
  */
-function cumulativeNormal(x) {
+function cumulativeNormal(x: number) {
   // Using the error function approximation
   const t = 1 / (1 + 0.2316419 * Math.abs(x))
   const d = 0.3989423 * Math.exp(-x * x / 2)
@@ -48,16 +48,16 @@ function cumulativeNormal(x) {
  * Probability Calculator Component
  */
 export const ProbabilityCalculator = ({ players  }: { players: any }) => {
-  const [team1Player1, setTeam1Player1] = useState(null)
-  const [team1Player2, setTeam1Player2] = useState(null)
-  const [team2Player1, setTeam2Player1] = useState(null)
-  const [team2Player2, setTeam2Player2] = useState(null)
+  const [team1Player1, setTeam1Player1] = useState('')
+  const [team1Player2, setTeam1Player2] = useState('')
+  const [team2Player1, setTeam2Player1] = useState('')
+  const [team2Player2, setTeam2Player2] = useState('')
 
   // Create player options for dropdowns
   const playerOptions = useMemo(() => {
     return players
       .sort((a: any, b: any) => b.trueSkill - a.trueSkill)
-      .map(player => ({
+      .map((player: any) => ({
         value: player.name,
         label: `${player.name} (${player.trueSkill.toFixed(1)})`,
         trueSkill: player.trueSkill,
@@ -66,8 +66,8 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
   }, [players])
 
   // Get player rating
-  const getPlayerRating = (playerName: any) => {
-    const player = players.find(p => p.name === playerName)
+  const getPlayerRating = (playerName: string) => {
+    const player = players.find((p: any) => p.name === playerName)
     if (!player) return new Rating()
     
     // If player has rating object, use it, otherwise create from trueSkill
@@ -100,15 +100,15 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
   }, [team1Player1, team1Player2, team2Player1, team2Player2, players])
 
   // Get filtered options (exclude already selected players)
-  const getFilteredOptions = (excludePlayers: any) => {
-    return playerOptions.filter(option => !excludePlayers.includes(option.value))
+  const getFilteredOptions = (excludePlayers: string[]) => {
+    return playerOptions.filter((option: any) => !excludePlayers.includes(option.value))
   }
 
   const handleReset = () => {
-    setTeam1Player1(null)
-    setTeam1Player2(null)
-    setTeam2Player1(null)
-    setTeam2Player2(null)
+    setTeam1Player1('')
+    setTeam1Player2('')
+    setTeam2Player1('')
+    setTeam2Player2('')
   }
 
   return (
@@ -132,8 +132,8 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
                 value={team1Player1}
                 onChange={setTeam1Player1}
                 placeholder="Select player..."
-                getOptionLabel={(option) => option.label || option}
-                getOptionValue={(option) => option.value || option}
+                getOptionLabel={(option: any) => option.label || option}
+                getOptionValue={(option: any) => option.value || option}
               />
             </div>
             <div className="player-selector">
@@ -143,8 +143,8 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
                 value={team1Player2}
                 onChange={setTeam1Player2}
                 placeholder="Select player..."
-                getOptionLabel={(option) => option.label || option}
-                getOptionValue={(option) => option.value || option}
+                getOptionLabel={(option: any) => option.label || option}
+                getOptionValue={(option: any) => option.value || option}
               />
             </div>
           </div>
@@ -166,8 +166,8 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
                 value={team2Player1}
                 onChange={setTeam2Player1}
                 placeholder="Select player..."
-                getOptionLabel={(option) => option.label || option}
-                getOptionValue={(option) => option.value || option}
+                getOptionLabel={(option: any) => option.label || option}
+                getOptionValue={(option: any) => option.value || option}
               />
             </div>
             <div className="player-selector">
@@ -177,8 +177,8 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
                 value={team2Player2}
                 onChange={setTeam2Player2}
                 placeholder="Select player..."
-                getOptionLabel={(option) => option.label || option}
-                getOptionValue={(option) => option.value || option}
+                getOptionLabel={(option: any) => option.label || option}
+                getOptionValue={(option: any) => option.value || option}
               />
             </div>
           </div>
