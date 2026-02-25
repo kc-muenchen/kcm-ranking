@@ -1,10 +1,10 @@
 /**
- * Convert new Kickertool format to old format for compatibility
+ * Convert new Kickertool format to old format for compatibility (frontend version)
  * New format: disciplines -> stages -> groups -> rounds -> matches
  * Old format: qualifying/eliminations -> rounds/levels -> matches
  */
 
-function getDefaultLevelName(levelIndex) {
+function getDefaultLevelName(levelIndex: number) {
   return levelIndex === 0 ? 'Quarterfinal'
     : levelIndex === 1 ? 'Semifinal'
       : levelIndex === 2 ? 'Final'
@@ -17,7 +17,7 @@ function getDefaultLevelName(levelIndex) {
  * rank 1-4 stay as-is; 5+ are grouped by elimination round:
  *   5-8 → 5, 9-16 → 9, 17-32 → 17, etc.
  */
-function rankToBracketPlace(rank) {
+function rankToBracketPlace(rank: number) {
   if (!rank || rank <= 4) return rank || 0
   let base = 5
   let groupSize = 4
@@ -28,13 +28,13 @@ function rankToBracketPlace(rank) {
   return base
 }
 
-function ensureEliminationLevelNames(data) {
+function ensureEliminationLevelNames(data: any) {
   if (!data?.eliminations || !Array.isArray(data.eliminations)) return
 
-  data.eliminations.forEach(elimination => {
+  data.eliminations.forEach((elimination: any) => {
     if (!elimination?.levels || !Array.isArray(elimination.levels)) return
 
-    elimination.levels.forEach((level, levelIndex) => {
+    elimination.levels.forEach((level: any, levelIndex: number) => {
       if (!level.name) {
         level.name = level.groupName || getDefaultLevelName(levelIndex)
       }
@@ -47,10 +47,9 @@ function ensureEliminationLevelNames(data) {
  * @param {Object} data - Tournament data in new format
  * @returns {Object} Tournament data in old format
  */
-export function convertNewFormatToOld(data) {
+export function convertNewFormatToOld(data: any) {
   // If it already has qualifying/eliminations, assume it's old format
   if (data.qualifying || data.eliminations) {
-    // Ensure elimination levels have names if they're missing
     ensureEliminationLevelNames(data)
     return data
   }
@@ -71,16 +70,15 @@ export function convertNewFormatToOld(data) {
   }
 
   // Helper to resolve participant to old-format player object list
-  const getParticipantPlayers = (participant) => {
+  const getParticipantPlayers = (participant: any) => {
     if (!participant) return []
 
-    // Team entries carry both players in name array, and ID is often "playerA_playerB"
     if (participant.type === 'team' && Array.isArray(participant.name)) {
       const names = participant.name.filter(Boolean)
       if (names.length === 0) return []
 
       const teamParts = typeof participant._id === 'string' ? participant._id.split('_') : []
-      return names.map((name, index) => ({
+      return names.map((name: string, index: number) => ({
         _id: teamParts[index] || `${participant._id}:${index}`,
         name,
         guest: !!participant.guest,
@@ -88,7 +86,6 @@ export function convertNewFormatToOld(data) {
       }))
     }
 
-    // Player entries carry a single name in an array
     if (participant.type === 'player' && Array.isArray(participant.name) && participant.name.length > 0) {
       const name = participant.name[0]
       if (!name) return []
@@ -104,16 +101,16 @@ export function convertNewFormatToOld(data) {
   }
 
   // Helper to get player objects from entry IDs
-  const getPlayerInfo = (entryIds) => {
+  const getPlayerInfo = (entryIds: any[]) => {
     if (!Array.isArray(entryIds)) return []
 
-    const players = []
-    const seen = new Set()
+    const players: any[] = []
+    const seen = new Set<string>()
 
-    entryIds.forEach(entryId => {
+    entryIds.forEach((entryId: any) => {
       const participant = participantsMap.get(entryId)
       if (participant) {
-        getParticipantPlayers(participant).forEach(player => {
+        getParticipantPlayers(participant).forEach((player: any) => {
           const key = `${player._id}:${player.name}`
           if (!seen.has(key)) {
             seen.add(key)
@@ -123,13 +120,12 @@ export function convertNewFormatToOld(data) {
         return
       }
 
-      // Fallback: if team entry isn't present, derive players from combined team ID
       if (typeof entryId === 'string' && entryId.includes('_')) {
-        entryId.split('_').forEach(playerId => {
+        entryId.split('_').forEach((playerId: string) => {
           const playerEntry = participantsMap.get(playerId)
           if (!playerEntry) return
 
-          getParticipantPlayers(playerEntry).forEach(player => {
+          getParticipantPlayers(playerEntry).forEach((player: any) => {
             const key = `${player._id}:${player.name}`
             if (!seen.has(key)) {
               seen.add(key)
@@ -143,7 +139,7 @@ export function convertNewFormatToOld(data) {
     return players
   }
 
-  const extractTeamEntryIds = (match) => {
+  const extractTeamEntryIds = (match: any) => {
     if (Array.isArray(match.entries) && match.entries.length >= 2) {
       const rawTeam1 = match.entries[0]
       const rawTeam2 = match.entries[1]
@@ -155,7 +151,7 @@ export function convertNewFormatToOld(data) {
 
     if (Array.isArray(match.entryIds)) {
       const teamIds = match.entryIds.filter(
-        entryId => typeof entryId === 'string' && entryId.includes('_') && participantsMap.has(entryId)
+        (entryId: any) => typeof entryId === 'string' && entryId.includes('_') && participantsMap.has(entryId)
       )
       if (teamIds.length >= 2) {
         return [[teamIds[0]], [teamIds[1]]]
@@ -181,13 +177,13 @@ export function convertNewFormatToOld(data) {
   }
 
   // Process each discipline
-  data.disciplines.forEach(discipline => {
+  data.disciplines.forEach((discipline: any) => {
     if (!discipline.stages || !Array.isArray(discipline.stages)) return
 
-    discipline.stages.forEach(stage => {
+    discipline.stages.forEach((stage: any) => {
       if (!stage.groups || !Array.isArray(stage.groups)) return
 
-      stage.groups.forEach(group => {
+      stage.groups.forEach((group: any) => {
         const stageName = typeof stage.name === 'string' ? stage.name.toLowerCase() : ''
         const groupName = typeof group.name === 'string' ? group.name.toLowerCase() : ''
         const isElimination = stage.tournamentMode === 'elimination' || (
@@ -202,15 +198,14 @@ export function convertNewFormatToOld(data) {
 
         // Process rounds
         if (group.rounds && Array.isArray(group.rounds)) {
-          group.rounds.forEach(round => {
+          group.rounds.forEach((round: any) => {
             if (!round.matches || !Array.isArray(round.matches)) return
 
             const convertedMatches = round.matches
-              .filter(match => match.state === 'played' && match.points && Array.isArray(match.points))
-              .map(match => {
+              .filter((match: any) => match.state === 'played' && match.points && Array.isArray(match.points))
+              .map((match: any) => {
                 const [team1EntryIds, team2EntryIds] = extractTeamEntryIds(match)
 
-                // Resolve player objects for both teams
                 const team1Players = getPlayerInfo(team1EntryIds)
                 const team2Players = getPlayerInfo(team2EntryIds)
 
@@ -230,15 +225,15 @@ export function convertNewFormatToOld(data) {
                   result: match.points || [0, 0],
                   team1: {
                     players: team1Players,
-                    name: team1Players.map(player => player.name).join(' / ')
+                    name: team1Players.map((player: any) => player.name).join(' / ')
                   },
                   team2: {
                     players: team2Players,
-                    name: team2Players.map(player => player.name).join(' / ')
+                    name: team2Players.map((player: any) => player.name).join(' / ')
                   }
                 }
               })
-              .filter(match => match !== null)
+              .filter((match: any) => match !== null)
 
             if (convertedMatches.length === 0) return
 
@@ -295,7 +290,7 @@ export function convertNewFormatToOld(data) {
             const elimination = converted.eliminations[0]
             if (!elimination.standings) elimination.standings = []
 
-            group.standings.forEach(standing => {
+            group.standings.forEach((standing: any) => {
               if (standing.removed || standing.paused) return
               const participant = participantsMap.get(standing.entryId)
               if (!participant) return
@@ -356,7 +351,7 @@ export function convertNewFormatToOld(data) {
             const qualifying = converted.qualifying[0]
             if (!qualifying.standings) qualifying.standings = []
 
-            group.standings.forEach(standing => {
+            group.standings.forEach((standing: any) => {
               if (standing.removed || standing.paused) return
               const participant = participantsMap.get(standing.entryId)
               if (!participant) return
@@ -414,7 +409,6 @@ export function convertNewFormatToOld(data) {
     })
   })
 
-  // Ensure all elimination levels have readable names
   ensureEliminationLevelNames(converted)
 
   return converted
