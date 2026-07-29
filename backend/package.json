@@ -11,7 +11,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "migrate:data": "node src/scripts/migrate-json-data.js",
-    "migrate:aliases": "node src/scripts/migrate-aliases.js"
+    "migrate:aliases": "node src/scripts/migrate-aliases.js",
+    "verify:conversion": "node src/scripts/verify-conversion.js",
+    "import:api": "node src/scripts/import-from-api.js"
   },
   "keywords": [
     "api",
