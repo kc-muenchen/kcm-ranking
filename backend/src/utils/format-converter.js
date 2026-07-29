@@ -2,6 +2,13 @@
  * Convert new Kickertool format to old format for compatibility
  * New format: disciplines -> stages -> groups -> rounds -> matches
  * Old format: qualifying/eliminations -> rounds/levels -> matches
+ *
+ * This is the ONLY converter in the codebase. It runs on import, before anything
+ * is stored, so every consumer sees the old-format shape and nothing else has to
+ * know that two export formats exist.
+ *
+ * See docs/TOURNAMENT_DATA_FORMAT.md for the invariants this must preserve, and
+ * `npm run verify:conversion -- <export.json>` to check them against an export.
  */
 
 function getDefaultLevelName(levelIndex) {
@@ -17,7 +24,7 @@ function getDefaultLevelName(levelIndex) {
  * rank 1-4 stay as-is; 5+ are grouped by elimination round:
  *   5-8 → 5, 9-16 → 9, 17-32 → 17, etc.
  */
-function rankToBracketPlace(rank) {
+export function rankToBracketPlace(rank) {
   if (!rank || rank <= 4) return rank || 0
   let base = 5
   let groupSize = 4
@@ -70,6 +77,13 @@ export function convertNewFormatToOld(data) {
     })
   }
 
+  // Kickertool has more than one single-player entry type: "player" for people
+  // picked from the registered player list, and "player_name" for people typed
+  // in by name on the night (those get a hash id instead of player-XXXX).
+  // Anything that is not a team and carries a name is one person.
+  const isPlayerEntry = (entry) =>
+    !!entry && entry.type !== 'team' && Array.isArray(entry.name) && !!entry.name[0]
+
   // Helper to resolve participant to old-format player object list
   const getParticipantPlayers = (participant) => {
     if (!participant) return []
@@ -80,6 +94,20 @@ export function convertNewFormatToOld(data) {
       if (names.length === 0) return []
 
       const teamParts = typeof participant._id === 'string' ? participant._id.split('_') : []
+
+      // If every team part resolves to a player entry, use those: the name array
+      // order does not always match the order of the IDs in the team ID.
+      const memberLookups = teamParts.map(partId => participantsMap.get(partId))
+      const allMembersResolved = teamParts.length > 0 && memberLookups.every(isPlayerEntry)
+      if (allMembersResolved) {
+        return memberLookups.map(member => ({
+          _id: member._id,
+          name: member.name[0],
+          guest: !!member.guest || !!participant.guest,
+          external: null
+        }))
+      }
+
       return names.map((name, index) => ({
         _id: teamParts[index] || `${participant._id}:${index}`,
         name,
@@ -89,9 +117,8 @@ export function convertNewFormatToOld(data) {
     }
 
     // Player entries carry a single name in an array
-    if (participant.type === 'player' && Array.isArray(participant.name) && participant.name.length > 0) {
+    if (isPlayerEntry(participant)) {
       const name = participant.name[0]
-      if (!name) return []
       return [{
         _id: participant._id,
         name,
@@ -141,6 +168,58 @@ export function convertNewFormatToOld(data) {
     })
 
     return players
+  }
+
+  // Old format lists standings per player: a team's stats appear once for every
+  // member of that team. New format lists them per entry, which for doubles and
+  // Monster-DYP is a team. Expand them so both formats aggregate identically.
+  // Handles registered team entries as well as Monster-DYP team IDs like
+  // "player-XXX_player-YYY" that are not registered as entries themselves.
+  const buildPlayerStandings = (standing, place) => {
+    const players = getPlayerInfo([standing.entryId])
+    if (players.length === 0) return []
+
+    const participant = participantsMap.get(standing.entryId)
+    // A player who drops out mid-tournament is "paused" in the new format and
+    // "deactivated" in the old one. Their played matches still count.
+    const deactivated = !!(standing.deactivated || standing.paused || participant?.paused)
+    const removed = !!(standing.removed || participant?.removed)
+    const standingId = standing._id || standing.entryId
+
+    return players.map(player => ({
+      _id: players.length > 1 ? `${standingId}_${player._id}` : standingId,
+      name: player.name,
+      deactivated,
+      removed,
+      stats: {
+        place,
+        finalResult: standing.finalResult ?? false,
+        matches: standing.matches ?? 0,
+        points: standing.points ?? 0,
+        won: standing.matchesWon ?? standing.won ?? 0,
+        lost: standing.matchesLost ?? standing.lost ?? 0,
+        draws: standing.matchesDraw ?? standing.draws ?? 0,
+        goals: standing.goals ?? 0,
+        goals_in: standing.goalsIn ?? 0,
+        goal_diff: standing.goalsDiff ?? 0,
+        points_per_game: standing.pointsPerMatch ?? 0,
+        corrected_points_per_game: standing.correctedPointsPerMatch ?? 0,
+        bh1: standing.bh1 ?? 0,
+        bh2: standing.bh2 ?? 0,
+        sb: standing.sb ?? 0,
+        lives: standing.lives ?? 0,
+        lastRound: standing.lastRound ?? -1,
+        sets_won: standing.setsWon ?? 0,
+        sets_lost: standing.setsLost ?? 0,
+        sets_diff: standing.setsDiff ?? 0,
+        dis_won: standing.encounterWon ?? 0,
+        dis_lost: standing.encounterLost ?? 0,
+        dis_draw: standing.encounterDraw ?? 0,
+        dis_diff: standing.encounterDiff ?? 0
+      },
+      guest: !!player.guest,
+      external: null
+    }))
   }
 
   const extractTeamEntryIds = (match) => {
@@ -263,6 +342,8 @@ export function convertNewFormatToOld(data) {
                   matches: convertedMatches,
                   name: 'Third Place'
                 }
+                // Old format carries this flag alongside the third-place match
+                elimination.thirdPlace = true
               } else {
                 elimination.levels.push({
                   matches: convertedMatches,
@@ -296,57 +377,10 @@ export function convertNewFormatToOld(data) {
             if (!elimination.standings) elimination.standings = []
 
             group.standings.forEach(standing => {
-              if (standing.removed || standing.paused) return
-              const participant = participantsMap.get(standing.entryId)
-              if (!participant) return
-
-              // Get player name(s)
-              let playerName = null
-              if (participant.type === 'team' && Array.isArray(participant.name)) {
-                // For teams, join all player names so we can split them later
-                playerName = participant.name.filter(Boolean).join(' / ')
-              } else if (participant.type === 'player' && Array.isArray(participant.name) && participant.name.length > 0) {
-                playerName = participant.name[0]
-              }
-
-              if (!playerName) return
-
-              // Convert standing to old format (bracket-correct place for elimination)
+              // Bracket-correct place for elimination: players knocked out in the
+              // same round share a place.
               const rawRank = standing.rank ?? standing.result ?? 0
-              elimination.standings.push({
-                _id: standing._id || standing.entryId,
-                name: playerName,
-                deactivated: standing.deactivated || false,
-                removed: standing.removed || false,
-                stats: {
-                  place: rankToBracketPlace(rawRank),
-                  finalResult: standing.finalResult ?? false,
-                  matches: standing.matches ?? 0,
-                  points: standing.points ?? 0,
-                  won: standing.matchesWon ?? standing.won ?? 0,
-                  lost: standing.matchesLost ?? standing.lost ?? 0,
-                  draws: standing.matchesDraw ?? standing.draws ?? 0,
-                  goals: standing.goals ?? 0,
-                  goals_in: standing.goalsIn ?? 0,
-                  goal_diff: standing.goalsDiff ?? 0,
-                  points_per_game: standing.pointsPerMatch ?? 0,
-                  corrected_points_per_game: standing.correctedPointsPerMatch ?? 0,
-                  bh1: standing.bh1 ?? 0,
-                  bh2: standing.bh2 ?? 0,
-                  sb: standing.sb ?? 0,
-                  lives: standing.lives ?? 0,
-                  lastRound: standing.lastRound ?? -1,
-                  sets_won: standing.setsWon ?? 0,
-                  sets_lost: standing.setsLost ?? 0,
-                  sets_diff: standing.setsDiff ?? 0,
-                  dis_won: standing.encounterWon ?? 0,
-                  dis_lost: standing.encounterLost ?? 0,
-                  dis_draw: standing.encounterDraw ?? 0,
-                  dis_diff: standing.encounterDiff ?? 0
-                },
-                guest: participant.guest || false,
-                external: null
-              })
+              elimination.standings.push(...buildPlayerStandings(standing, rankToBracketPlace(rawRank)))
             })
           } else {
             // Process qualifying standings
@@ -357,56 +391,7 @@ export function convertNewFormatToOld(data) {
             if (!qualifying.standings) qualifying.standings = []
 
             group.standings.forEach(standing => {
-              if (standing.removed || standing.paused) return
-              const participant = participantsMap.get(standing.entryId)
-              if (!participant) return
-
-              // Get player name(s)
-              let playerName = null
-              if (participant.type === 'team' && Array.isArray(participant.name)) {
-                // For teams, join all player names so we can split them later
-                playerName = participant.name.filter(Boolean).join(' / ')
-              } else if (participant.type === 'player' && Array.isArray(participant.name) && participant.name.length > 0) {
-                playerName = participant.name[0]
-              }
-
-              if (!playerName) return
-
-              // Convert standing to old format
-              qualifying.standings.push({
-                _id: standing._id || standing.entryId,
-                name: playerName,
-                deactivated: standing.deactivated || false,
-                removed: standing.removed || false,
-                stats: {
-                  place: standing.rank ?? standing.result ?? 0,
-                  finalResult: standing.finalResult ?? false,
-                  matches: standing.matches ?? 0,
-                  points: standing.points ?? 0,
-                  won: standing.matchesWon ?? standing.won ?? 0,
-                  lost: standing.matchesLost ?? standing.lost ?? 0,
-                  draws: standing.matchesDraw ?? standing.draws ?? 0,
-                  goals: standing.goals ?? 0,
-                  goals_in: standing.goalsIn ?? 0,
-                  goal_diff: standing.goalsDiff ?? 0,
-                  points_per_game: standing.pointsPerMatch ?? 0,
-                  corrected_points_per_game: standing.correctedPointsPerMatch ?? 0,
-                  bh1: standing.bh1 ?? 0,
-                  bh2: standing.bh2 ?? 0,
-                  sb: standing.sb ?? 0,
-                  lives: standing.lives ?? 0,
-                  lastRound: standing.lastRound ?? -1,
-                  sets_won: standing.setsWon ?? 0,
-                  sets_lost: standing.setsLost ?? 0,
-                  sets_diff: standing.setsDiff ?? 0,
-                  dis_won: standing.encounterWon ?? 0,
-                  dis_lost: standing.encounterLost ?? 0,
-                  dis_draw: standing.encounterDraw ?? 0,
-                  dis_diff: standing.encounterDiff ?? 0
-                },
-                guest: participant.guest || false,
-                external: null
-              })
+              qualifying.standings.push(...buildPlayerStandings(standing, standing.rank ?? standing.result ?? 0))
             })
           }
         }
