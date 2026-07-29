@@ -33,6 +33,7 @@ services:
       NODE_ENV: production
       API_PREFIX: /api
       API_KEYS: ${API_KEYS:-}
+      TIO_API_TOKEN: ${TIO_API_TOKEN:-}
       CORS_ORIGIN: http://localhost:8080
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
     ports:

@@ -230,7 +230,9 @@ export async function processTournamentData(data) {
             (existingHasOnlyEliminations && newHasOnlyQualifying)) {
           // Merge the tournaments
           tournamentToUse = existing
-          mergedData = mergeTournamentData(existing.rawData, data)
+          // Merge the converted data: raw new-format input has no qualifying /
+          // eliminations keys, so merging it would drop the incoming half.
+          mergedData = mergeTournamentData(existing.rawData, convertedData)
           break
         }
       }
@@ -492,12 +494,24 @@ async function createTeamWithPlayers(tx, matchId, teamNumber, name, score, won, 
  */
 async function getOrCreatePlayer(tx, playerData) {
   const playerName = playerData.name;
-  
+
+  const existing = await tx.player.findUnique({ where: { name: playerName } });
+  if (existing) return existing;
+
+  // Players are identified by name (aliases merge spelling variants). externalId
+  // is only kept for reference, and Kickertool reuses its player slot ids across
+  // tournaments, so claim one only while it is still free.
+  let externalId = playerData._id || null;
+  if (externalId) {
+    const taken = await tx.player.findUnique({ where: { externalId } });
+    if (taken) externalId = null;
+  }
+
   const player = await tx.player.upsert({
     where: { name: playerName },
     update: {},
     create: {
-      externalId: playerData._id,
+      externalId,
       name: playerName,
       firstName: playerData.external?.firstName || null,
       lastName: playerData.external?.lastName || null,

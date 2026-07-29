@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "KCM Ranking - Kickertool Exporter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Automatically export Kickertool tournaments to GitHub",
   "permissions": [
     "activeTab",
@@ -11,8 +11,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://app.kickertool.de/*",
-    "https://alpha.kickertool.de/*",
+    "https://*.kickertool.de/*",
+    "https://*.kickertool3.de/*",
     "https://api.github.com/*",
     "http://localhost:3001/*",
     "http://127.0.0.1:3001/*"
@@ -22,7 +22,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://app.kickertool.de/*", "https://alpha.kickertool.de/*"],
+      "matches": ["https://*.kickertool.de/*", "https://*.kickertool3.de/*"],
       "js": ["content.js"],
       "run_at": "document_start",
       "all_frames": true
@@ -45,7 +45,7 @@
   "web_accessible_resources": [
     {
       "resources": ["injected.js"],
-      "matches": ["https://app.kickertool.de/*", "https://alpha.kickertool.de/*"]
+      "matches": ["https://*.kickertool.de/*", "https://*.kickertool3.de/*"]
     }
   ]
 }

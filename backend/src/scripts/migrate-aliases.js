@@ -19,6 +19,7 @@ const canonicalNameToAlias = {
   'Jan-Hendrik Heilers': ['Jan'],
   'Johannes Metzlaff': ['Johannes', 'Hannes'],
   'Jona Steffel': ['Jona', 'Jonathan Steffel'],
+  'Julian Mendler': ['julian Mendler'],
   'Konrad Pientka': ['Konrad'],
   'Leon Straßberger': ['Leon', 'Leon ', 'Leon S', 'Leon S.'],
   'Ludwig Bauer': ['Ludwig', 'Lu', 'Ludwig Ayrton Bauer'],

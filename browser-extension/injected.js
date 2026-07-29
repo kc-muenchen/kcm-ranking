@@ -8,6 +8,16 @@ function sendToExtension(data, filename) {
   }));
 }
 
+// Both export formats: old exports carry qualifying/participants,
+// new ones (kickertool3) carry disciplines/entries.
+function looksLikeTournament(data) {
+  if (!data || typeof data !== 'object') return false;
+  return !!(data.name || data.qualifying || data.eliminations ||
+    data.participants || data.disciplines || data.entries || data.tournament);
+}
+
+console.log('✅ KCM Exporter: capture hooks installed on', window.location.host);
+
 // Intercept URL.createObjectURL
 const originalCreateObjectURL = URL.createObjectURL;
 URL.createObjectURL = function(blob) {
@@ -17,9 +27,9 @@ URL.createObjectURL = function(blob) {
     reader.onload = function(e) {
       try {
         const data = JSON.parse(e.target.result);
-        
-        if (data && (data.name || data.qualifying || data.participants || data.tournament)) {
-          console.log('✅ KCM Exporter: Tournament data captured');
+
+        if (looksLikeTournament(data)) {
+          console.log('✅ KCM Exporter: Tournament data captured:', data.name);
           sendToExtension(data, null);
         }
       } catch (err) {
@@ -47,7 +57,8 @@ document.createElement = function(tagName) {
           .then(r => r.text())
           .then(text => {
             const data = JSON.parse(text);
-            if (data && (data.name || data.qualifying || data.participants)) {
+            if (looksLikeTournament(data)) {
+              console.log('✅ KCM Exporter: Tournament data captured:', data.name);
               sendToExtension(data, value);
             }
           })
@@ -67,7 +78,8 @@ document.createElement = function(tagName) {
           .then(r => r.text())
           .then(text => {
             const data = JSON.parse(text);
-            if (data && (data.name || data.qualifying || data.participants)) {
+            if (looksLikeTournament(data)) {
+              console.log('✅ KCM Exporter: Tournament data captured:', data.name);
               sendToExtension(data, filename);
             }
           })

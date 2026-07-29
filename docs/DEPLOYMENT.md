@@ -474,6 +474,74 @@ Already configured in Prisma (see `backend/prisma/schema.prisma`).
 - **Small Production**: $5 VPS + domain
 - **Larger Scale**: Cloud platform or better VPS
 
+## Scheduled Tournament Imports
+
+Tournaments can be pulled from the Tournament.app API automatically instead of
+being exported by hand. See [Tournament data format](./TOURNAMENT_DATA_FORMAT.md)
+for what the importer does.
+
+### Prerequisites
+
+1. `TIO_API_TOKEN` in the server's `.env` (generate it in Kickertool under
+   profile → Settings → API). It is passed through to the backend container by
+   both compose files.
+2. A backend image that contains the importer:
+   ```bash
+   docker-compose -f docker-compose.prod.yml pull backend
+   docker-compose -f docker-compose.prod.yml up -d backend
+   ```
+
+### Cron entry
+
+The backend container is long-running, so the job just execs into it. As root
+(or the user owning the deployment), `crontab -e`:
+
+```cron
+# Import finished Monster-DYP tournaments every Thursday at 03:00
+# (club plays Wednesday evenings; % must be escaped in crontab)
+0 3 * * 4 cd /opt/kcm-ranking && /usr/bin/flock -n /tmp/kcm-import.lock \
+  docker-compose -f docker-compose.prod.yml exec -T backend \
+  node src/scripts/import-from-api.js --all --state finished --limit 5 \
+  --mode monster_dyp --exclude "SOS Kinder" \
+  >> /var/log/kcm-import.log 2>&1
+```
+
+What the flags do, and why they matter unattended:
+
+- `--state finished` — never import a tournament that is still running. Its
+  matches are mid-flight, so the stats would be partial and the cross-check
+  would fail anyway.
+- `--limit 5` — the API lists newest first, so this looks at the last five
+  events rather than re-importing the whole year every week. Imports upsert on
+  the tournament id, so re-running is safe and picks up late score corrections.
+- `--mode` / `--exclude` — keep singles, BYP and one-off charity events out of
+  the ranking.
+- `flock -n` — skip the run rather than stack up if a previous one is still
+  going.
+
+The script exits non-zero if any tournament was skipped or failed, so cron will
+mail the output (or your monitoring can watch the log). A tournament is skipped
+when its derived stats disagree with the API's own numbers — usually meaning the
+Kickertool scoring settings changed and `SCORING` in
+`backend/src/utils/tournament-io-mapper.js` needs updating. It is never silently
+imported with wrong points.
+
+Check what a run would do without writing anything:
+
+```bash
+docker-compose -f docker-compose.prod.yml exec -T backend \
+  node src/scripts/import-from-api.js --all --state finished --limit 5 \
+  --mode monster_dyp --exclude "SOS Kinder" --dry-run
+```
+
+### Alternative: webhooks
+
+The API can push instead of being polled — `TournamentAdded`, `MatchUpdated` and
+`StandingsUpdated` events to an endpoint of ours (`POST /v1/public/webhooks`).
+That would make the ranking update within seconds of a result being entered,
+but needs a public endpoint and shared-secret handling, so cron is the simpler
+starting point.
+
 ## Next Steps
 
 - Configure [CI/CD Pipeline](./CI_CD.md) for automated deployments
