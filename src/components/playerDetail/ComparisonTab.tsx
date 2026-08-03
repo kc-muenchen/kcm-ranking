@@ -26,7 +26,7 @@ const Metric = ({
     >
       {value}
     </dd>
-    {detail && <dd className="tnum text-xs text-fg-faint">{detail}</dd>}
+    {detail && <dd className="tnum text-[0.875rem] text-fg-faint">{detail}</dd>}
   </div>
 )
 
@@ -94,7 +94,7 @@ export const ComparisonTab = ({
 
           <div className="flex items-end justify-between gap-6">
             <div className="flex min-w-0 flex-col gap-1">
-              <span className="truncate text-[0.8125rem] text-fg-dim">{playerName}</span>
+              <span className="truncate text-[0.9375rem] text-fg-dim">{playerName}</span>
               <span
                 className={`tnum text-3xl font-semibold leading-none tracking-tight ${
                   prediction.team1WinProb > 0.5 ? 'text-accent' : 'text-fg-dim'
@@ -104,7 +104,7 @@ export const ComparisonTab = ({
               </span>
             </div>
             <div className="flex min-w-0 flex-col items-end gap-1">
-              <span className="truncate text-[0.8125rem] text-fg-dim">{selectedComparePlayer}</span>
+              <span className="truncate text-[0.9375rem] text-fg-dim">{selectedComparePlayer}</span>
               <span
                 className={`tnum text-3xl font-semibold leading-none tracking-tight ${
                   prediction.team2WinProb > 0.5 ? 'text-accent' : 'text-fg-dim'
@@ -126,7 +126,7 @@ export const ComparisonTab = ({
             />
           </div>
 
-          <p className="text-xs text-fg-faint">
+          <p className="text-[0.875rem] text-fg-faint">
             Modelled as a 1v1 from current TrueSkill ratings, accounting for each player&rsquo;s uncertainty.
           </p>
         </section>
@@ -142,7 +142,7 @@ export const ComparisonTab = ({
           </div>
 
           {headToHeadStats.totalMatches === 0 ? (
-            <p className="border-l-2 border-line py-3 pl-3 text-[0.8125rem] text-fg-faint">
+            <p className="border-l-2 border-line py-3 pl-3 text-[0.9375rem] text-fg-faint">
               These two have never faced each other.
             </p>
           ) : (
@@ -163,7 +163,7 @@ export const ComparisonTab = ({
                 />
               </dl>
 
-              <p className="text-[0.8125rem] text-fg-dim">
+              <p className="text-[0.9375rem] text-fg-dim">
                 {headToHeadStats.player1Wins > headToHeadStats.player2Wins ? (
                   <>
                     <span className="font-medium text-fg">{playerName}</span> leads the series.

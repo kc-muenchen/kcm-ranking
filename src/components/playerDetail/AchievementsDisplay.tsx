@@ -45,7 +45,7 @@ export const AchievementsDisplay = ({ achievements }: { achievements: any }) => 
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-4 border-b border-line pb-2">
           <h3 className="eyebrow">Unlocked</h3>
-          <span className="tnum text-xs text-fg-faint">{unlocked.length}</span>
+          <span className="tnum text-[0.875rem] text-fg-faint">{unlocked.length}</span>
         </div>
 
         {unlocked.length > 0 ? (
@@ -72,12 +72,12 @@ export const AchievementsDisplay = ({ achievements }: { achievements: any }) => 
                   </span>
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="flex items-baseline gap-2">
-                      <span className="truncate text-[0.8125rem] font-medium text-fg">{achievement.name}</span>
+                      <span className="truncate text-[0.9375rem] font-medium text-fg">{achievement.name}</span>
                       <span className="eyebrow shrink-0">T{achievement.tier}</span>
                     </span>
-                    <span className="text-xs leading-relaxed text-fg-dim">{achievement.description}</span>
+                    <span className="text-[0.875rem] leading-relaxed text-fg-dim">{achievement.description}</span>
                     {achievement.unlockedDate && (
-                      <span className="tnum text-[0.6875rem] text-fg-faint">
+                      <span className="tnum text-[0.9375rem] text-fg-faint">
                         {new Date(achievement.unlockedDate).toLocaleDateString('de-DE', {
                           year: 'numeric',
                           month: 'short',
@@ -91,7 +91,7 @@ export const AchievementsDisplay = ({ achievements }: { achievements: any }) => 
             })}
           </motion.ul>
         ) : (
-          <p className="py-6 text-[0.8125rem] text-fg-faint">
+          <p className="py-6 text-[0.9375rem] text-fg-faint">
             Nothing unlocked yet. Play a few tournaments and the first milestones arrive quickly.
           </p>
         )}
@@ -101,7 +101,7 @@ export const AchievementsDisplay = ({ achievements }: { achievements: any }) => 
         <section className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between gap-4 border-b border-line pb-2">
             <h3 className="eyebrow">In progress</h3>
-            <span className="tnum text-xs text-fg-faint">{progress.length}</span>
+            <span className="tnum text-[0.875rem] text-fg-faint">{progress.length}</span>
           </div>
 
           <motion.ul variants={staggerParent} initial="hidden" animate="show" className="flex flex-col">
@@ -123,10 +123,10 @@ export const AchievementsDisplay = ({ achievements }: { achievements: any }) => 
                       <AchievementIcon size={14} weight="bold" />
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-[0.8125rem] font-medium text-fg">{achievement.name}</span>
-                      <span className="text-xs leading-relaxed text-fg-dim">{achievement.description}</span>
+                      <span className="truncate text-[0.9375rem] font-medium text-fg">{achievement.name}</span>
+                      <span className="text-[0.875rem] leading-relaxed text-fg-dim">{achievement.description}</span>
                     </span>
-                    <span className="tnum shrink-0 text-xs text-fg-dim">
+                    <span className="tnum shrink-0 text-[0.875rem] text-fg-dim">
                       {displayCurrent}
                       <span className="mx-1 text-fg-faint">/</span>
                       {displayNext}

@@ -36,7 +36,7 @@ function SeasonSelector({
                 type="button"
                 onClick={() => onSelectSeason(String(season))}
                 aria-pressed={isActive}
-                className={`tactile tnum relative rounded-sm px-3 py-1.5 text-[0.8125rem] ${
+                className={`tactile tnum relative rounded-sm px-3 py-1.5 text-[0.9375rem] ${
                   isActive ? 'text-fg' : 'text-fg-dim hover:text-fg'
                 }`}
               >
@@ -70,7 +70,7 @@ function SeasonSelector({
           >
             {isOn && <Check size={11} weight="bold" />}
           </span>
-          <span className={`text-[0.8125rem] leading-snug ${isOn ? 'text-fg' : 'text-fg-dim'}`}>
+          <span className={`text-[0.9375rem] leading-snug ${isOn ? 'text-fg' : 'text-fg-dim'}`}>
             Finale qualifiers only
             <span className="ml-1.5 text-fg-faint">Top 20 + 5 successors, min. 10 games</span>
           </span>

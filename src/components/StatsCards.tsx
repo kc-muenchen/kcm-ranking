@@ -115,7 +115,7 @@ function StatsCards({
           >
             {stat.value ?? '--'}
           </dd>
-          {stat.detail && <dd className="tnum text-xs text-fg-dim">{stat.detail}</dd>}
+          {stat.detail && <dd className="tnum text-[0.875rem] text-fg-dim">{stat.detail}</dd>}
         </motion.div>
       ))}
     </motion.dl>

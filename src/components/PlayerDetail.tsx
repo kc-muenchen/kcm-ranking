@@ -53,7 +53,7 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
       <button
         type="button"
         onClick={onBack}
-        className="tactile group inline-flex w-fit items-center gap-1.5 text-[0.8125rem] text-fg-dim hover:text-accent"
+        className="tactile group inline-flex w-fit items-center gap-1.5 text-[0.9375rem] text-fg-dim hover:text-accent"
       >
         <ArrowLeft
           size={13}

@@ -3,11 +3,18 @@
 @import 'tailwindcss';
 
 /* ============================================================================
-   KCM Ranking - cockpit design tokens
+   KCM Ranking - design tokens
 
-   A standings board, not a marketing page. Density is high: data is separated
-   by 1px rules rather than boxed in cards, and every numeral is monospaced so
-   columns align optically.
+   Tuned for infrequent visitors. Members look at this a handful of times a
+   quarter, so nobody builds familiarity with it: the layout has to be legible
+   cold, every time. That rules out the dense-cockpit conventions this file
+   started with - 11px letterspaced labels and two-letter column codes only work
+   for people who read a board daily.
+
+   So: larger type, muted tones that still clear WCAG AA, and generous rows.
+   Data is still separated by rules rather than boxed in cards, and figures are
+   still monospaced so columns align - those aid scanning without costing
+   legibility.
 
    One accent only. It is deliberately blue rather than green or red, so those
    two stay reserved as semantic encodings for gains and losses.
@@ -19,14 +26,16 @@
   --color-surface-2: #1b1b21;
   --color-surface-3: #23232b;
 
-  /* Rules do the work that cards used to */
-  --color-line: #26262e;
-  --color-line-strong: #35353f;
+  /* Rules do the work that cards used to. Lifted from the original #26262e so
+     row separation is actually visible rather than implied. */
+  --color-line: #2f2f38;
+  --color-line-strong: #454550;
 
-  /* Text */
+  /* Text. Every tone here clears WCAG AA (4.5:1) on --color-bg; the old faint
+     tone sat at 3.74 and carried all the column headers and labels. */
   --color-fg: #f2f2f4;
-  --color-fg-dim: #9d9da8;
-  --color-fg-faint: #6b6b76;
+  --color-fg-dim: #b4b4be;
+  --color-fg-faint: #8a8a95;
 
   /* Single accent, desaturated so it sits inside the neutral base */
   --color-accent: #5289d4;
@@ -120,12 +129,20 @@
 }
 
 @layer utilities {
-  /* Section label: the small uppercase caption above a data block */
+  /* Section label above a data block. Sentence case at a readable size - the
+     previous 11px uppercase monospace version looked the part but made every
+     label something you had to decode rather than read. */
   .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--color-fg-faint);
+  }
+
+  /* Column header in a data table. Readable words, not two-letter codes. */
+  .colhead {
+    font-size: 0.8125rem;
+    font-weight: 500;
     color: var(--color-fg-faint);
   }
 

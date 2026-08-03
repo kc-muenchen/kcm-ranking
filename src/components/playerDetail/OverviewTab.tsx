@@ -18,10 +18,10 @@ const PersonRow = ({
   tone: 'up' | 'down'
 }) => (
   <motion.li variants={staggerChild} className="flex items-baseline gap-3 border-b border-line py-2.5">
-    <span className="tnum w-5 shrink-0 text-xs text-fg-faint">{String(index + 1).padStart(2, '0')}</span>
+    <span className="tnum w-5 shrink-0 text-[0.875rem] text-fg-faint">{String(index + 1).padStart(2, '0')}</span>
     <span className="min-w-0 flex-1">
-      <span className="block truncate text-[0.8125rem] font-medium text-fg">{name}</span>
-      <span className="tnum block text-xs text-fg-faint">{record}</span>
+      <span className="block truncate text-[0.9375rem] font-medium text-fg">{name}</span>
+      <span className="tnum block text-[0.875rem] text-fg-faint">{record}</span>
     </span>
     <span className={`tnum shrink-0 text-sm font-semibold ${tone === 'up' ? 'text-up' : 'text-down'}`}>
       {trailing}
@@ -43,7 +43,7 @@ const Block = ({
 }) => (
   <section className="flex flex-col gap-2">
     <h3 className="eyebrow border-b border-line pb-2">{title}</h3>
-    {isEmpty ? <p className="py-6 text-[0.8125rem] text-fg-faint">{emptyText}</p> : children}
+    {isEmpty ? <p className="py-6 text-[0.9375rem] text-fg-faint">{emptyText}</p> : children}
   </section>
 )
 
@@ -100,7 +100,7 @@ export const OverviewTab = ({
                     >
                       {String(ranking.place).padStart(2, '0')}
                     </span>
-                    <span className="tnum flex-1 text-[0.8125rem] text-fg-dim">
+                    <span className="tnum flex-1 text-[0.9375rem] text-fg-dim">
                       {ranking.count}
                       <span className="ml-1.5 text-fg-faint">
                         time{ranking.count !== 1 ? 's' : ''}
@@ -131,7 +131,7 @@ export const OverviewTab = ({
                               type="button"
                               onClick={() => onTournamentClick && onTournamentClick(tournament)}
                               title={`View ${tournament.tournament}`}
-                              className="tactile rounded-xs border border-line px-2 py-1 text-[0.6875rem] text-fg-dim hover:border-accent hover:text-accent"
+                              className="tactile rounded-xs border border-line px-2 py-1 text-[0.9375rem] text-fg-dim hover:border-accent hover:text-accent"
                             >
                               {tournament.tournament}
                             </button>

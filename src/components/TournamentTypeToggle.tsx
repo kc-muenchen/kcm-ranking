@@ -25,7 +25,7 @@ function TournamentTypeToggle({
             type="button"
             onClick={() => onTournamentTypeChange(id)}
             aria-pressed={isActive}
-            className={`tactile relative flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-[0.8125rem] font-medium ${
+            className={`tactile relative flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-[0.9375rem] font-medium ${
               isActive ? 'text-fg' : 'text-fg-dim hover:text-fg'
             }`}
           >

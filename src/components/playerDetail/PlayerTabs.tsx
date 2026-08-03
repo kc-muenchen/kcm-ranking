@@ -31,7 +31,7 @@ export const PlayerTabs = ({ activeTab, onTabChange }: { activeTab: any; onTabCh
             role="tab"
             aria-selected={isActive}
             onClick={() => onTabChange(id)}
-            className={`tactile relative flex shrink-0 items-center gap-1.5 px-2.5 py-2.5 text-[0.8125rem] font-medium transition-colors md:px-3 ${
+            className={`tactile relative flex shrink-0 items-center gap-1.5 px-2.5 py-2.5 text-[0.9375rem] font-medium transition-colors md:px-3 ${
               isActive ? 'text-fg' : 'text-fg-dim hover:text-fg'
             }`}
           >

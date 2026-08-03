@@ -54,7 +54,7 @@ function ViewToggle({ viewMode, onViewModeChange }: { viewMode: any; onViewModeC
               type="button"
               onClick={() => onViewModeChange(id)}
               aria-current={isActive ? 'page' : undefined}
-              className={`tactile relative flex flex-1 items-center justify-center gap-1.5 rounded-sm px-3 py-1.5 text-[0.8125rem] font-medium sm:flex-none ${
+              className={`tactile relative flex flex-1 items-center justify-center gap-1.5 rounded-sm px-3 py-1.5 text-[0.9375rem] font-medium sm:flex-none ${
                 isActive ? 'text-fg' : 'text-fg-dim hover:text-fg'
               }`}
             >
@@ -78,7 +78,7 @@ function ViewToggle({ viewMode, onViewModeChange }: { viewMode: any; onViewModeC
           onClick={() => setIsToolsOpen(open => !open)}
           aria-expanded={isToolsOpen}
           aria-haspopup="menu"
-          className={`tactile flex w-full items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-[0.8125rem] font-medium sm:w-auto sm:py-1.5 ${
+          className={`tactile flex w-full items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-[0.9375rem] font-medium sm:w-auto sm:py-1.5 ${
             isToolActive
               ? 'border-accent-dim bg-accent/10 text-accent'
               : 'border-line bg-surface text-fg-dim hover:border-line-strong hover:text-fg'
@@ -110,7 +110,7 @@ function ViewToggle({ viewMode, onViewModeChange }: { viewMode: any; onViewModeC
                     onViewModeChange(id)
                     setIsToolsOpen(false)
                   }}
-                  className={`tactile flex w-full items-center gap-2 px-3 py-2 text-left text-[0.8125rem] ${
+                  className={`tactile flex w-full items-center gap-2 px-3 py-2 text-left text-[0.9375rem] ${
                     viewMode === id ? 'bg-accent/10 text-accent' : 'text-fg-dim hover:bg-surface-3 hover:text-fg'
                   }`}
                 >

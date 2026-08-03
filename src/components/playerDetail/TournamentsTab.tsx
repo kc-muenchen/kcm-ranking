@@ -28,7 +28,7 @@ export const TournamentsTab = ({ tournamentList }: { tournamentList: any }) => {
           <span className="eyebrow">Participation</span>
           <h2 className="text-base font-semibold tracking-tight text-fg">Tournaments played</h2>
         </div>
-        <span className="tnum text-xs text-fg-faint">{tournamentList.length} total</span>
+        <span className="tnum text-[0.875rem] text-fg-faint">{tournamentList.length} total</span>
       </div>
 
       <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
@@ -39,7 +39,7 @@ export const TournamentsTab = ({ tournamentList }: { tournamentList: any }) => {
                 <th
                   key={label}
                   scope="col"
-                  className={`whitespace-nowrap px-3 py-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-fg-faint ${
+                  className={`colhead whitespace-nowrap px-3 py-3 ${
                     index >= 2 ? 'text-right' : 'text-left'
                   }`}
                 >
@@ -61,7 +61,7 @@ export const TournamentsTab = ({ tournamentList }: { tournamentList: any }) => {
                       : { animation: 'none' }
                   }
                 >
-                  <td className="tnum whitespace-nowrap px-3 py-2.5 text-xs text-fg-faint">
+                  <td className="tnum whitespace-nowrap px-3 py-3.5 text-[0.875rem] text-fg-faint">
                     {new Date(tournament.date).toLocaleDateString('de-DE', {
                       year: '2-digit',
                       month: '2-digit',
@@ -69,26 +69,26 @@ export const TournamentsTab = ({ tournamentList }: { tournamentList: any }) => {
                     })}
                   </td>
                   <td
-                    className={`max-w-[18rem] truncate border-l-2 px-3 py-2.5 text-[0.8125rem] ${
+                    className={`max-w-[18rem] truncate border-l-2 px-3 py-3.5 text-[0.9375rem] ${
                       isPodium ? 'border-l-accent font-medium text-fg' : 'border-l-transparent text-fg-dim'
                     }`}
                   >
                     {tournament.name}
                   </td>
-                  <td className="tnum px-3 py-2.5 text-right text-[0.8125rem] text-fg-dim">
+                  <td className="tnum px-3 py-2.5 text-right text-[0.9375rem] text-fg-dim">
                     {tournament.qualifyingPlace ?? <span className="text-fg-faint">--</span>}
                   </td>
-                  <td className="tnum px-3 py-2.5 text-right text-[0.8125rem] text-fg-dim">
+                  <td className="tnum px-3 py-2.5 text-right text-[0.9375rem] text-fg-dim">
                     {tournament.eliminationPlace ?? <span className="text-fg-faint">--</span>}
                   </td>
                   <td
-                    className={`tnum px-3 py-2.5 text-right text-[0.8125rem] ${
+                    className={`tnum px-3 py-2.5 text-right text-[0.9375rem] ${
                       isPodium ? 'font-semibold text-fg' : 'text-fg-dim'
                     }`}
                   >
                     {tournament.finalPlace ?? <span className="text-fg-faint">--</span>}
                   </td>
-                  <td className="tnum px-3 py-2.5 text-right text-[0.8125rem] text-accent">
+                  <td className="tnum px-3 py-2.5 text-right text-[0.9375rem] text-accent">
                     {tournament.seasonPoints !== undefined ? (
                       `+${tournament.seasonPoints}`
                     ) : (

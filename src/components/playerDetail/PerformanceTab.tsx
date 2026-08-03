@@ -44,7 +44,7 @@ export const PerformanceTab = ({
             <span className="eyebrow">Match log</span>
             <h2 className="text-base font-semibold tracking-tight text-fg">Every match played</h2>
           </div>
-          <span className="tnum text-xs text-fg-faint">{matchHistory.length} matches</span>
+          <span className="tnum text-[0.875rem] text-fg-faint">{matchHistory.length} matches</span>
         </div>
 
         {matchHistory.length === 0 ? (
@@ -62,7 +62,7 @@ export const PerformanceTab = ({
                     <th
                       key={label}
                       scope="col"
-                      className={`whitespace-nowrap px-3 py-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-fg-faint ${
+                      className={`colhead whitespace-nowrap px-3 py-3 ${
                         index >= 5 ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -100,7 +100,7 @@ export const PerformanceTab = ({
                           : { animation: 'none' }
                       }
                     >
-                      <td className="tnum whitespace-nowrap px-3 py-2.5 text-xs text-fg-faint">
+                      <td className="tnum whitespace-nowrap px-3 py-3.5 text-[0.875rem] text-fg-faint">
                         {new Date(entry.date).toLocaleDateString('de-DE', {
                           year: '2-digit',
                           month: '2-digit',
@@ -108,28 +108,28 @@ export const PerformanceTab = ({
                         })}
                       </td>
                       <td
-                        className={`border-l-2 px-3 py-2.5 text-[0.8125rem] font-medium ${
+                        className={`border-l-2 px-3 py-3.5 text-[0.9375rem] font-medium ${
                           match.won ? 'border-l-up text-up' : 'border-l-down text-down'
                         }`}
                       >
                         {match.won ? 'Won' : 'Lost'}
                       </td>
-                      <td className="tnum px-3 py-2.5 text-[0.8125rem] text-fg">{score}</td>
-                      <td className="max-w-[10rem] truncate px-3 py-2.5 text-[0.8125rem] text-fg-dim">
+                      <td className="tnum px-3 py-3.5 text-[0.9375rem] text-fg">{score}</td>
+                      <td className="max-w-[10rem] truncate px-3 py-3.5 text-[0.9375rem] text-fg-dim">
                         {teammates.join(', ') || <span className="text-fg-faint">--</span>}
                       </td>
-                      <td className="max-w-[14rem] truncate px-3 py-2.5 text-[0.8125rem] text-fg-dim">
+                      <td className="max-w-[14rem] truncate px-3 py-3.5 text-[0.9375rem] text-fg-dim">
                         {opponents.join(', ')}
                       </td>
                       <td
-                        className={`tnum px-3 py-2.5 text-right text-[0.8125rem] ${
+                        className={`tnum px-3 py-2.5 text-right text-[0.9375rem] ${
                           skillDelta >= 0 ? 'text-up' : 'text-down'
                         }`}
                       >
                         {skillDelta >= 0 ? '+' : ''}
                         {skillDelta.toFixed(2)}
                       </td>
-                      <td className="tnum px-3 py-2.5 text-right text-[0.8125rem] text-fg">
+                      <td className="tnum px-3 py-2.5 text-right text-[0.9375rem] text-fg">
                         {entry.skill.toFixed(1)}
                       </td>
                     </tr>

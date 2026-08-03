@@ -40,27 +40,47 @@ const NUMERIC = new Set([
   'pointsPerGame'
 ])
 
+/**
+ * Column labels, spelled out.
+ *
+ * These were two-letter codes (MP, GF, GD, SB, PPG). Codes are fine for a board
+ * somebody reads every week; members here visit a few times a quarter, so every
+ * abbreviation is something they have to decode from scratch each time.
+ */
 const COLUMN_LABELS: Record<string, string> = {
   rank: 'Rank',
   name: 'Player',
-  seasonPoints: 'Points',
+  seasonPoints: 'Season points',
   trueSkill: 'TrueSkill',
-  tournaments: 'Events',
-  bestPlace: 'Best',
-  avgPlace: 'Avg',
-  qualifyingPlace: 'Qual',
-  eliminationPlace: 'KO',
+  tournaments: 'Tournaments',
+  bestPlace: 'Best place',
+  avgPlace: 'Average place',
+  qualifyingPlace: 'Qualifying',
+  eliminationPlace: 'Knockout',
   buchholz: 'Buchholz',
-  sonnebornBerger: 'SB',
-  matches: 'MP',
-  points: 'Pts',
-  won: 'W',
-  lost: 'L',
-  winRate: 'Win %',
-  goalsFor: 'GF',
-  goalsAgainst: 'GA',
-  goalDiff: 'GD',
-  pointsPerGame: 'PPG'
+  sonnebornBerger: 'Sonneborn-Berger',
+  matches: 'Matches',
+  points: 'Points',
+  won: 'Won',
+  lost: 'Lost',
+  winRate: 'Win rate',
+  goalsFor: 'Goals for',
+  goalsAgainst: 'Goals against',
+  goalDiff: 'Goal difference',
+  pointsPerGame: 'Points per match'
+}
+
+/** Plain-language explanation shown on hover for the less obvious columns. */
+const COLUMN_HELP: Record<string, string> = {
+  trueSkill:
+    'Skill rating from match results. Accounts for how strong your opponents were, not just how often you won. Higher is better.',
+  seasonPoints: 'Points earned from tournament placings this season, plus one point per tournament attended.',
+  bestPlace: 'Best finishing position achieved in any tournament.',
+  avgPlace: 'Average finishing position across all tournaments played.',
+  buchholz: 'Tie-breaker: the combined score of everyone this player faced.',
+  sonnebornBerger: 'Tie-breaker: weighted by the strength of the opponents actually beaten.',
+  pointsPerGame: 'Match points divided by matches played.',
+  winRate: 'Share of matches won.'
 }
 
 /**
@@ -113,31 +133,43 @@ function RankingTable({
     cols.push({
       id: 'rank',
       accessorFn: (row: any) => (viewMode === 'tournament' ? row.finalPlace : row.place) ?? 9999,
-      header: viewMode === 'tournament' ? 'Final' : 'Rank',
+      header: viewMode === 'tournament' ? 'Final place' : 'Rank',
       cell: ({ row }) => {
         const player: any = row.original
         const place = viewMode === 'tournament' ? player.finalPlace : player.place
         const isPodium = typeof place === 'number' && place <= 3
 
         return (
-          <div className="flex items-center gap-1.5">
-            <span className={isPodium ? 'font-semibold text-fg' : 'text-fg-dim'}>
-              {typeof place === 'number' ? String(place).padStart(2, '0') : '--'}
+          <div className="flex items-center gap-2">
+            {/*
+              Podium gets a filled chip rather than a 2px edge rule. The rule was
+              legible only to someone who already knew to look for it; a chip
+              reads as "this one placed" on first sight. No zero padding - "1"
+              is a position, "01" looks like a code.
+            */}
+            <span
+              className={
+                isPodium
+                  ? 'grid h-6 min-w-6 place-items-center rounded-sm bg-accent px-1 font-semibold text-bg'
+                  : 'grid h-6 min-w-6 place-items-center px-1 text-fg-dim'
+              }
+            >
+              {typeof place === 'number' ? place : '--'}
             </span>
             {player.finaleStatus === 'qualified' && (
               <span
-                title="Qualified for season finale"
-                className="rounded-xs border border-up/40 px-1 text-[0.5625rem] font-semibold uppercase tracking-wider text-up"
+                title="Qualified for the season finale"
+                className="whitespace-nowrap rounded-sm border border-up/40 px-1.5 py-0.5 text-[0.75rem] font-medium text-up"
               >
-                Q
+                Qualified
               </span>
             )}
             {player.finaleStatus === 'successor' && (
               <span
-                title="Potential successor"
-                className="rounded-xs border border-warn/40 px-1 text-[0.5625rem] font-semibold uppercase tracking-wider text-warn"
+                title="Next in line if a qualified player drops out"
+                className="whitespace-nowrap rounded-sm border border-warn/40 px-1.5 py-0.5 text-[0.75rem] font-medium text-warn"
               >
-                S
+                Reserve
               </span>
             )}
           </div>
@@ -165,7 +197,7 @@ function RankingTable({
               {player.name}
             </a>
             {player.external?.nationalLicence && (
-              <span className="tnum shrink-0 text-[0.6875rem] text-fg-faint">
+              <span className="tnum shrink-0 text-[0.9375rem] text-fg-faint">
                 {player.external.nationalLicence}
               </span>
             )}
@@ -179,7 +211,7 @@ function RankingTable({
         {
           id: 'seasonPoints',
           accessorKey: 'seasonPoints',
-          header: viewMode === 'overall' ? 'Total' : 'Points',
+          header: viewMode === 'overall' ? 'Total points' : 'Season points',
           cell: ({ getValue }) => <span className="font-semibold text-fg">{getValue() ?? 0}</span>
         },
         {
@@ -191,11 +223,11 @@ function RankingTable({
             return <span className="text-accent">{value.toFixed(1)}</span>
           }
         },
-        { id: 'tournaments', accessorKey: 'tournaments', header: 'Events' },
+        { id: 'tournaments', accessorKey: 'tournaments', header: 'Tournaments' },
         {
           id: 'bestPlace',
           accessorKey: 'bestPlace',
-          header: 'Best',
+          header: 'Best place',
           cell: ({ getValue }) => {
             const place = getValue()
             return typeof place === 'number' ? (
@@ -205,17 +237,17 @@ function RankingTable({
             )
           }
         },
-        { id: 'avgPlace', accessorKey: 'avgPlace', header: 'Avg' }
+        { id: 'avgPlace', accessorKey: 'avgPlace', header: 'Average place' }
       )
     }
 
     if (viewMode === 'tournament') {
       cols.push(
-        { id: 'qualifyingPlace', accessorKey: 'qualifyingPlace', header: 'Qual' },
+        { id: 'qualifyingPlace', accessorKey: 'qualifyingPlace', header: 'Qualifying' },
         {
           id: 'eliminationPlace',
           accessorKey: 'eliminationPlace',
-          header: 'KO',
+          header: 'Knockout',
           cell: ({ getValue }) => {
             const value = getValue()
             return value ?? <span className="text-fg-faint">--</span>
@@ -230,48 +262,55 @@ function RankingTable({
         {
           id: 'sonnebornBerger',
           accessorKey: 'sonnebornBerger',
-          header: 'SB',
+          header: 'Sonneborn-Berger',
           cell: ({ getValue }) => getValue() || 0
         }
       )
     }
 
     cols.push(
-      { id: 'matches', accessorKey: 'matches', header: 'MP' },
+      { id: 'matches', accessorKey: 'matches', header: 'Matches' },
       {
         id: 'points',
         accessorKey: 'points',
-        header: 'Pts',
+        header: 'Points',
         cell: ({ getValue }) => <span className="font-semibold text-fg">{getValue()}</span>
       },
       {
         id: 'won',
         accessorKey: 'won',
-        header: 'W',
+        header: 'Won',
         cell: ({ getValue }) => <span className="text-up">{getValue()}</span>
       },
       {
         id: 'lost',
         accessorKey: 'lost',
-        header: 'L',
+        header: 'Lost',
         cell: ({ getValue }) => <span className="text-down">{getValue()}</span>
       },
       {
         id: 'winRate',
         accessorKey: 'winRate',
-        header: 'Win %',
+        header: 'Win rate',
         cell: ({ getValue }) => {
           const rate = parseFloat(String(getValue() ?? 0))
           const tone = rate >= 60 ? 'text-up' : rate >= 40 ? 'text-fg-dim' : 'text-down'
-          return <span className={tone}>{rate.toFixed(1)}</span>
+          // Keep the unit on the value. "77.1" under a "Win rate" heading is only
+          // unambiguous to someone who already knows the column.
+          return (
+            <span className={tone}>
+              {rate.toFixed(1)}
+              <span className="text-fg-faint">%</span>
+            </span>
+          )
         }
       },
-      { id: 'goalsFor', accessorKey: 'goalsFor', header: 'GF' },
-      { id: 'goalsAgainst', accessorKey: 'goalsAgainst', header: 'GA' },
+      { id: 'goalsFor', accessorKey: 'goalsFor', header: 'Goals for' },
+      { id: 'goalsAgainst', accessorKey: 'goalsAgainst', header: 'Goals against' },
       {
         id: 'goalDiff',
         accessorKey: 'goalDiff',
-        header: 'GD',
+        header: 'Goal difference',
         cell: ({ getValue }) => {
           const diff = Number(getValue() ?? 0)
           return (
@@ -285,7 +324,7 @@ function RankingTable({
       {
         id: 'pointsPerGame',
         accessorKey: 'pointsPerGame',
-        header: 'PPG',
+        header: 'Points per match',
         cell: ({ getValue }) => {
           const value = getValue()
           return typeof value === 'number' ? value.toFixed(2) : value
@@ -373,9 +412,9 @@ function RankingTable({
     <section className="flex flex-col gap-4">
       {/* Header: title left, controls right. Nothing centred. */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-lg font-semibold tracking-tight text-fg">{title}</h2>
-          <p className="text-[0.8125rem] text-fg-dim">{subtitle}</p>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-xl font-semibold tracking-tight text-fg">{title}</h2>
+          <p className="text-[0.9375rem] text-fg-dim">{subtitle}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -386,7 +425,7 @@ function RankingTable({
               onChange={event => setGlobalFilter(event.target.value)}
               placeholder="Find player"
               aria-label="Find player"
-              className="min-w-0 flex-1 bg-transparent py-1.5 text-[0.8125rem] text-fg outline-none placeholder:text-fg-faint"
+              className="min-w-0 flex-1 bg-transparent py-1.5 text-[0.9375rem] text-fg outline-none placeholder:text-fg-faint"
             />
             {globalFilter && (
               <button
@@ -407,7 +446,7 @@ function RankingTable({
               aria-expanded={isColumnMenuOpen}
               aria-haspopup="menu"
               title="Choose columns"
-              className="tactile flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[0.8125rem] text-fg-dim hover:border-line-strong hover:text-fg"
+              className="tactile flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[0.9375rem] text-fg-dim hover:border-line-strong hover:text-fg"
             >
               <Columns size={14} weight="bold" />
               <span className="hidden sm:inline">Columns</span>
@@ -429,7 +468,7 @@ function RankingTable({
                     .map(column => (
                       <label
                         key={column.id}
-                        className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 text-[0.8125rem] text-fg-dim hover:bg-surface-3 hover:text-fg"
+                        className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 text-[0.9375rem] text-fg-dim hover:bg-surface-3 hover:text-fg"
                       >
                         <input
                           type="checkbox"
@@ -448,6 +487,17 @@ function RankingTable({
       </div>
 
       {/*
+        Stated up front rather than left implicit. Most members open this a few
+        times a quarter and will not remember what the ranking is sorted by, let
+        alone what TrueSkill measures.
+      */}
+      <p className="max-w-[76ch] border-l-2 border-line py-1 pl-3 text-[0.9375rem] leading-relaxed text-fg-faint">
+        {viewMode === 'tournament'
+          ? 'Ordered by final placing in this tournament. Hover any column heading to see what it means.'
+          : 'Ordered by season points, then TrueSkill. Season points come from tournament placings plus one point for turning up; TrueSkill is a skill rating that weighs how strong your opponents were, not just how often you won. Hover any column heading to see what it means.'}
+      </p>
+
+      {/*
         Wide content scrolls inside its own container so the page never does.
         The scroll container is dropped at md: an overflow container becomes the
         containing block for sticky children, which would pin the header 56px
@@ -463,25 +513,28 @@ function RankingTable({
                 const isNumeric = NUMERIC.has(header.column.id)
                 const sortDirection = header.column.getIsSorted()
 
+                const help = COLUMN_HELP[header.column.id]
+
                 return (
                   <th
                     key={header.id}
                     scope="col"
-                    className={`whitespace-nowrap px-3 py-2.5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.08em] ${
-                      isNumeric ? 'text-right' : 'text-left'
-                    }`}
+                    className={`whitespace-nowrap px-3 py-3 ${isNumeric ? 'text-right' : 'text-left'}`}
                   >
                     <button
                       type="button"
                       onClick={header.column.getToggleSortingHandler()}
-                      className={`inline-flex items-center gap-1 transition-colors ${
+                      title={help ? `${COLUMN_LABELS[header.column.id]} — ${help}` : 'Sort by this column'}
+                      className={`colhead inline-flex items-center gap-1 transition-colors ${
                         isNumeric ? 'flex-row-reverse' : ''
-                      } ${sortDirection ? 'text-accent' : 'text-fg-faint hover:text-fg-dim'}`}
+                      } ${sortDirection ? '!text-accent' : 'hover:!text-fg'}`}
                     >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      <span className="flex w-2.5 justify-center">
-                        {sortDirection === 'asc' && <CaretUp size={9} weight="bold" />}
-                        {sortDirection === 'desc' && <CaretDown size={9} weight="bold" />}
+                      <span className={help ? 'underline decoration-line-strong decoration-dotted underline-offset-4' : ''}>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </span>
+                      <span className="flex w-3 justify-center">
+                        {sortDirection === 'asc' && <CaretUp size={11} weight="bold" />}
+                        {sortDirection === 'desc' && <CaretDown size={11} weight="bold" />}
                       </span>
                     </button>
                   </th>
@@ -508,17 +561,14 @@ function RankingTable({
                       : { animation: 'none' }
                   }
                 >
-                  {row.getVisibleCells().map((cell, cellIndex) => {
+                  {row.getVisibleCells().map(cell => {
                     const isNumeric = NUMERIC.has(cell.column.id)
                     return (
                       <td
                         key={cell.id}
-                        className={`px-3 py-2.5 text-[0.8125rem] ${isNumeric ? 'tnum text-right' : 'text-left'} ${
-                          isNumeric ? 'text-fg-dim' : ''
-                        } ${
-                          /* podium marker: a rule, not a medal or a glow */
-                          cellIndex === 0 && isPodium ? 'border-l-2 border-l-accent pl-2.5' : ''
-                        } ${cellIndex === 0 && !isPodium ? 'border-l-2 border-l-transparent pl-2.5' : ''}`}
+                        className={`px-3 py-3.5 text-[0.9375rem] ${
+                          isNumeric ? 'tnum text-right text-fg-dim' : 'text-left'
+                        }`}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -544,7 +594,7 @@ function RankingTable({
                 <button
                   type="button"
                   onClick={() => setGlobalFilter('')}
-                  className="tactile rounded-sm border border-line-strong px-3 py-1.5 text-[0.8125rem] text-fg-dim hover:border-accent hover:text-accent"
+                  className="tactile rounded-sm border border-line-strong px-3 py-1.5 text-[0.9375rem] text-fg-dim hover:border-accent hover:text-accent"
                 >
                   Clear search
                 </button>

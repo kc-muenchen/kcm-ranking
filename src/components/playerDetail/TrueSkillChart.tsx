@@ -140,7 +140,7 @@ export const TrueSkillChart = ({
         {selectedPlayers.map((playerName, index) => (
           <span
             key={playerName}
-            className="flex items-center gap-1.5 rounded-sm border border-line bg-surface py-1 pl-2 pr-1.5 text-xs"
+            className="flex items-center gap-1.5 rounded-sm border border-line bg-surface py-1 pl-2 pr-1.5 text-[0.875rem]"
           >
             <span
               className="h-2 w-2 shrink-0 rounded-full"
@@ -201,7 +201,7 @@ export const TrueSkillChart = ({
                 x={PADDING.left - 10}
                 y={line.y + 4}
                 fill="var(--color-fg-faint)"
-                fontSize="11"
+                fontSize="14"
                 fontFamily="var(--font-mono)"
                 textAnchor="end"
               >
@@ -216,7 +216,7 @@ export const TrueSkillChart = ({
               x={label.x}
               y={VIEW_HEIGHT - PADDING.bottom + 20}
               fill="var(--color-fg-faint)"
-              fontSize="11"
+              fontSize="14"
               fontFamily="var(--font-mono)"
               textAnchor="middle"
             >

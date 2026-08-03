@@ -19,7 +19,7 @@ export const QualificationInfoBox = () => {
         className="tactile group flex w-full items-center gap-2 py-3 text-left"
       >
         <Info size={14} weight="bold" className="shrink-0 text-fg-faint group-hover:text-accent" />
-        <span className="text-[0.8125rem] font-medium text-fg-dim group-hover:text-fg">
+        <span className="text-[0.9375rem] font-medium text-fg-dim group-hover:text-fg">
           Season finale qualification rules
         </span>
         <motion.span
@@ -40,7 +40,7 @@ export const QualificationInfoBox = () => {
             transition={spring}
             className="overflow-hidden"
           >
-            <div className="flex flex-col gap-3 pb-5 text-[0.8125rem] leading-relaxed text-fg-dim md:max-w-[70ch]">
+            <div className="flex flex-col gap-3 pb-5 text-[0.9375rem] leading-relaxed text-fg-dim md:max-w-[70ch]">
               <ul className="flex flex-col gap-2">
                 <li className="flex gap-2.5">
                   <span className="tnum shrink-0 text-fg-faint">01</span>
@@ -52,7 +52,7 @@ export const QualificationInfoBox = () => {
                   <span className="tnum shrink-0 text-fg-faint">02</span>
                   <span>
                     Top <span className="tnum text-fg">20</span> players are{' '}
-                    <span className="rounded-xs border border-up/40 px-1 py-px text-[0.6875rem] font-medium uppercase tracking-wide text-up">
+                    <span className="rounded-xs border border-up/40 px-1 py-px text-[0.9375rem] font-medium uppercase tracking-wide text-up">
                       qualified
                     </span>
                     .
@@ -62,7 +62,7 @@ export const QualificationInfoBox = () => {
                   <span className="tnum shrink-0 text-fg-faint">03</span>
                   <span>
                     Next <span className="tnum text-fg">5</span> are{' '}
-                    <span className="rounded-xs border border-warn/40 px-1 py-px text-[0.6875rem] font-medium uppercase tracking-wide text-warn">
+                    <span className="rounded-xs border border-warn/40 px-1 py-px text-[0.9375rem] font-medium uppercase tracking-wide text-warn">
                       successors
                     </span>{' '}
                     if a spot opens.
@@ -130,7 +130,7 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }: { seasonFinal: a
             <span className="eyebrow">Season final</span>
           </div>
           <h2 className="text-lg font-semibold tracking-tight text-fg">{seasonFinal.name}</h2>
-          <p className="tnum text-xs text-fg-faint">
+          <p className="tnum text-[0.875rem] text-fg-faint">
             {new Date(seasonFinal.date).toLocaleDateString('de-DE', {
               year: 'numeric',
               month: 'short',
@@ -142,7 +142,7 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }: { seasonFinal: a
         <button
           type="button"
           onClick={onViewFinal}
-          className="tactile group inline-flex shrink-0 items-center gap-2 self-start rounded-md border border-line-strong bg-surface px-3 py-2 text-[0.8125rem] font-medium text-fg-dim hover:border-accent hover:text-accent"
+          className="tactile group inline-flex shrink-0 items-center gap-2 self-start rounded-md border border-line-strong bg-surface px-3 py-2 text-[0.9375rem] font-medium text-fg-dim hover:border-accent hover:text-accent"
         >
           View tournament
           <ArrowRight
@@ -183,7 +183,7 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }: { seasonFinal: a
         </motion.ol>
       )}
 
-      <p className="max-w-[70ch] border-l-2 border-line pl-3 text-[0.8125rem] leading-relaxed text-fg-faint">
+      <p className="max-w-[70ch] border-l-2 border-line pl-3 text-[0.9375rem] leading-relaxed text-fg-faint">
         This season has concluded. Tournaments after this date do not count toward season points, and the final itself
         is excluded from season ranking calculations.
       </p>

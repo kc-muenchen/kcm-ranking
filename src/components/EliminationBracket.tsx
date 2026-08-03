@@ -43,9 +43,9 @@ const Match = ({ match }: { match: any }) => {
         won ? 'border-l-accent' : 'border-l-transparent'
       }`}
     >
-      <span className={`truncate text-[0.8125rem] ${won ? 'font-medium text-fg' : 'text-fg-dim'}`}>{team.name}</span>
+      <span className={`truncate text-[0.9375rem] ${won ? 'font-medium text-fg' : 'text-fg-dim'}`}>{team.name}</span>
       {match.result && (
-        <span className={`tnum shrink-0 text-[0.8125rem] ${won ? 'font-semibold text-fg' : 'text-fg-faint'}`}>
+        <span className={`tnum shrink-0 text-[0.9375rem] ${won ? 'font-semibold text-fg' : 'text-fg-faint'}`}>
           {score}
         </span>
       )}
@@ -145,7 +145,7 @@ function EliminationBracket({ eliminationData }: { eliminationData: any }) {
                       >
                         {player.name}
                       </span>
-                      <span className="tnum shrink-0 text-[0.8125rem] text-fg-faint">
+                      <span className="tnum shrink-0 text-[0.9375rem] text-fg-faint">
                         <span className="text-up">{player.stats.won}</span>
                         <span className="mx-1">-</span>
                         <span className="text-down">{player.stats.lost}</span>

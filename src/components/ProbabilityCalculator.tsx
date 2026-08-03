@@ -87,7 +87,7 @@ export const ProbabilityCalculator = ({ players }: { players: any }) => {
             <span className="eyebrow">Tool</span>
           </div>
           <h2 className="text-lg font-semibold tracking-tight text-fg">Match probability</h2>
-          <p className="max-w-[60ch] text-[0.8125rem] text-fg-dim">
+          <p className="max-w-[60ch] text-[0.9375rem] text-fg-dim">
             Pick four players to model a doubles result from current TrueSkill ratings.
           </p>
         </div>
@@ -96,7 +96,7 @@ export const ProbabilityCalculator = ({ players }: { players: any }) => {
           <button
             type="button"
             onClick={handleReset}
-            className="tactile flex shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[0.8125rem] text-fg-dim hover:border-accent hover:text-accent"
+            className="tactile flex shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[0.9375rem] text-fg-dim hover:border-accent hover:text-accent"
           >
             <ArrowCounterClockwise size={13} weight="bold" />
             <span className="hidden sm:inline">Reset</span>
@@ -106,7 +106,7 @@ export const ProbabilityCalculator = ({ players }: { players: any }) => {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_auto_1fr] md:items-start md:gap-8">
         <div className="flex flex-col gap-3 border-t-2 border-line pt-4 md:border-t-0 md:border-l-2 md:pl-5 md:pt-0">
-          <span className="text-[0.8125rem] font-medium text-fg">Team 1</span>
+          <span className="text-[0.9375rem] font-medium text-fg">Team 1</span>
           <PlayerSlot
             label="Player 1"
             value={team1Player1}
@@ -126,7 +126,7 @@ export const ProbabilityCalculator = ({ players }: { players: any }) => {
         </div>
 
         <div className="flex flex-col gap-3 border-t-2 border-line pt-4 md:border-t-0 md:border-l-2 md:pl-5 md:pt-0">
-          <span className="text-[0.8125rem] font-medium text-fg">Team 2</span>
+          <span className="text-[0.9375rem] font-medium text-fg">Team 2</span>
           <PlayerSlot
             label="Player 1"
             value={team2Player1}
@@ -155,7 +155,7 @@ export const ProbabilityCalculator = ({ players }: { players: any }) => {
                 >
                   {(probabilities.team1WinProb * 100).toFixed(1)}%
                 </span>
-                <span className="tnum text-xs text-fg-faint">
+                <span className="tnum text-[0.875rem] text-fg-faint">
                   combined skill {probabilities.team1Skill.toFixed(1)}
                 </span>
               </div>
@@ -169,7 +169,7 @@ export const ProbabilityCalculator = ({ players }: { players: any }) => {
                 >
                   {(probabilities.team2WinProb * 100).toFixed(1)}%
                 </span>
-                <span className="tnum text-xs text-fg-faint">
+                <span className="tnum text-[0.875rem] text-fg-faint">
                   combined skill {probabilities.team2Skill.toFixed(1)}
                 </span>
               </div>
@@ -185,7 +185,7 @@ export const ProbabilityCalculator = ({ players }: { players: any }) => {
               />
             </div>
 
-            <p className="max-w-[70ch] border-l-2 border-line pl-3 text-xs leading-relaxed text-fg-faint">
+            <p className="max-w-[70ch] border-l-2 border-line pl-3 text-[0.875rem] leading-relaxed text-fg-faint">
               Derived from TrueSkill ratings, accounting for each player&rsquo;s uncertainty. Real results still turn
               on form, the table, and who is buying the next round.
             </p>

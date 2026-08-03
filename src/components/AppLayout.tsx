@@ -16,10 +16,10 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           <div className="flex items-center gap-3">
             <img src={logo} alt="" className="h-7 w-auto object-contain" />
             <div className="flex items-baseline gap-2.5">
-              <span className="font-mono text-[0.8125rem] font-semibold uppercase tracking-[0.14em] text-fg">
+              <span className="font-mono text-[0.9375rem] font-semibold uppercase tracking-[0.14em] text-fg">
                 KCM Ranking
               </span>
-              <span className="hidden text-xs text-fg-faint sm:inline">Table Soccer</span>
+              <span className="hidden text-[0.875rem] text-fg-faint sm:inline">Table Soccer</span>
             </div>
           </div>
 
@@ -38,7 +38,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
       <footer className="border-t border-line">
         <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-1 px-4 py-6 md:flex-row md:items-center md:justify-between md:px-8">
-          <p className="text-xs text-fg-faint">
+          <p className="text-[0.875rem] text-fg-faint">
             <a
               href="https://kc-muenchen.de/"
               className="tactile text-fg-dim underline-offset-4 hover:text-accent hover:underline"
