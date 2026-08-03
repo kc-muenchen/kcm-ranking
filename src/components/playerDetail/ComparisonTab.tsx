@@ -17,8 +17,8 @@ export const ComparisonTab = ({ playerName,
   const player2 = allPlayers.find((p: any) => p.name === selectedComparePlayer)
   
   // Calculate win probability if both players have TrueSkill ratings
-  const prediction = (player1?.trueSkill && player2?.trueSkill) 
-    ? calculateWinProbability(player1.trueSkill, player2.trueSkill)
+  const prediction = (player1 && player2)
+    ? calculateWinProbability([player1], [player2])
     : null
 
   return (
@@ -47,8 +47,8 @@ export const ComparisonTab = ({ playerName,
                 <div className="prediction-player player1">
                   <div className="player-name">{playerName}</div>
                   <div className="player-skill">TrueSkill: {player1.trueSkill.toFixed(1)}</div>
-                  <div className={`win-probability ${prediction.player1WinProb > 0.5 ? 'favorite' : ''}`}>
-                    {(prediction.player1WinProb * 100).toFixed(1)}%
+                  <div className={`win-probability ${prediction.team1WinProb > 0.5 ? 'favorite' : ''}`}>
+                    {(prediction.team1WinProb * 100).toFixed(1)}%
                   </div>
                 </div>
                 
@@ -57,20 +57,20 @@ export const ComparisonTab = ({ playerName,
                 <div className="prediction-player player2">
                   <div className="player-name">{selectedComparePlayer}</div>
                   <div className="player-skill">TrueSkill: {player2.trueSkill.toFixed(1)}</div>
-                  <div className={`win-probability ${prediction.player2WinProb > 0.5 ? 'favorite' : ''}`}>
-                    {(prediction.player2WinProb * 100).toFixed(1)}%
+                  <div className={`win-probability ${prediction.team2WinProb > 0.5 ? 'favorite' : ''}`}>
+                    {(prediction.team2WinProb * 100).toFixed(1)}%
                   </div>
                 </div>
               </div>
               
               <div className="prediction-bar-container">
-                <div 
-                  className="prediction-bar player1-bar" 
-                  style={{ width: `${prediction.player1WinProb * 100}%` }}
+                <div
+                  className="prediction-bar player1-bar"
+                  style={{ width: `${prediction.team1WinProb * 100}%` }}
                 ></div>
-                <div 
-                  className="prediction-bar player2-bar" 
-                  style={{ width: `${prediction.player2WinProb * 100}%` }}
+                <div
+                  className="prediction-bar player2-bar"
+                  style={{ width: `${prediction.team2WinProb * 100}%` }}
                 ></div>
               </div>
               

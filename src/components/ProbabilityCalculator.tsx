@@ -1,48 +1,7 @@
 import { useState, useMemo } from 'react'
-import { Rating } from 'ts-trueskill'
 import SearchableSelect from './SearchableSelect'
+import { calculateWinProbability } from '../utils/trueskill'
 import './ProbabilityCalculator.css'
-
-/**
- * Calculate win probability for team1 vs team2 using TrueSkill ratings
- * Based on the TrueSkill algorithm's win probability formula
- */
-function calculateWinProbability(team1Ratings: any[], team2Ratings: any[]) {
-  // Calculate team skill (sum of player skills)
-  const team1Mu = team1Ratings.reduce((sum: any, rating: any) => sum + rating.mu, 0)
-  const team2Mu = team2Ratings.reduce((sum: any, rating: any) => sum + rating.mu, 0)
-  
-  // Calculate team uncertainty (combined variance)
-  const team1Sigma = Math.sqrt(team1Ratings.reduce((sum: any, rating: any) => sum + rating.sigma ** 2, 0))
-  const team2Sigma = Math.sqrt(team2Ratings.reduce((sum: any, rating: any) => sum + rating.sigma ** 2, 0))
-  
-  // Total uncertainty
-  const beta = 25 / 6 // Default beta from TrueSkill
-  const totalSigma = Math.sqrt(team1Sigma ** 2 + team2Sigma ** 2 + 2 * beta ** 2)
-  
-  // Win probability using cumulative normal distribution
-  const muDiff = team1Mu - team2Mu
-  const probability = cumulativeNormal(muDiff / totalSigma)
-  
-  return {
-    team1WinProbability: probability,
-    team2WinProbability: 1 - probability,
-    team1Skill: team1Mu - 3 * team1Sigma,
-    team2Skill: team2Mu - 3 * team2Sigma
-  }
-}
-
-/**
- * Cumulative normal distribution function
- */
-function cumulativeNormal(x: number) {
-  // Using the error function approximation
-  const t = 1 / (1 + 0.2316419 * Math.abs(x))
-  const d = 0.3989423 * Math.exp(-x * x / 2)
-  const probability = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))))
-  
-  return x > 0 ? 1 - probability : probability
-}
 
 /**
  * Probability Calculator Component
@@ -60,25 +19,13 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
       .map((player: any) => ({
         value: player.name,
         label: `${player.name} (${player.trueSkill.toFixed(1)})`,
-        trueSkill: player.trueSkill,
-        rating: player.rating || new Rating() // Use stored rating or default
+        trueSkill: player.trueSkill
       }))
   }, [players])
 
-  // Get player rating
-  const getPlayerRating = (playerName: string) => {
-    const player = players.find((p: any) => p.name === playerName)
-    if (!player) return new Rating()
-    
-    // If player has rating object, use it, otherwise create from trueSkill
-    if (player.rating) return player.rating
-    
-    // Estimate mu from conservative rating (trueSkill = mu - 3*sigma)
-    // Assuming default sigma of 8.333
-    const sigma = 8.333
-    const mu = player.trueSkill + 3 * sigma
-    return new Rating(mu, sigma)
-  }
+  // Look up a player's full rating (mu/sigma), not just the conservative estimate
+  const getPlayer = (playerName: string) =>
+    players.find((p: any) => p.name === playerName)
 
   // Calculate probabilities
   const probabilities = useMemo(() => {
@@ -86,17 +33,10 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
       return null
     }
 
-    const team1Ratings = [
-      getPlayerRating(team1Player1),
-      getPlayerRating(team1Player2)
-    ]
-
-    const team2Ratings = [
-      getPlayerRating(team2Player1),
-      getPlayerRating(team2Player2)
-    ]
-
-    return calculateWinProbability(team1Ratings, team2Ratings)
+    return calculateWinProbability(
+      [getPlayer(team1Player1), getPlayer(team1Player2)],
+      [getPlayer(team2Player1), getPlayer(team2Player2)]
+    )
   }, [team1Player1, team1Player2, team2Player1, team2Player2, players])
 
   // Get filtered options (exclude already selected players)
@@ -192,20 +132,20 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
             <div className="probability-bar team-1-bar">
               <div 
                 className="probability-fill"
-                style={{ width: `${probabilities.team1WinProbability * 100}%` }}
+                style={{ width: `${probabilities.team1WinProb * 100}%` }}
               >
                 <span className="probability-label">
-                  {(probabilities.team1WinProbability * 100).toFixed(1)}%
+                  {(probabilities.team1WinProb * 100).toFixed(1)}%
                 </span>
               </div>
             </div>
             <div className="probability-bar team-2-bar">
               <div 
                 className="probability-fill"
-                style={{ width: `${probabilities.team2WinProbability * 100}%` }}
+                style={{ width: `${probabilities.team2WinProb * 100}%` }}
               >
                 <span className="probability-label">
-                  {(probabilities.team2WinProbability * 100).toFixed(1)}%
+                  {(probabilities.team2WinProb * 100).toFixed(1)}%
                 </span>
               </div>
             </div>
@@ -221,7 +161,7 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
               <div className="stat-row">
                 <span className="stat-label">Win Probability:</span>
                 <span className="stat-value win-prob">
-                  {(probabilities.team1WinProbability * 100).toFixed(1)}%
+                  {(probabilities.team1WinProb * 100).toFixed(1)}%
                 </span>
               </div>
               <div className="stat-row">
@@ -241,7 +181,7 @@ export const ProbabilityCalculator = ({ players  }: { players: any }) => {
               <div className="stat-row">
                 <span className="stat-label">Win Probability:</span>
                 <span className="stat-value win-prob">
-                  {(probabilities.team2WinProbability * 100).toFixed(1)}%
+                  {(probabilities.team2WinProb * 100).toFixed(1)}%
                 </span>
               </div>
               <div className="stat-row">

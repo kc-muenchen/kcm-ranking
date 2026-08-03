@@ -93,7 +93,10 @@ export async function calculateAggregatedStats(players) {
       seasonPoints,
       bestPlace,
       ...matchStats,
-      trueSkill: trueSkillRating?.skill || 25.0, // Get from TrueSkill service
+      // Conservative rating (mu - 3*sigma) from the TrueSkill service. An unrated
+      // player sits at 0, not 25 - a fresh rating is mu 25 / sigma 8.333, which
+      // exposes as 0. Use ?? so a genuine skill of exactly 0 survives.
+      trueSkill: trueSkillRating?.skill ?? 0,
       external: player.isExternal
     };
   }).sort((a, b) => {
@@ -156,24 +159,5 @@ function calculateMatchStats(teamPlayers) {
     points,
     winRate: parseFloat(winRate)
   };
-}
-
-/**
- * Calculate TrueSkill ratings for all players
- * This should be called separately and stored/cached
- * @param {Array} matches - All matches with teams and players
- * @returns {Map} - Map of player names to TrueSkill ratings
- */
-export async function calculateTrueSkill(matches) {
-  // TODO: Implement TrueSkill algorithm
-  // This will be similar to the frontend implementation
-  // but will run on the backend for consistency
-  
-  const ratings = new Map();
-  
-  // For now, return default rating of 25.0
-  // This will be implemented with the ts-trueskill library
-  
-  return ratings;
 }
 
