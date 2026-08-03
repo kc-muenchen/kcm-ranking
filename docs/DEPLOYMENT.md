@@ -503,13 +503,19 @@ docker ps --format '{{.Names}}'   # container names, for `docker exec`
 ```
 
 Note the two are not interchangeable: `docker compose exec` takes the *service*
-name, `docker exec` takes the *container* name. Using `docker exec` with the
-container name needs neither the compose file nor the right working directory,
-which makes it the sturdier choice for cron:
+name, `docker exec` takes the *container* name.
+
+Run everything below through compose:
 
 ```bash
-docker exec -w /app stats-backend node src/scripts/import-from-api.js --list
+cd /path/to/compose-dir
+docker compose exec stats-backend node src/scripts/import-from-api.js --list
 ```
+
+Commands run in the image's working directory (`/app`), so the script path is
+relative to it. Outside that directory, point compose at the file with
+`docker compose -f /path/to/docker-compose.yml exec ...`, which is what the cron
+entry below does.
 
 ### Cron entry
 
@@ -520,23 +526,15 @@ The backend container is long-running, so the job just execs into it. As root
 # Import finished Monster-DYP tournaments every Thursday at 03:00
 # (club plays Wednesday evenings; % must be escaped in crontab)
 0 3 * * 4 /usr/bin/flock -n /tmp/kcm-import.lock \
-  docker exec -w /app stats-backend \
+  docker compose -f /opt/kcm-ranking/docker-compose.yml exec -T stats-backend \
   node src/scripts/import-from-api.js --all --state finished --limit 5 \
   --mode monster_dyp --exclude "SOS Kinder" \
   >> /var/log/kcm-import.log 2>&1
 ```
 
-Substitute the container name for your deployment. The equivalent through
-compose, which needs the working directory to contain the compose file and
-`-T` because cron has no TTY:
-
-```cron
-0 3 * * 4 cd /opt/kcm-ranking && /usr/bin/flock -n /tmp/kcm-import.lock \
-  docker compose -f docker-compose.prod.yml exec -T stats-backend \
-  node src/scripts/import-from-api.js --all --state finished --limit 5 \
-  --mode monster_dyp --exclude "SOS Kinder" \
-  >> /var/log/kcm-import.log 2>&1
-```
+Substitute the compose file path and service name for your deployment. `-T` is
+required because cron has no TTY, and the absolute `-f` path means the job does
+not depend on a working directory.
 
 What the flags do, and why they matter unattended:
 
@@ -561,7 +559,7 @@ imported with wrong points.
 Check what a run would do without writing anything:
 
 ```bash
-docker exec -w /app stats-backend \
+docker compose exec stats-backend \
   node src/scripts/import-from-api.js --all --state finished --limit 5 \
   --mode monster_dyp --exclude "SOS Kinder" --dry-run
 ```
@@ -570,8 +568,8 @@ Two things to confirm the first time, both true only once the image containing
 the importer has been pulled:
 
 ```bash
-docker exec stats-backend printenv TIO_API_TOKEN   # token wired through?
-docker exec stats-backend ls /app/src/scripts       # importer in this image?
+docker compose exec stats-backend printenv TIO_API_TOKEN   # token wired through?
+docker compose exec stats-backend ls src/scripts            # importer in this image?
 ```
 
 ### Alternative: webhooks
