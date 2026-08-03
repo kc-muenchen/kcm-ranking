@@ -1,318 +1,293 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
-import { MaterialReactTable } from 'material-react-table'
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable
+} from '@tanstack/react-table'
+import type { ColumnDef, SortingState, VisibilityState } from '@tanstack/react-table'
+import { AnimatePresence, motion } from 'framer-motion'
+import { CaretDown, CaretUp, Columns, MagnifyingGlass, X } from '@phosphor-icons/react'
 import { PlayerRecord, ViewMode } from '../types/components'
-import './RankingTable.css'
+import { EmptyState } from './ui/States'
+import { springSnappy } from '../lib/motion'
 
-function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { players: PlayerRecord[], viewMode: ViewMode, onPlayerSelect?: (playerName: string) => void, selectedSeason: string | null }) {
-  const [copied, setCopied] = useState(false)
+/** Rows past this index appear immediately - see the .row-in note in index.css. */
+const ROW_STAGGER_LIMIT = 14
 
-  const getMedalEmoji = (place: number | string | null | undefined) => {
-    if (place === 1) return '🥇'
-    if (place === 2) return '🥈'
-    if (place === 3) return '🥉'
-    return place
-  }
+/** Columns rendered as monospaced tabular figures so they align down the page. */
+const NUMERIC = new Set([
+  'rank',
+  'seasonPoints',
+  'trueSkill',
+  'tournaments',
+  'bestPlace',
+  'avgPlace',
+  'qualifyingPlace',
+  'eliminationPlace',
+  'buchholz',
+  'sonnebornBerger',
+  'matches',
+  'points',
+  'won',
+  'lost',
+  'winRate',
+  'goalsFor',
+  'goalsAgainst',
+  'goalDiff',
+  'pointsPerGame'
+])
 
-  const exportToWhatsApp = async () => {
-    // Sort players by place (ascending) for export, limit to first 25
-    const sortedForExport = [...players].sort((a, b) => (a.place ?? 999) - (b.place ?? 999)).slice(0, 25)
-    
-    // Format as WhatsApp message
-    const seasonText = selectedSeason ? ` ${selectedSeason}` : ''
-    let message = `🏆 *Season Rankings${seasonText}*\n\n`
-    
-    sortedForExport.forEach((player: any) => {
-      const place = player.place
-      const medal = getMedalEmoji(place)
-      const name = player.name
-      const points = player.seasonPoints ?? 0
-      
-      // Add qualification badges if applicable
-      let statusBadge = ''
-      if (player.finaleStatus === 'qualified') {
-        statusBadge = ' ✓'
-      } else if (player.finaleStatus === 'successor') {
-        statusBadge = ' →'
+const COLUMN_LABELS: Record<string, string> = {
+  rank: 'Rank',
+  name: 'Player',
+  seasonPoints: 'Points',
+  trueSkill: 'TrueSkill',
+  tournaments: 'Events',
+  bestPlace: 'Best',
+  avgPlace: 'Avg',
+  qualifyingPlace: 'Qual',
+  eliminationPlace: 'KO',
+  buchholz: 'Buchholz',
+  sonnebornBerger: 'SB',
+  matches: 'MP',
+  points: 'Pts',
+  won: 'W',
+  lost: 'L',
+  winRate: 'Win %',
+  goalsFor: 'GF',
+  goalsAgainst: 'GA',
+  goalDiff: 'GD',
+  pointsPerGame: 'PPG'
+}
+
+/**
+ * Standings board.
+ *
+ * Built directly on TanStack Table rather than material-react-table: the data is
+ * dense and every pixel of Material chrome had to be fought off with overrides.
+ * Data is separated by 1px rules, never boxed in cards, and all figures are
+ * monospaced so columns read as columns.
+ */
+function RankingTable({
+  players,
+  viewMode,
+  onPlayerSelect,
+  selectedSeason
+}: {
+  players: PlayerRecord[]
+  viewMode: ViewMode
+  onPlayerSelect?: (playerName: string) => void
+  selectedSeason: string | null
+}) {
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'rank', desc: false }])
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false)
+  const columnMenuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!isColumnMenuOpen) return undefined
+
+    const handleClickOutside = (event: globalThis.MouseEvent) => {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target as Node)) {
+        setIsColumnMenuOpen(false)
       }
-      
-      message += `${place <= 3 ? medal : place + '.'} ${name} - ${points} pts${statusBadge}\n`
-    })
-
-    // Add season points calculation info (in German)
-    message += `\n📊 *Punkteberechnung:*\n`
-    message += `Punkte basierend auf Endplatzierung (1.: 25, 2.: 20, 3.: 16, 4.: 13, 5.: 10) plus 1 Anwesenheitspunkt für alle.\n`
-    message += `Plätze 5-16 erhalten alle 11 Punkte (z.B. 1. Platz = 26 Gesamtpunkte, 5.-16. Platz = 11 Gesamtpunkte, 17.+ Platz = 1 Gesamtpunkt)\n\n`
-    message += `*Qualifikation:*\n`
-    message += `Mindestens 10 Turnierteilnahmen erforderlich. Top 20 Spieler sind qualifiziert für das Saisonfinale.`
-        
-    // Copy to clipboard
-    try {
-      await navigator.clipboard.writeText(message)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err)
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea')
-      textArea.value = message
-      textArea.style.position = 'fixed'
-      textArea.style.opacity = '0'
-      document.body.appendChild(textArea)
-      textArea.select()
-      try {
-        document.execCommand('copy')
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      } catch (fallbackErr) {
-        console.error('Fallback copy failed:', fallbackErr)
-      }
-      document.body.removeChild(textArea)
     }
-  }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsColumnMenuOpen(false)
+    }
 
-  // Define columns based on viewMode
-  const columns = useMemo<any[]>(() => {
-    const cols: any[] = []
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isColumnMenuOpen])
 
-    // Rank column
+  const columns = useMemo<ColumnDef<PlayerRecord, any>[]>(() => {
+    const cols: ColumnDef<PlayerRecord, any>[] = []
+
     cols.push({
-      accessorKey: viewMode === 'tournament' ? 'finalPlace' : 'place',
       id: 'rank',
+      accessorFn: (row: any) => (viewMode === 'tournament' ? row.finalPlace : row.place) ?? 9999,
       header: viewMode === 'tournament' ? 'Final' : 'Rank',
-      size: 60,
-      minSize: 50,
-      Cell: ({ row }: { row: any }) => {
-        const player = row.original
-        const displayPlace = viewMode === 'tournament' ? player.finalPlace : player.place
+      cell: ({ row }) => {
+        const player: any = row.original
+        const place = viewMode === 'tournament' ? player.finalPlace : player.place
+        const isPodium = typeof place === 'number' && place <= 3
+
         return (
-          <div className="rank-cell">
-            <span className="rank-badge">
-              {getMedalEmoji(displayPlace)}
+          <div className="flex items-center gap-1.5">
+            <span className={isPodium ? 'font-semibold text-fg' : 'text-fg-dim'}>
+              {typeof place === 'number' ? String(place).padStart(2, '0') : '--'}
             </span>
             {player.finaleStatus === 'qualified' && (
-              <span className="finale-badge qualified" title="Qualified for Season Finale">✓</span>
+              <span
+                title="Qualified for season finale"
+                className="rounded-xs border border-up/40 px-1 text-[0.5625rem] font-semibold uppercase tracking-wider text-up"
+              >
+                Q
+              </span>
             )}
             {player.finaleStatus === 'successor' && (
-              <span className="finale-badge successor" title="Potential Successor">→</span>
+              <span
+                title="Potential successor"
+                className="rounded-xs border border-warn/40 px-1 text-[0.5625rem] font-semibold uppercase tracking-wider text-warn"
+              >
+                S
+              </span>
             )}
           </div>
         )
       }
     })
 
-    // Name column
     cols.push({
-      accessorKey: 'name',
       id: 'name',
+      accessorKey: 'name',
       header: 'Player',
-      size: 150,
-      minSize: 120,
-      Cell: ({ row }: { row: any }) => {
-        const player = row.original
+      cell: ({ row }) => {
+        const player: any = row.original
         return (
-          <div className="name-cell">
-            <div className="player-info">
-              <a 
-                href={`?player=${encodeURIComponent(player.name)}`}
-                className="player-name clickable" 
-                onClick={(e: MouseEvent<HTMLAnchorElement>) => {
-                  e.preventDefault()
-                  onPlayerSelect && onPlayerSelect(player.name)
-                }}
-                title="Click to view player details (right-click to open in new tab)"
-              >
-                {player.name}
-              </a>
-              {player.external && (
-                <span className="player-license">
-                  {player.external.nationalLicence}
-                </span>
-              )}
-            </div>
+          <div className="flex items-baseline gap-2">
+            <a
+              href={`?player=${encodeURIComponent(player.name)}`}
+              onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+                event.preventDefault()
+                onPlayerSelect?.(player.name)
+              }}
+              title="Open player detail (right-click to open in a new tab)"
+              className="truncate font-medium text-fg decoration-accent/50 underline-offset-4 transition-colors hover:text-accent hover:underline"
+            >
+              {player.name}
+            </a>
+            {player.external?.nationalLicence && (
+              <span className="tnum shrink-0 text-[0.6875rem] text-fg-faint">
+                {player.external.nationalLicence}
+              </span>
+            )}
           </div>
         )
       }
     })
 
-    // View-specific columns
     if (viewMode === 'overall' || viewMode === 'season') {
       cols.push(
         {
-          accessorKey: 'seasonPoints',
           id: 'seasonPoints',
-          header: viewMode === 'overall' ? 'Total Points' : 'Season Points',
-          size: 50,
-          minSize: 80,
-          Cell: ({ cell }: { cell: any }) => (
-            <div className="season-points-cell">
-              <span className="season-points-value" title={`Season Points: ${cell.getValue()}`}>
-                {cell.getValue()}
-              </span>
-            </div>
-          )
+          accessorKey: 'seasonPoints',
+          header: viewMode === 'overall' ? 'Total' : 'Points',
+          cell: ({ getValue }) => <span className="font-semibold text-fg">{getValue() ?? 0}</span>
         },
         {
-          accessorKey: 'trueSkill',
           id: 'trueSkill',
+          accessorKey: 'trueSkill',
           header: 'TrueSkill',
-          size: 50,
-          minSize: 80,
-          Cell: ({ cell }: { cell: any }) => (
-            <div className="trueskill-cell">
-              <span className="trueskill-rating" title={`TrueSkill: ${cell.getValue().toFixed(1)}`}>
-                {cell.getValue().toFixed(1)}
-              </span>
-            </div>
-          )
+          cell: ({ getValue }) => {
+            const value = Number(getValue() ?? 0)
+            return <span className="text-accent">{value.toFixed(1)}</span>
+          }
         },
+        { id: 'tournaments', accessorKey: 'tournaments', header: 'Events' },
         {
-          accessorKey: 'tournaments',
-          id: 'tournaments',
-          header: 'Tournaments',
-          size: 100
-        },
-        {
-          accessorKey: 'bestPlace',
           id: 'bestPlace',
-          header: 'Best Place',
-          size: 50,
-          minSize: 80,
-          Cell: ({ cell }: { cell: any }) => (
-            <span className="best-place">
-              {getMedalEmoji(cell.getValue())}
-            </span>
-          )
+          accessorKey: 'bestPlace',
+          header: 'Best',
+          cell: ({ getValue }) => {
+            const place = getValue()
+            return typeof place === 'number' ? (
+              <span className={place <= 3 ? 'text-fg' : 'text-fg-dim'}>{place}</span>
+            ) : (
+              <span className="text-fg-faint">--</span>
+            )
+          }
         },
-        {
-          accessorKey: 'avgPlace',
-          id: 'avgPlace',
-          header: 'Avg Place',
-          size: 100
-        }
+        { id: 'avgPlace', accessorKey: 'avgPlace', header: 'Avg' }
       )
     }
 
     if (viewMode === 'tournament') {
       cols.push(
+        { id: 'qualifyingPlace', accessorKey: 'qualifyingPlace', header: 'Qual' },
         {
-          accessorKey: 'qualifyingPlace',
-          id: 'qualifyingPlace',
-          header: 'Qualifying',
-          size: 50,
-          minSize: 80,
-          Cell: ({ cell }: { cell: any }) => getMedalEmoji(cell.getValue())
-        },
-        {
-          accessorKey: 'eliminationPlace',
           id: 'eliminationPlace',
-          header: 'Knockout',
-          size: 50,
-          minSize: 80,
-          Cell: ({ cell }: { cell: any }) => cell.getValue() !== null ? getMedalEmoji(cell.getValue()) : '-'
+          accessorKey: 'eliminationPlace',
+          header: 'KO',
+          cell: ({ getValue }) => {
+            const value = getValue()
+            return value ?? <span className="text-fg-faint">--</span>
+          }
         },
         {
-          accessorKey: 'buchholz',
           id: 'buchholz',
+          accessorKey: 'buchholz',
           header: 'Buchholz',
-          size: 50,
-          minSize: 80,
-          Cell: ({ cell }: { cell: any }) => cell.getValue() || 0
+          cell: ({ getValue }) => getValue() || 0
         },
         {
-          accessorKey: 'sonnebornBerger',
           id: 'sonnebornBerger',
+          accessorKey: 'sonnebornBerger',
           header: 'SB',
-          size: 50,
-          minSize: 80,
-          Cell: ({ cell }: { cell: any }) => cell.getValue() || 0
+          cell: ({ getValue }) => getValue() || 0
         }
       )
     }
 
-    // Common columns
     cols.push(
+      { id: 'matches', accessorKey: 'matches', header: 'MP' },
       {
-        accessorKey: 'matches',
-        id: 'matches',
-        header: 'Matches',
-        size: 80
-      },
-      {
-        accessorKey: 'points',
         id: 'points',
-        header: 'Points',
-        size: 80,
-        Cell: ({ cell }: { cell: any }) => (
-          <div className="points-cell">
-            <strong>{cell.getValue()}</strong>
-          </div>
-        )
+        accessorKey: 'points',
+        header: 'Pts',
+        cell: ({ getValue }) => <span className="font-semibold text-fg">{getValue()}</span>
       },
       {
-        accessorKey: 'won',
         id: 'won',
-        header: 'Won',
-        size: 80,
-        Cell: ({ cell }: { cell: any }) => <span className="positive">{cell.getValue()}</span>
+        accessorKey: 'won',
+        header: 'W',
+        cell: ({ getValue }) => <span className="text-up">{getValue()}</span>
       },
       {
-        accessorKey: 'lost',
         id: 'lost',
-        header: 'Lost',
-        size: 80,
-        Cell: ({ cell }: { cell: any }) => <span className="negative">{cell.getValue()}</span>
+        accessorKey: 'lost',
+        header: 'L',
+        cell: ({ getValue }) => <span className="text-down">{getValue()}</span>
       },
       {
-        accessorKey: 'winRate',
         id: 'winRate',
+        accessorKey: 'winRate',
         header: 'Win %',
-        size: 80,
-        Cell: ({ cell }: { cell: any }) => {
-          const rate = parseFloat(cell.getValue())
-          return (
-            <span className={`win-rate ${
-              rate >= 60 ? 'high' :
-              rate >= 40 ? 'medium' : 'low'
-            }`}>
-              {cell.getValue()}%
-            </span>
-          )
+        cell: ({ getValue }) => {
+          const rate = parseFloat(String(getValue() ?? 0))
+          const tone = rate >= 60 ? 'text-up' : rate >= 40 ? 'text-fg-dim' : 'text-down'
+          return <span className={tone}>{rate.toFixed(1)}</span>
         }
       },
+      { id: 'goalsFor', accessorKey: 'goalsFor', header: 'GF' },
+      { id: 'goalsAgainst', accessorKey: 'goalsAgainst', header: 'GA' },
       {
-        accessorKey: 'goalsFor',
-        id: 'goalsFor',
-        header: 'GF',
-        size: 60
-      },
-      {
-        accessorKey: 'goalsAgainst',
-        id: 'goalsAgainst',
-        header: 'GA',
-        size: 60
-      },
-      {
-        accessorKey: 'goalDiff',
         id: 'goalDiff',
+        accessorKey: 'goalDiff',
         header: 'GD',
-        size: 60,
-        Cell: ({ cell }: { cell: any }) => {
-          const diff = cell.getValue()
+        cell: ({ getValue }) => {
+          const diff = Number(getValue() ?? 0)
           return (
-            <span className={diff >= 0 ? 'positive' : 'negative'}>
-              {diff >= 0 ? '+' : ''}{diff}
+            <span className={diff >= 0 ? 'text-up' : 'text-down'}>
+              {diff >= 0 ? '+' : ''}
+              {diff}
             </span>
           )
         }
       },
       {
-        accessorKey: 'pointsPerGame',
         id: 'pointsPerGame',
+        accessorKey: 'pointsPerGame',
         header: 'PPG',
-        size: 80,
-        Cell: ({ cell }: { cell: any }) => {
-          const value = cell.getValue()
+        cell: ({ getValue }) => {
+          const value = getValue()
           return typeof value === 'number' ? value.toFixed(2) : value
         }
       }
@@ -321,9 +296,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
     return cols
   }, [viewMode, onPlayerSelect])
 
-  // Define default column visibility based on view mode
-  const defaultColumnVisibility = useMemo(() => {
-    const visibility: Record<string, boolean> = {
+  const initialVisibility = useMemo<VisibilityState>(() => {
+    const visibility: VisibilityState = {
       rank: true,
       name: true,
       matches: false,
@@ -331,7 +305,6 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
       won: false,
       lost: false,
       winRate: true,
-      // Hide these by default - users can enable them if needed
       goalsFor: false,
       goalsAgainst: false,
       goalDiff: false,
@@ -349,8 +322,8 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
     if (viewMode === 'tournament') {
       visibility.qualifyingPlace = true
       visibility.eliminationPlace = false
-      visibility.buchholz = true // Hidden by default
-      visibility.sonnebornBerger = true // Hidden by default
+      visibility.buchholz = true
+      visibility.sonnebornBerger = true
       visibility.points = true
       visibility.won = true
       visibility.lost = true
@@ -359,271 +332,228 @@ function RankingTable({ players, viewMode, onPlayerSelect, selectedSeason  }: { 
     return visibility
   }, [viewMode])
 
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialVisibility)
+  useEffect(() => setColumnVisibility(initialVisibility), [initialVisibility])
+
+  const table = useReactTable({
+    data: players,
+    columns,
+    state: { sorting, globalFilter, columnVisibility },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnVisibilityChange: setColumnVisibility,
+    globalFilterFn: (row, _columnId, filterValue) =>
+      String((row.original as any).name ?? '')
+        .toLowerCase()
+        .includes(String(filterValue).toLowerCase()),
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel()
+  })
+
+  const rows = table.getRowModel().rows
+
+  const title =
+    viewMode === 'overall' ? 'Overall standings' : viewMode === 'season' ? 'Season standings' : 'Tournament standings'
+
+  const subtitle = (() => {
+    if (viewMode === 'season') {
+      const qualified = players.filter(p => (p as any).finaleStatus === 'qualified').length
+      const successors = players.filter(p => (p as any).finaleStatus === 'successor').length
+      if (qualified > 0 || successors > 0) {
+        return `${qualified} qualified${successors > 0 ? `, ${successors} in reach` : ''} · min. 10 events`
+      }
+      return `${players.length} players${selectedSeason ? ` · season ${selectedSeason}` : ''}`
+    }
+    if (viewMode === 'overall') return `${players.length} players · all tournaments`
+    return `${players.length} players`
+  })()
+
   return (
-    <div className="ranking-table-container">
-      <div className="table-header">
-        <div className="table-header-top">
-          <div>
-            <h2>
-              {viewMode === 'overall' ? 'Overall Rankings' : 
-               viewMode === 'season' ? 'Season Rankings' : 
-               'Player Rankings'}
-            </h2>
-            <p className="table-subtitle">
-              {viewMode === 'overall' 
-                ? `Showing ${players.length} players across all tournaments`
-                : viewMode === 'season'
-                ? (() => {
-                    const qualified = players.filter((p) => p.finaleStatus === 'qualified').length
-                    const successors = players.filter((p) => p.finaleStatus === 'successor').length
-                    if (qualified > 0 || successors > 0) {
-                      return `Showing ${qualified} qualified players${successors > 0 ? ` + ${successors} potential successors` : ''} (min. 10 games)`
-                    }
-                    return `Showing ${players.length} players for this season`
-                  })()
-                : `Showing ${players.length} players`
-              }
-            </p>
+    <section className="flex flex-col gap-4">
+      {/* Header: title left, controls right. Nothing centred. */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-lg font-semibold tracking-tight text-fg">{title}</h2>
+          <p className="text-[0.8125rem] text-fg-dim">{subtitle}</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative flex flex-1 items-center gap-2 rounded-md border border-line bg-surface px-2.5 focus-within:border-accent md:w-56 md:flex-none">
+            <MagnifyingGlass size={14} weight="bold" className="shrink-0 text-fg-faint" />
+            <input
+              value={globalFilter}
+              onChange={event => setGlobalFilter(event.target.value)}
+              placeholder="Find player"
+              aria-label="Find player"
+              className="min-w-0 flex-1 bg-transparent py-1.5 text-[0.8125rem] text-fg outline-none placeholder:text-fg-faint"
+            />
+            {globalFilter && (
+              <button
+                type="button"
+                onClick={() => setGlobalFilter('')}
+                aria-label="Clear search"
+                className="tactile shrink-0 rounded-xs p-0.5 text-fg-faint hover:text-fg"
+              >
+                <X size={12} weight="bold" />
+              </button>
+            )}
           </div>
-          {false && viewMode === 'season' && players.length > 0 && (
-            <button 
-              className="export-whatsapp-btn"
-              onClick={exportToWhatsApp}
-              title="Copy ranking to clipboard as WhatsApp message"
+
+          <div className="relative" ref={columnMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsColumnMenuOpen(open => !open)}
+              aria-expanded={isColumnMenuOpen}
+              aria-haspopup="menu"
+              title="Choose columns"
+              className="tactile flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[0.8125rem] text-fg-dim hover:border-line-strong hover:text-fg"
             >
-              {copied ? '✓ Copied!' : '📱 Export to WhatsApp'}
+              <Columns size={14} weight="bold" />
+              <span className="hidden sm:inline">Columns</span>
             </button>
-          )}
+
+            <AnimatePresence>
+              {isColumnMenuOpen && (
+                <motion.div
+                  role="menu"
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={springSnappy}
+                  className="absolute right-0 z-20 mt-1.5 max-h-80 w-52 origin-top-right overflow-y-auto rounded-md border border-line-strong bg-surface-2 py-1 shadow-[var(--shadow-overlay)]"
+                >
+                  {table
+                    .getAllLeafColumns()
+                    .filter(column => column.id !== 'rank' && column.id !== 'name')
+                    .map(column => (
+                      <label
+                        key={column.id}
+                        className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 text-[0.8125rem] text-fg-dim hover:bg-surface-3 hover:text-fg"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={column.getIsVisible()}
+                          onChange={column.getToggleVisibilityHandler()}
+                          className="h-3.5 w-3.5 accent-[var(--color-accent)]"
+                        />
+                        {COLUMN_LABELS[column.id] ?? column.id}
+                      </label>
+                    ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
-      <div className="table-wrapper">
-        <MaterialReactTable
-          columns={columns}
-          data={players}
-          enableStickyHeader
-          enableColumnResizing={false}
-          enableDensityToggle={false}
-          enableFullScreenToggle={false}
-          enableHiding={true}
-          enablePagination={false}
-          enableSorting
-          enableGlobalFilter={true}
-          renderBottomToolbar={false}
-          initialState={{
-            sorting: [{
-              id: 'rank',
-              desc: false
-            }],
-            columnVisibility: defaultColumnVisibility
-          }}
-          muiTableContainerProps={{
-            sx: {
-              maxHeight: 'calc(100vh)',
-              backgroundColor: 'var(--surface) !important',
-              borderRadius: '8px',
-              '& .MuiTable-root': {
-                borderCollapse: 'separate',
-                borderSpacing: 0,
-                backgroundColor: 'var(--surface) !important'
-              }
-            }
-          }}
-          muiTablePaperProps={{
-            sx: {
-              boxShadow: 'none',
-              backgroundColor: 'var(--surface) !important',
-              color: 'var(--text-primary)',
-              borderRadius: '8px',
-              overflow: 'hidden',
-              '& .MuiToolbar-root': {
-                backgroundColor: 'var(--surface)',
-                color: 'var(--text-primary)'
-              },
-              '& *': {
-                '&::-webkit-scrollbar': {
-                  width: '8px',
-                  height: '8px'
-                },
-                '&::-webkit-scrollbar-track': {
-                  background: 'transparent'
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  background: 'var(--border)',
-                  borderRadius: '4px',
-                  '&:hover': {
-                    background: 'var(--text-secondary)'
+      {/*
+        Wide content scrolls inside its own container so the page never does.
+        The scroll container is dropped at md: an overflow container becomes the
+        containing block for sticky children, which would pin the header 56px
+        below the table's own top and cover the first row. Above md there is no
+        horizontal overflow to manage, so sticky can resolve against the viewport
+        and sit correctly under the app bar.
+      */}
+      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:overflow-x-visible md:px-0">
+        <table className="w-full min-w-[42rem] border-collapse">
+          <thead className="bg-bg md:sticky md:top-14 md:z-10">
+            <tr className="border-b border-line-strong">
+              {table.getHeaderGroups()[0]?.headers.map(header => {
+                const isNumeric = NUMERIC.has(header.column.id)
+                const sortDirection = header.column.getIsSorted()
+
+                return (
+                  <th
+                    key={header.id}
+                    scope="col"
+                    className={`whitespace-nowrap px-3 py-2.5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.08em] ${
+                      isNumeric ? 'text-right' : 'text-left'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={header.column.getToggleSortingHandler()}
+                      className={`inline-flex items-center gap-1 transition-colors ${
+                        isNumeric ? 'flex-row-reverse' : ''
+                      } ${sortDirection ? 'text-accent' : 'text-fg-faint hover:text-fg-dim'}`}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      <span className="flex w-2.5 justify-center">
+                        {sortDirection === 'asc' && <CaretUp size={9} weight="bold" />}
+                        {sortDirection === 'desc' && <CaretDown size={9} weight="bold" />}
+                      </span>
+                    </button>
+                  </th>
+                )
+              })}
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row, index) => {
+              const player: any = row.original
+              const place = viewMode === 'tournament' ? player.finalPlace : player.place
+              const isPodium = typeof place === 'number' && place <= 3
+
+              return (
+                <tr
+                  key={row.id}
+                  className={`row-in group border-b border-line transition-colors hover:bg-surface ${
+                    isPodium ? 'bg-surface/40' : ''
+                  }`}
+                  style={
+                    index < ROW_STAGGER_LIMIT
+                      ? ({ '--row-index': index } as React.CSSProperties)
+                      : { animation: 'none' }
                   }
-                }
-              }
+                >
+                  {row.getVisibleCells().map((cell, cellIndex) => {
+                    const isNumeric = NUMERIC.has(cell.column.id)
+                    return (
+                      <td
+                        key={cell.id}
+                        className={`px-3 py-2.5 text-[0.8125rem] ${isNumeric ? 'tnum text-right' : 'text-left'} ${
+                          isNumeric ? 'text-fg-dim' : ''
+                        } ${
+                          /* podium marker: a rule, not a medal or a glow */
+                          cellIndex === 0 && isPodium ? 'border-l-2 border-l-accent pl-2.5' : ''
+                        } ${cellIndex === 0 && !isPodium ? 'border-l-2 border-l-transparent pl-2.5' : ''}`}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+
+        {rows.length === 0 && (
+          <EmptyState
+            icon={<MagnifyingGlass size={18} weight="bold" />}
+            title={globalFilter ? `No player matches "${globalFilter}"` : 'No players to show'}
+            hint={
+              globalFilter
+                ? 'Check the spelling, or clear the search to see the full standings.'
+                : 'Once results are imported the standings will appear here.'
             }
-          }}
-          muiTableProps={{
-            sx: {
-              backgroundColor: 'var(--surface)',
-              '& .MuiTableHead-root': {
-                backgroundColor: 'var(--background)'
-              },
-              '& .MuiTableBody-root': {
-                backgroundColor: 'var(--surface)'
-              }
+            action={
+              globalFilter ? (
+                <button
+                  type="button"
+                  onClick={() => setGlobalFilter('')}
+                  className="tactile rounded-sm border border-line-strong px-3 py-1.5 text-[0.8125rem] text-fg-dim hover:border-accent hover:text-accent"
+                >
+                  Clear search
+                </button>
+              ) : undefined
             }
-          }}
-          muiTableHeadCellProps={{
-            sx: {
-              backgroundColor: 'var(--background) !important',
-              color: 'var(--text-secondary) !important',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              fontSize: '0.75rem',
-              letterSpacing: '0.5px',
-              borderBottom: '2px solid var(--border)',
-              padding: '1rem',
-              '@media (max-width: 768px)': {
-                fontSize: '0.625rem',
-                padding: '0.5rem 0.375rem'
-              },
-              '&:hover': {
-                backgroundColor: 'var(--surface-light) !important',
-                color: 'var(--primary-color) !important'
-              },
-              '& .MuiTableSortLabel-root': {
-                color: 'inherit !important',
-                '&:hover': {
-                  color: 'var(--primary-color) !important'
-                },
-                '&.Mui-active': {
-                  color: 'var(--primary-color) !important'
-                },
-                '& .MuiTableSortLabel-icon': {
-                  color: 'inherit !important'
-                }
-              }
-            }
-          }}
-          muiTableBodyCellProps={{
-            sx: {
-              borderBottom: '1px solid var(--border)',
-              padding: '1rem',
-              fontSize: '0.9375rem',
-              backgroundColor: 'var(--surface)',
-              color: 'var(--text-primary)',
-              '@media (max-width: 768px)': {
-                fontSize: '0.75rem',
-                padding: '0.5rem 0.375rem'
-              }
-            }
-          }}
-          muiTableBodyRowProps={({ row }) => {
-            const player = row.original
-            const displayPlace = viewMode === 'tournament' ? (player.finalPlace ?? 999) : (player.place ?? 999)
-            const finaleClass = player.finaleStatus === 'qualified' ? 'finale-qualified' : 
-                               player.finaleStatus === 'successor' ? 'finale-successor' : ''
-            return {
-              className: `rank-${displayPlace <= 3 ? displayPlace : ''} ${finaleClass}`,
-              sx: {
-                backgroundColor: 'var(--surface)',
-                color: 'var(--text-primary)',
-                '&:hover': {
-                  backgroundColor: 'var(--surface-light) !important'
-                },
-                '&:nth-of-type(even)': {
-                  backgroundColor: 'var(--surface)'
-                }
-              }
-            }
-          }}
-          muiTopToolbarProps={{
-            sx: {
-              backgroundColor: 'var(--surface) !important',
-              color: 'var(--text-primary) !important',
-              borderBottom: '1px solid var(--border)',
-              padding: '0.5rem 1rem',
-              minHeight: '48px',
-              '& .MuiButton-root': {
-                color: 'var(--text-primary) !important',
-                borderColor: 'var(--border)',
-                '&:hover': {
-                  backgroundColor: 'var(--surface-light) !important'
-                }
-              },
-              '& .MuiIconButton-root': {
-                color: 'var(--text-primary) !important',
-                '&:hover': {
-                  backgroundColor: 'var(--surface-light) !important'
-                }
-              },
-              '& .MuiTypography-root': {
-                color: 'var(--text-secondary) !important'
-              },
-              '& .MuiInputBase-root': {
-                color: 'var(--text-primary) !important',
-                backgroundColor: 'var(--surface-light)',
-                '& .MuiInputBase-input': {
-                  color: 'var(--text-primary) !important',
-                  '&::placeholder': {
-                    color: 'var(--text-secondary) !important',
-                    opacity: 1
-                  }
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'var(--border) !important'
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'var(--primary-color) !important'
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'var(--primary-color) !important'
-                }
-              },
-              '& .MuiMenu-paper': {
-                backgroundColor: 'var(--surface) !important',
-                color: 'var(--text-primary) !important',
-                border: '1px solid var(--border)'
-              },
-              '& .MuiMenuItem-root': {
-                color: 'var(--text-primary) !important',
-                '&:hover': {
-                  backgroundColor: 'var(--surface-light) !important'
-                },
-                '& .MuiCheckbox-root': {
-                  color: 'var(--text-secondary) !important',
-                  '&.Mui-checked': {
-                    color: 'var(--primary-color) !important'
-                  }
-                }
-              }
-            }
-          }}
-          muiBottomToolbarProps={{
-            sx: {
-              backgroundColor: 'var(--surface)',
-              color: 'var(--text-primary)',
-              '& .MuiButton-root': {
-                color: 'var(--text-primary)',
-                '&:hover': {
-                  backgroundColor: 'var(--surface-light)'
-                }
-              },
-              '& .MuiTypography-root': {
-                color: 'var(--text-secondary)'
-              }
-            }
-          }}
-          muiToolbarAlertBannerProps={{
-            sx: {
-              backgroundColor: 'var(--surface)',
-              color: 'var(--text-primary)'
-            }
-          }}
-          muiSearchTextFieldProps={{
-            sx: {
-              
-            }
-          }}
-        />
+          />
+        )}
       </div>
-    </div>
+    </section>
   )
 }
 

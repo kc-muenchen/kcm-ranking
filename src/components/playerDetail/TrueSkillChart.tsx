@@ -1,193 +1,208 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
+import { X } from '@phosphor-icons/react'
 import { SearchableSelect } from '../SearchableSelect'
-
-// Color palette for multiple players
-const PLAYER_COLORS = [
-  '#818cf8', // indigo
-  '#f472b6', // pink
-  '#34d399', // emerald
-  '#fbbf24', // amber
-  '#60a5fa', // blue
-  '#a78bfa', // violet
-  '#fb7185', // rose
-  '#4ade80', // green
-]
+import { EmptyState } from '../ui/States'
+import { ChartLineUp } from '@phosphor-icons/react'
 
 /**
- * TrueSkill evolution chart component with multi-player support
+ * Series palette.
+ *
+ * Warm and cool alternate so adjacent lines stay separable, saturation is held
+ * down so no single series screams, and the first entry is the app accent so a
+ * solo chart matches the rest of the UI.
  */
-export const TrueSkillChart = ({ playerHistories, allPlayers: _allPlayers, mainPlayerName  }: { playerHistories: any, allPlayers: any, mainPlayerName: any }) => {
+const SERIES_COLORS = [
+  '#5289d4',
+  '#3fbf8f',
+  '#d9a441',
+  '#e2647a',
+  '#4fb3c4',
+  '#c98a4b',
+  '#7fa650',
+  '#cf7d5c'
+]
+
+const VIEW_WIDTH = 900
+const VIEW_HEIGHT = 400
+const PADDING = { top: 24, right: 24, bottom: 44, left: 48 }
+
+const CHART_WIDTH = VIEW_WIDTH - PADDING.left - PADDING.right
+const CHART_HEIGHT = VIEW_HEIGHT - PADDING.top - PADDING.bottom
+
+/**
+ * TrueSkill trajectory over time, one line per selected player.
+ *
+ * The SVG scales via viewBox rather than a fixed pixel canvas, so it stays
+ * readable on a phone. Lines draw themselves in on mount.
+ */
+export const TrueSkillChart = ({
+  playerHistories,
+  allPlayers: _allPlayers,
+  mainPlayerName
+}: {
+  playerHistories: any
+  allPlayers: any
+  mainPlayerName: any
+}) => {
+  void _allPlayers
+
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(() => {
-    // Start with the main player if provided, otherwise first player with history
-    if (mainPlayerName && playerHistories.has(mainPlayerName)) {
-      return [mainPlayerName]
-    }
-    return playerHistories.size > 0 ? [Array.from(playerHistories.keys())[0]] : []
+    if (mainPlayerName && playerHistories.has(mainPlayerName)) return [mainPlayerName]
+    return playerHistories.size > 0 ? [Array.from(playerHistories.keys())[0] as string] : []
   })
 
   if (playerHistories.size === 0) {
-    return <div className="no-data">No rating history available</div>
+    return (
+      <EmptyState
+        icon={<ChartLineUp size={18} weight="bold" />}
+        title="No rating history"
+        hint="A trajectory appears once this player has played rated matches."
+      />
+    )
   }
 
-  // Get all histories to calculate global min/max
   const allHistories: any[][] = Array.from(playerHistories.values())
-  const allSkills = allHistories.flatMap(history => history.map(h => h.skill))
-  
+  const allSkills = allHistories.flatMap(history => history.map((entry: any) => entry.skill))
+
   if (allSkills.length === 0) {
-    return <div className="no-data">No rating history available</div>
+    return (
+      <EmptyState
+        icon={<ChartLineUp size={18} weight="bold" />}
+        title="No rating history"
+        hint="A trajectory appears once this player has played rated matches."
+      />
+    )
   }
 
-  // Calculate chart dimensions
-  const width = 900
-  const height = 400
-  const padding = 60
-  const chartWidth = width - 2 * padding
-  const chartHeight = height - 2 * padding
-
-  // Get min and max skill values for scaling (with padding)
   const minSkill = Math.min(...allSkills) - 2
   const maxSkill = Math.max(...allSkills) + 2
-  const skillRange = maxSkill - minSkill
+  const skillRange = maxSkill - minSkill || 1
 
-  // Get all dates across all histories for x-axis normalization
   const allDates = new Set<number>()
-  allHistories.forEach((history: any[]) => {
-    history.forEach((entry: any) => allDates.add(entry.date))
-  })
+  allHistories.forEach(history => history.forEach((entry: any) => allDates.add(entry.date)))
   const sortedDates = Array.from(allDates).sort((a, b) => a - b)
   const dateRange = sortedDates.length > 1 ? sortedDates[sortedDates.length - 1] - sortedDates[0] : 1
-  
-  // Create points for each selected player
-  const playerLines = selectedPlayers.map((playerName: string, playerIndex: number) => {
-    const history = playerHistories.get(playerName) || []
-    if (history.length === 0) return null
 
-    const points = history.map((entry: any) => {
-      const x = padding + ((entry.date - sortedDates[0]) / dateRange) * chartWidth
-      const y = padding + chartHeight - ((entry.skill - minSkill) / skillRange) * chartHeight
-      return { x, y, skill: entry.skill, index: entry.matchIndex, date: entry.date }
-    }).sort((a: any, b: any) => a.date - b.date) // Ensure points are sorted by date
+  const toX = (date: number) => PADDING.left + ((date - sortedDates[0]) / dateRange) * CHART_WIDTH
+  const toY = (skill: number) => PADDING.top + CHART_HEIGHT - ((skill - minSkill) / skillRange) * CHART_HEIGHT
 
-    const pathD = points.map((point: any, index: any) => 
-      `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
-    ).join(' ')
+  const playerLines = selectedPlayers
+    .map((playerName, playerIndex) => {
+      const history = playerHistories.get(playerName) || []
+      if (history.length === 0) return null
 
-    return {
-      playerName,
-      color: PLAYER_COLORS[playerIndex % PLAYER_COLORS.length],
-      points,
-      pathD
-    }
-  }).filter((line): line is { playerName: string; color: string; points: any[]; pathD: string } => line !== null)
+      const points = [...history]
+        .sort((a: any, b: any) => a.date - b.date)
+        .map((entry: any) => ({
+          x: toX(entry.date),
+          y: toY(entry.skill),
+          skill: entry.skill,
+          index: entry.matchIndex,
+          date: entry.date
+        }))
 
-  // Create grid lines
-  const numGridLines = 6
-  const gridLines = Array.from({ length: numGridLines }, (_: any, i: any) => {
-    const value = minSkill + (skillRange * i / (numGridLines - 1))
-    const y = padding + chartHeight - ((value - minSkill) / skillRange) * chartHeight
-    return { y, value }
-  })
-
-  // Create date labels for x-axis
-  const numDateLabels = 6
-  const dateLabels = Array.from({ length: numDateLabels }, (_: any, i: any) => {
-    const dateValue = sortedDates[0] + (dateRange * i / (numDateLabels - 1))
-    const x = padding + (i / (numDateLabels - 1)) * chartWidth
-    const date = new Date(dateValue)
-    
-    // Format date based on range
-    let dateFormat
-    if (dateRange > 365 * 24 * 60 * 60 * 1000) {
-      // More than a year: show month/year
-      dateFormat = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-    } else {
-      // Less than a year: show month/day
-      dateFormat = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }
-    
-    return { x, date: dateValue, label: dateFormat }
-  })
-
-  const handleAddPlayer = (playerName: string) => {
-    if (!selectedPlayers.includes(playerName)) {
-      setSelectedPlayers([...selectedPlayers, playerName])
-    }
-  }
-
-  const handleRemovePlayer = (playerName: string) => {
-    if (selectedPlayers.length > 1) {
-      setSelectedPlayers(selectedPlayers.filter(p => p !== playerName))
-    }
-  }
-
-  // Get available players (those with history)
-  const availablePlayers = Array.from(playerHistories.keys())
-    .filter((name: unknown) => {
-      if (typeof name !== 'string') return false
-      return (playerHistories.get(name)?.length ?? 0) > 0
+      return {
+        playerName,
+        color: SERIES_COLORS[playerIndex % SERIES_COLORS.length],
+        points,
+        pathD: points.map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+      }
     })
+    .filter((line): line is NonNullable<typeof line> => line !== null)
+
+  const gridLines = Array.from({ length: 6 }, (_, i) => {
+    const value = minSkill + (skillRange * i) / 5
+    return { y: toY(value), value }
+  })
+
+  const dateLabels = Array.from({ length: 6 }, (_, i) => {
+    const dateValue = sortedDates[0] + (dateRange * i) / 5
+    const date = new Date(dateValue)
+    return {
+      x: PADDING.left + (i / 5) * CHART_WIDTH,
+      label:
+        dateRange > 365 * 24 * 60 * 60 * 1000
+          ? date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+          : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+  })
+
+  const availablePlayers = Array.from(playerHistories.keys())
+    .filter((name: unknown): name is string => typeof name === 'string')
+    .filter(name => (playerHistories.get(name)?.length ?? 0) > 0)
     .sort()
 
   return (
-    <div className="trueskill-chart-container">
-      {/* Player selector */}
-      <div className="chart-player-selector">
-        <div className="selected-players">
-          {selectedPlayers.map((playerName: any, index: any) => (
-            <div key={playerName} className="player-tag" style={{ borderColor: PLAYER_COLORS[index % PLAYER_COLORS.length] }}>
-              <span style={{ color: PLAYER_COLORS[index % PLAYER_COLORS.length] }}>
-                {playerName}
-              </span>
-              {selectedPlayers.length > 1 && (
-                <button 
-                  className="remove-player-btn"
-                  onClick={() => handleRemovePlayer(playerName)}
-                  title="Remove player"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+    <div className="flex flex-col gap-3">
+      {/* Legend doubles as the series picker. */}
+      <div className="flex flex-wrap items-center gap-2">
+        {selectedPlayers.map((playerName, index) => (
+          <span
+            key={playerName}
+            className="flex items-center gap-1.5 rounded-sm border border-line bg-surface py-1 pl-2 pr-1.5 text-xs"
+          >
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: SERIES_COLORS[index % SERIES_COLORS.length] }}
+            />
+            <span className="text-fg">{playerName}</span>
+            {selectedPlayers.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setSelectedPlayers(prev => prev.filter(name => name !== playerName))}
+                aria-label={`Remove ${playerName}`}
+                className="tactile rounded-xs p-0.5 text-fg-faint hover:text-down"
+              >
+                <X size={10} weight="bold" />
+              </button>
+            )}
+          </span>
+        ))}
+
         {availablePlayers.length > selectedPlayers.length && (
-          <SearchableSelect
-            options={availablePlayers
-              .filter((name: any) => !selectedPlayers.includes(name))
-              .map(name => ({ name }))}
-            value=""
-            onChange={(value: string) => {
-              if (value) {
-                handleAddPlayer(value)
-              }
-            }}
-            placeholder="+ Add player to compare..."
-            getOptionLabel={(option: any) => option.name}
-            getOptionValue={(option: any) => option.name}
-            className="add-player-select"
-          />
+          <div className="w-56">
+            <SearchableSelect
+              options={availablePlayers.filter(name => !selectedPlayers.includes(name)).map(name => ({ name }))}
+              value=""
+              onChange={(value: string) => {
+                if (value && !selectedPlayers.includes(value)) {
+                  setSelectedPlayers(prev => [...prev, value])
+                }
+              }}
+              placeholder="Add player"
+              emptyMessage="No player by that name"
+              getOptionLabel={(option: any) => option.name}
+              getOptionValue={(option: any) => option.name}
+            />
+          </div>
         )}
       </div>
 
-      {/* Chart */}
-      <div className="trueskill-chart">
-        <svg width={width} height={height} className="chart-svg">
-          {/* Grid lines */}
-          {gridLines.map((line: any, i: any) => (
-            <g key={i}>
+      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+        <svg
+          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label="TrueSkill rating over time"
+          className="h-auto w-full min-w-[34rem]"
+        >
+          {gridLines.map((line, index) => (
+            <g key={index}>
               <line
-                x1={padding}
+                x1={PADDING.left}
                 y1={line.y}
-                x2={width - padding}
+                x2={VIEW_WIDTH - PADDING.right}
                 y2={line.y}
-                stroke="rgba(255, 255, 255, 0.1)"
+                stroke="var(--color-line)"
                 strokeWidth="1"
               />
               <text
-                x={padding - 10}
+                x={PADDING.left - 10}
                 y={line.y + 4}
-                fill="rgba(255, 255, 255, 0.5)"
-                fontSize="12"
+                fill="var(--color-fg-faint)"
+                fontSize="11"
+                fontFamily="var(--font-mono)"
                 textAnchor="end"
               >
                 {line.value.toFixed(0)}
@@ -195,102 +210,53 @@ export const TrueSkillChart = ({ playerHistories, allPlayers: _allPlayers, mainP
             </g>
           ))}
 
-          {/* X-axis */}
-          <line
-            x1={padding}
-            y1={height - padding}
-            x2={width - padding}
-            y2={height - padding}
-            stroke="rgba(255, 255, 255, 0.3)"
-            strokeWidth="2"
-          />
-          
-          {/* Date labels on x-axis */}
-          {dateLabels.map((label: any, i: any) => (
-            <g key={i}>
-              <line
-                x1={label.x}
-                y1={height - padding}
-                x2={label.x}
-                y2={height - padding + 5}
-                stroke="rgba(255, 255, 255, 0.3)"
-                strokeWidth="1"
-              />
-              <text
-                x={label.x}
-                y={height - padding + 20}
-                fill="rgba(255, 255, 255, 0.6)"
-                fontSize="11"
-                textAnchor="middle"
-              >
-                {label.label}
-              </text>
-            </g>
+          {dateLabels.map((label, index) => (
+            <text
+              key={index}
+              x={label.x}
+              y={VIEW_HEIGHT - PADDING.bottom + 20}
+              fill="var(--color-fg-faint)"
+              fontSize="11"
+              fontFamily="var(--font-mono)"
+              textAnchor="middle"
+            >
+              {label.label}
+            </text>
           ))}
 
-          {/* Y-axis */}
           <line
-            x1={padding}
-            y1={padding}
-            x2={padding}
-            y2={height - padding}
-            stroke="rgba(255, 255, 255, 0.3)"
-            strokeWidth="2"
+            x1={PADDING.left}
+            y1={VIEW_HEIGHT - PADDING.bottom}
+            x2={VIEW_WIDTH - PADDING.right}
+            y2={VIEW_HEIGHT - PADDING.bottom}
+            stroke="var(--color-line-strong)"
+            strokeWidth="1"
           />
 
-          {/* Line charts for each player */}
           {playerLines.map(({ playerName, color, points, pathD }) => (
             <g key={playerName}>
-              <path
+              <motion.path
                 d={pathD}
                 fill="none"
                 stroke={color}
-                strokeWidth="3"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity="0.9"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
               />
-              {/* Data points */}
-              {points.map((point: any, index: any) => (
-                <circle
-                  key={index}
-                  cx={point.x}
-                  cy={point.y}
-                  r="4"
-                  fill={color}
-                  stroke="#1e1b4b"
-                  strokeWidth="2"
-                  opacity="0.9"
-                >
-                  <title>{playerName} - Match {point.index}: {point.skill.toFixed(1)}</title>
+              {points.map((point, index) => (
+                <circle key={index} cx={point.x} cy={point.y} r="2.5" fill={color} opacity="0.9">
+                  <title>
+                    {playerName} — match {point.index}: {point.skill.toFixed(1)}
+                  </title>
                 </circle>
               ))}
             </g>
           ))}
-
-          {/* Axis labels */}
-          <text
-            x={width / 2}
-            y={height - 15}
-            fill="rgba(255, 255, 255, 0.7)"
-            fontSize="14"
-            textAnchor="middle"
-          >
-            Time
-          </text>
-          <text
-            x={20}
-            y={height / 2}
-            fill="rgba(255, 255, 255, 0.7)"
-            fontSize="14"
-            textAnchor="middle"
-            transform={`rotate(-90, 20, ${height / 2})`}
-          >
-            TrueSkill Rating
-          </text>
         </svg>
       </div>
     </div>
   )
 }
-

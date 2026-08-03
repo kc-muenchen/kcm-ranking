@@ -6,6 +6,8 @@ import type { Tournament, APITournament } from '../types/tournament'
 interface UseTournamentsReturn {
   tournaments: Tournament[]
   loading: boolean
+  /** Set when both the API and the local-file fallback failed, so the UI can say so. */
+  error: string | null
   reloadTournaments: () => Promise<void>
 }
 
@@ -15,6 +17,7 @@ interface UseTournamentsReturn {
 export const useTournaments = (): UseTournamentsReturn => {
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     // Preload aliases from API, then load tournaments
@@ -26,7 +29,8 @@ export const useTournaments = (): UseTournamentsReturn => {
   const loadTournaments = async () => {
     try {
       setLoading(true)
-      
+      setError(null)
+
       // Fetch tournaments from backend API
       const tournamentsData = await apiFetch(API_ENDPOINTS.tournaments)
       
@@ -98,9 +102,12 @@ export const useTournaments = (): UseTournamentsReturn => {
       setTournaments(validTournaments)
     } catch (error) {
       console.error('Error loading tournaments from files:', error)
+      // Both the API and the fallback failed. Surface it rather than letting the
+      // UI render an empty state, which would look identical to having no data.
+      setError(error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
-  return { tournaments, loading, reloadTournaments: loadTournaments }
+  return { tournaments, loading, error, reloadTournaments: loadTournaments }
 }
 

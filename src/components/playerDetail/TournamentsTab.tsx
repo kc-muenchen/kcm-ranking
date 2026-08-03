@@ -1,56 +1,106 @@
+import { CalendarBlank } from '@phosphor-icons/react'
+import { EmptyState } from '../ui/States'
+
+/** Rows past this index appear immediately. */
+const ROW_STAGGER_LIMIT = 14
+
 /**
- * Tournaments tab component showing tournament participation list
+ * Tournament participation.
+ *
+ * One row per tournament rather than a grid of cards: the interesting data is
+ * the placement columns, and columns want a table.
  */
-export const TournamentsTab = ({ tournamentList  }: { tournamentList: any }) => {
+export const TournamentsTab = ({ tournamentList }: { tournamentList: any }) => {
+  if (tournamentList.length === 0) {
+    return (
+      <EmptyState
+        icon={<CalendarBlank size={18} weight="bold" />}
+        title="No tournaments yet"
+        hint="This player has not appeared in an imported tournament."
+      />
+    )
+  }
+
   return (
-    <div className="tab-panel">
-      {/* Tournament Participation List */}
-      <div className="tournament-list-section">
-        <h2>Tournament Participation</h2>
-        <p className="section-subtitle">Participated in {tournamentList.length} tournament{tournamentList.length !== 1 ? 's' : ''}</p>
-        
-        <div className="tournament-grid">
-          {tournamentList.map((tournament: any, index: any) => (
-            <div key={index} className="tournament-card">
-              <div className="tournament-card-header">
-                <span className="tournament-name">{tournament.name}</span>
-                <span className="tournament-date">
-                  {new Date(tournament.date).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="tournament-card-body">
-                {tournament.finalPlace && (
-                  <div className="tournament-placement">
-                    <span className="placement-label">Final Place:</span>
-                    <span className={`placement-value ${tournament.finalPlace <= 3 ? 'podium' : ''}`}>
-                      #{tournament.finalPlace}
-                    </span>
-                  </div>
-                )}
-                {tournament.qualifyingPlace && tournament.eliminationPlace && (
-                  <div className="tournament-details">
-                    <span className="detail-item">
-                      <span className="detail-label">Qualifying:</span>
-                      <span className="detail-value">#{tournament.qualifyingPlace}</span>
-                    </span>
-                    <span className="detail-item">
-                      <span className="detail-label">Knockout:</span>
-                      <span className="detail-value">#{tournament.eliminationPlace}</span>
-                    </span>
-                  </div>
-                )}
-                {tournament.seasonPoints !== undefined && (
-                  <div className="tournament-season-points">
-                    <span className="season-points-label">Season Points:</span>
-                    <span className="season-points-earned">+{tournament.seasonPoints}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+    <section className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="eyebrow">Participation</span>
+          <h2 className="text-base font-semibold tracking-tight text-fg">Tournaments played</h2>
         </div>
+        <span className="tnum text-xs text-fg-faint">{tournamentList.length} total</span>
       </div>
-    </div>
+
+      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+        <table className="w-full min-w-[34rem] border-collapse">
+          <thead>
+            <tr className="border-b border-line-strong">
+              {['Date', 'Tournament', 'Qual', 'KO', 'Final', 'Points'].map((label, index) => (
+                <th
+                  key={label}
+                  scope="col"
+                  className={`whitespace-nowrap px-3 py-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-fg-faint ${
+                    index >= 2 ? 'text-right' : 'text-left'
+                  }`}
+                >
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tournamentList.map((tournament: any, index: number) => {
+              const isPodium = tournament.finalPlace && tournament.finalPlace <= 3
+              return (
+                <tr
+                  key={index}
+                  className="row-in border-b border-line transition-colors hover:bg-surface"
+                  style={
+                    index < ROW_STAGGER_LIMIT
+                      ? ({ '--row-index': index } as React.CSSProperties)
+                      : { animation: 'none' }
+                  }
+                >
+                  <td className="tnum whitespace-nowrap px-3 py-2.5 text-xs text-fg-faint">
+                    {new Date(tournament.date).toLocaleDateString('de-DE', {
+                      year: '2-digit',
+                      month: '2-digit',
+                      day: '2-digit'
+                    })}
+                  </td>
+                  <td
+                    className={`max-w-[18rem] truncate border-l-2 px-3 py-2.5 text-[0.8125rem] ${
+                      isPodium ? 'border-l-accent font-medium text-fg' : 'border-l-transparent text-fg-dim'
+                    }`}
+                  >
+                    {tournament.name}
+                  </td>
+                  <td className="tnum px-3 py-2.5 text-right text-[0.8125rem] text-fg-dim">
+                    {tournament.qualifyingPlace ?? <span className="text-fg-faint">--</span>}
+                  </td>
+                  <td className="tnum px-3 py-2.5 text-right text-[0.8125rem] text-fg-dim">
+                    {tournament.eliminationPlace ?? <span className="text-fg-faint">--</span>}
+                  </td>
+                  <td
+                    className={`tnum px-3 py-2.5 text-right text-[0.8125rem] ${
+                      isPodium ? 'font-semibold text-fg' : 'text-fg-dim'
+                    }`}
+                  >
+                    {tournament.finalPlace ?? <span className="text-fg-faint">--</span>}
+                  </td>
+                  <td className="tnum px-3 py-2.5 text-right text-[0.8125rem] text-accent">
+                    {tournament.seasonPoints !== undefined ? (
+                      `+${tournament.seasonPoints}`
+                    ) : (
+                      <span className="text-fg-faint">--</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
-
