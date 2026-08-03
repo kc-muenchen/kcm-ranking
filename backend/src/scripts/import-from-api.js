@@ -87,6 +87,17 @@ async function importOne(client, id, options) {
 
   report.unresolved.forEach(name => console.log(`  WARNING unresolved standing entry: ${name}`));
 
+  // Importing replaces a tournament's matches and standings, so an empty
+  // result would prune a good one. A finished tournament always has matches.
+  const totalMatches = report.groups.reduce((sum, g) => sum + g.matches, 0);
+  if (totalMatches === 0) {
+    console.log('  no matches returned - refusing to overwrite what is already stored');
+    if (!options.force) {
+      console.log('  SKIPPED (pass --force to import anyway)');
+      return { id, status: 'skipped', problems: 1 };
+    }
+  }
+
   if (report.problems.length > 0) {
     console.log(`  ${report.problems.length} check failure(s) - the scoring rules in tournament-io-mapper.js`);
     console.log('  may no longer match this tournament\'s Kickertool settings:');
