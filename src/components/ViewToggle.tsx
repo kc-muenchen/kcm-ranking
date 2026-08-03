@@ -62,7 +62,7 @@ function ViewToggle({ viewMode, onViewModeChange }: { viewMode: any; onViewModeC
                 <motion.span
                   layoutId="view-toggle-active"
                   transition={spring}
-                  className="absolute inset-0 rounded-sm border border-line-strong bg-surface-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+                  className="absolute inset-0 rounded-sm border border-line-strong bg-surface-3 shadow-[inset_0_1px_0_var(--hairline)]"
                 />
               )}
               <Icon size={14} weight="bold" className="relative shrink-0" />

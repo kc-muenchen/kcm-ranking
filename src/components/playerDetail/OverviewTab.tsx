@@ -18,7 +18,7 @@ const PersonRow = ({
   tone: 'up' | 'down'
 }) => (
   <motion.li variants={staggerChild} className="flex items-baseline gap-3 border-b border-line py-2.5">
-    <span className="tnum w-5 shrink-0 text-[0.875rem] text-fg-faint">{String(index + 1).padStart(2, '0')}</span>
+    <span className="tnum w-5 shrink-0 text-[0.875rem] text-fg-faint">{index + 1}</span>
     <span className="min-w-0 flex-1">
       <span className="block truncate text-[0.9375rem] font-medium text-fg">{name}</span>
       <span className="tnum block text-[0.875rem] text-fg-faint">{record}</span>
@@ -98,7 +98,7 @@ export const OverviewTab = ({
                         ranking.place === 1 ? 'font-semibold text-fg' : 'text-fg-dim'
                       }`}
                     >
-                      {String(ranking.place).padStart(2, '0')}
+                      {ranking.place}
                     </span>
                     <span className="tnum flex-1 text-[0.9375rem] text-fg-dim">
                       {ranking.count}

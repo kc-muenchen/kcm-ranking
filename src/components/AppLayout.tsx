@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import logo from '../Logo-kcm.png'
 import ScrollToTop from './ScrollToTop'
+import { ThemeToggle } from './ThemeToggle'
 
 /**
  * App shell: a compact sticky command bar over a full-bleed content column.
@@ -11,7 +12,7 @@ import ScrollToTop from './ScrollToTop'
 export const AppLayout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-bg">
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/80 shadow-[inset_0_-1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-line bg-bg/80 shadow-[inset_0_-1px_0_var(--hairline)] backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between gap-4 px-4 md:px-8">
           <div className="flex items-center gap-3">
             <img src={logo} alt="" className="h-7 w-auto object-contain" />
@@ -23,9 +24,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="breathe h-1.5 w-1.5 rounded-full bg-up" aria-hidden="true" />
-            <span className="eyebrow hidden sm:inline">KC München</span>
+          <div className="flex items-center gap-3">
+            <span className="eyebrow hidden items-center gap-2 sm:inline-flex">
+              <span className="breathe inline-block h-1.5 w-1.5 rounded-full bg-up" aria-hidden="true" />
+              KC München
+            </span>
+            <ThemeToggle />
           </div>
         </div>
       </header>

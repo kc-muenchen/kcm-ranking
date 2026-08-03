@@ -54,7 +54,7 @@ function ScrollToTop() {
           transition={springPop}
           whileTap={{ scale: 0.92 }}
           aria-label="Scroll to top"
-          className="fixed bottom-5 right-5 z-40 grid h-10 w-10 place-items-center rounded-md border border-line-strong bg-surface-2/90 text-fg-dim shadow-[var(--shadow-overlay),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md hover:border-accent hover:text-accent md:bottom-8 md:right-8"
+          className="fixed bottom-5 right-5 z-40 grid h-10 w-10 place-items-center rounded-md border border-line-strong bg-surface-2/90 text-fg-dim shadow-[var(--shadow-overlay),inset_0_1px_0_var(--hairline)] backdrop-blur-md hover:border-accent hover:text-accent md:bottom-8 md:right-8"
         >
           <ArrowUp size={16} weight="bold" />
         </motion.button>

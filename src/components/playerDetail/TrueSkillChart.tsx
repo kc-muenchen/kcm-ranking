@@ -6,22 +6,14 @@ import { EmptyState } from '../ui/States'
 import { ChartLineUp } from '@phosphor-icons/react'
 
 /**
- * Series palette.
+ * Series palette, resolved from CSS custom properties so it follows the theme.
  *
- * Warm and cool alternate so adjacent lines stay separable, saturation is held
- * down so no single series screams, and the first entry is the app accent so a
- * solo chart matches the rest of the UI.
+ * The dark values would wash out on a light page - a 2px stroke needs a darker
+ * hue there to stay legible. Warm and cool alternate so adjacent lines stay
+ * separable, and the first entry is the app accent so a solo chart matches the
+ * rest of the UI.
  */
-const SERIES_COLORS = [
-  '#5289d4',
-  '#3fbf8f',
-  '#d9a441',
-  '#e2647a',
-  '#4fb3c4',
-  '#c98a4b',
-  '#7fa650',
-  '#cf7d5c'
-]
+const SERIES_COLORS = Array.from({ length: 8 }, (_, i) => `var(--series-${i + 1})`)
 
 const VIEW_WIDTH = 900
 const VIEW_HEIGHT = 400

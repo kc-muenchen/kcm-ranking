@@ -166,7 +166,7 @@ export const SeasonFinalBanner = ({ seasonFinal, onViewFinal }: { seasonFinal: a
               <span
                 className={`tnum w-6 shrink-0 text-sm ${team.place === 1 ? 'font-semibold text-fg' : 'text-fg-dim'}`}
               >
-                {String(team.place).padStart(2, '0')}
+                {team.place}
               </span>
               <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 {team.players.map((player: string, index: number) => (

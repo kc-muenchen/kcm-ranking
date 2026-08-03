@@ -136,7 +136,7 @@ function EliminationBracket({ eliminationData }: { eliminationData: any }) {
                           player.stats.place === 1 ? 'font-semibold text-fg' : 'text-fg-dim'
                         }`}
                       >
-                        {String(player.stats.place).padStart(2, '0')}
+                        {player.stats.place}
                       </span>
                       <span
                         className={`flex-1 truncate text-sm ${
