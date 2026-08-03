@@ -1,12 +1,15 @@
-import { TrueSkill } from 'ts-trueskill'
-import { normalizePlayerNameSync } from '../config/playerAliases'
+import { Rating, TrueSkill } from 'ts-trueskill'
 
 /**
- * TrueSkill configuration
+ * TrueSkill configuration - must stay in sync with the backend environment in
+ * backend/src/services/trueskill-service.js, which is what actually computes the
+ * ratings. This copy exists so the UI can derive win probabilities from them.
+ *
  * - mu: 25 (initial skill estimate)
  * - sigma: 25/3 ≈ 8.333 (initial uncertainty)
  * - beta: 5.5 (skill vs luck factor - higher = more luck-based)
  * - tau: 0.12 (dynamics factor - higher = skills change faster over time)
+ * - drawProbability: 0 (no draws in table soccer)
  */
 const TRUESKILL_CONFIG = {
   mu: 25,
@@ -17,192 +20,6 @@ const TRUESKILL_CONFIG = {
 
 // Create a TrueSkill environment with custom parameters
 const trueskill = new TrueSkill(TRUESKILL_CONFIG.mu, TRUESKILL_CONFIG.sigma, TRUESKILL_CONFIG.beta, TRUESKILL_CONFIG.tau, 0)
-
-/**
- * Calculate TrueSkill ratings for all players across all tournaments
- * @param {Array} tournaments - Array of tournament objects with match data
- * @returns {Object} Object with playerRatings Map and playerHistory Map
- */
-export function calculateTrueSkillRatings(tournaments: any[]) {
-  // Initialize player ratings with custom config
-  const playerRatings = new Map<string, any>()
-  const playerHistory = new Map<string, any[]>() // Track rating history per player
-  
-  // Collect all matches across all tournaments with timestamps
-  const allMatches: any[] = []
-  
-  tournaments.forEach((tournament: any) => {
-    const tournamentDate = new Date(tournament.date)
-    
-    // Process qualifying rounds
-    if (tournament.data.qualifying && tournament.data.qualifying.length > 0) {
-      const qualifying = tournament.data.qualifying[0]
-      
-      if (qualifying.rounds) {
-        qualifying.rounds.forEach((round: any) => {
-          if (round.matches) {
-            round.matches.forEach((match: any) => {
-              if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
-                allMatches.push({
-                  date: match.timeStart || tournamentDate.getTime(),
-                  team1Players: match.team1.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
-                  team2Players: match.team2.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
-                  team1Score: match.result[0],
-                  team2Score: match.result[1]
-                })
-              }
-            })
-          }
-        })
-      }
-    }
-    
-    // Process elimination rounds
-    if (tournament.data.eliminations) {
-      tournament.data.eliminations.forEach((elimination: any) => {
-        // Process all levels (rounds)
-        if (elimination.levels) {
-          elimination.levels.forEach((level: any) => {
-            if (level.matches) {
-              level.matches.forEach((match: any) => {
-                if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
-                  allMatches.push({
-                    date: match.timeStart || tournamentDate.getTime(),
-                    team1Players: match.team1.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
-                    team2Players: match.team2.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
-                    team1Score: match.result[0],
-                    team2Score: match.result[1]
-                  })
-                }
-              })
-            }
-          })
-        }
-        
-        // Process third place match
-        if (elimination.third && elimination.third.matches) {
-          elimination.third.matches.forEach((match: any) => {
-            if (match.valid && !match.skipped && match.team1 && match.team2 && match.result) {
-              allMatches.push({
-                date: match.timeStart || tournamentDate.getTime(),
-                team1Players: match.team1.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
-                team2Players: match.team2.players.map((p: any) => normalizePlayerNameSync(p.name)).filter((name: string) => name),
-                team1Score: match.result[0],
-                team2Score: match.result[1]
-              })
-            }
-          })
-        }
-      })
-    }
-  })
-  
-  // Sort matches by date (chronological order)
-  allMatches.sort((a: any, b: any) => a.date - b.date)
-  
-  // Initialize history for all players with their starting rating
-  allMatches.forEach((match: any) => {
-    [...match.team1Players, ...match.team2Players].forEach((playerName: string) => {
-      if (!playerHistory.has(playerName)) {
-        const initialRating = trueskill.createRating()
-        playerHistory.set(playerName, [{
-          matchIndex: -1,
-          date: allMatches[0].date,
-          rating: initialRating,
-          skill: getConservativeRating(initialRating),
-          match: null
-        }])
-      }
-    })
-  })
-  
-  // Process each match and update ratings
-  allMatches.forEach((match: any, matchIndex: any) => {
-    // Get or create ratings for all players
-    const team1Ratings = match.team1Players.map((playerName: any) => {
-      if (!playerRatings.has(playerName)) {
-        playerRatings.set(playerName, trueskill.createRating())
-      }
-      return playerRatings.get(playerName)
-    })
-    
-    const team2Ratings = match.team2Players.map((playerName: any) => {
-      if (!playerRatings.has(playerName)) {
-        playerRatings.set(playerName, trueskill.createRating())
-      }
-      return playerRatings.get(playerName)
-    })
-    
-    // Determine ranks (lower is better: 1 for winner, 2 for loser, 0 for draw)
-    let ranks
-    if (match.team1Score > match.team2Score) {
-      ranks = [1, 2] // Team 1 wins
-    } else if (match.team2Score > match.team1Score) {
-      ranks = [2, 1] // Team 2 wins
-    } else {
-      ranks = [1, 1] // Draw
-    }
-    
-    // Calculate new ratings with custom environment
-    try {
-      const result = trueskill.rate([team1Ratings, team2Ratings], ranks)
-      const [newTeam1Ratings, newTeam2Ratings] = result
-      
-      // Update player ratings and history
-      match.team1Players.forEach((playerName: any, index: any) => {
-        if (index < newTeam1Ratings.length) {
-          const newRating = newTeam1Ratings[index]
-          playerRatings.set(playerName, newRating)
-          
-          // Add to history
-          const history = playerHistory.get(playerName) || []
-          history.push({
-            matchIndex,
-            date: match.date,
-            rating: newRating,
-            skill: getConservativeRating(newRating),
-            match: {
-              team1Players: match.team1Players,
-              team2Players: match.team2Players,
-              team1Score: match.team1Score,
-              team2Score: match.team2Score,
-              won: match.team1Score > match.team2Score
-            }
-          })
-          playerHistory.set(playerName, history)
-        }
-      })
-      
-      match.team2Players.forEach((playerName: any, index: any) => {
-        if (index < newTeam2Ratings.length) {
-          const newRating = newTeam2Ratings[index]
-          playerRatings.set(playerName, newRating)
-          
-          // Add to history
-          const history = playerHistory.get(playerName) || []
-          history.push({
-            matchIndex,
-            date: match.date,
-            rating: newRating,
-            skill: getConservativeRating(newRating),
-            match: {
-              team1Players: match.team1Players,
-              team2Players: match.team2Players,
-              team1Score: match.team1Score,
-              team2Score: match.team2Score,
-              won: match.team2Score > match.team1Score
-            }
-          })
-          playerHistory.set(playerName, history)
-        }
-      })
-    } catch (error) {
-      console.warn('Error calculating TrueSkill for match:', error)
-    }
-  })
-  
-  return { playerRatings, playerHistory }
-}
 
 /**
  * Get the conservative skill estimate (mu - 3*sigma) for a player
@@ -216,46 +33,54 @@ export function getConservativeRating(rating: any) {
 }
 
 /**
- * Export player ratings to a simple object format
- * @param {Map} playerRatings - Map of player names to Rating objects
- * @returns {Object} Object with player names as keys and skill estimates as values
+ * Build a TrueSkill Rating from an aggregated player object.
+ * Falls back to the environment defaults when a player has no rating yet.
+ * @param {Object} player - Player with mu/sigma (as produced by playerProcessing)
+ * @returns {Rating} TrueSkill Rating object
  */
-export function exportRatings(playerRatings: Map<string, any>) {
-  const ratings: Record<string, { skill: number; mu: number; sigma: number }> = {}
-  playerRatings.forEach((rating: any, playerName: any) => {
-    ratings[playerName] = {
-      skill: getConservativeRating(rating),
-      mu: rating.mu,
-      sigma: rating.sigma
-    }
-  })
-  return ratings
+export function toRating(player: any) {
+  const mu = typeof player?.mu === 'number' ? player.mu : TRUESKILL_CONFIG.mu
+  const sigma = typeof player?.sigma === 'number' ? player.sigma : TRUESKILL_CONFIG.sigma
+  return new Rating(mu, sigma)
 }
 
 /**
- * Calculate win probability for a 1v1 match based on TrueSkill ratings
- * Uses logistic function to convert skill difference to probability
- * @param {number} player1Skill - TrueSkill rating of player 1
- * @param {number} player2Skill - TrueSkill rating of player 2
- * @returns {Object} Object with player1WinProb and player2WinProb (0-1 range)
+ * Conservative skill estimate for a whole team: the summed means minus three
+ * standard deviations of the combined (independent) uncertainty.
+ * @param {Array} ratings - TrueSkill Rating objects
+ * @returns {number} Conservative team skill estimate
  */
-export function calculateWinProbability(player1Skill: number, player2Skill: number) {
-  // Validate inputs
-  if (typeof player1Skill !== 'number' || typeof player2Skill !== 'number') {
-    return { player1WinProb: 0.5, player2WinProb: 0.5 }
-  }
-  
-  // Calculate skill difference
-  const skillDiff = player1Skill - player2Skill
-  
-  // Use logistic function to convert skill difference to probability
-  // Scale factor of 3.0 is tuned for TrueSkill's typical range
-  const scaleFactor = 3.0
-  const player1WinProb = 1 / (1 + Math.exp(-skillDiff / scaleFactor))
-  
-  return {
-    player1WinProb,
-    player2WinProb: 1 - player1WinProb
-  }
+function getTeamSkill(ratings: any[]) {
+  const mu = ratings.reduce((sum: number, r: any) => sum + r.mu, 0)
+  const sigma = Math.sqrt(ratings.reduce((sum: number, r: any) => sum + r.sigma ** 2, 0))
+  return mu - 3 * sigma
 }
 
+/**
+ * Calculate win probability between two teams using the TrueSkill model.
+ *
+ * Delegates to the library's winProbability so beta and each player's own sigma
+ * are accounted for, rather than approximating from conservative ratings (which
+ * already have uncertainty baked in and would double-count it).
+ *
+ * @param {Array} team1Players - Players with mu/sigma (1 for a 1v1, 2 for doubles)
+ * @param {Array} team2Players - Players with mu/sigma
+ * @returns {Object} Win probabilities (0-1) and conservative team skills
+ */
+export function calculateWinProbability(team1Players: any[], team2Players: any[]) {
+  const team1 = (team1Players || []).filter(Boolean).map(toRating)
+  const team2 = (team2Players || []).filter(Boolean).map(toRating)
+
+  if (team1.length === 0 || team2.length === 0) {
+    return { team1WinProb: 0.5, team2WinProb: 0.5, team1Skill: 0, team2Skill: 0 }
+  }
+
+  const team1WinProb = trueskill.winProbability(team1, team2)
+
+  return {
+    team1WinProb,
+    team2WinProb: 1 - team1WinProb,
+    team1Skill: getTeamSkill(team1),
+    team2Skill: getTeamSkill(team2)
+  }
+}
