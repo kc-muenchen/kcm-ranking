@@ -50,6 +50,7 @@ const NUMERIC = new Set([
 const COLUMN_LABELS: Record<string, string> = {
   rank: 'Rank',
   name: 'Player',
+  finaleStatus: 'Finale',
   seasonPoints: 'Season points',
   trueSkill: 'TrueSkill',
   tournaments: 'Tournaments',
@@ -80,7 +81,9 @@ const COLUMN_HELP: Record<string, string> = {
   buchholz: 'Tie-breaker: the combined score of everyone this player faced.',
   sonnebornBerger: 'Tie-breaker: weighted by the strength of the opponents actually beaten.',
   pointsPerGame: 'Match points divided by matches played.',
-  winRate: 'Share of matches won.'
+  winRate: 'Share of matches won.',
+  finaleStatus:
+    'Season finale place. Needs at least 10 tournaments played, so a player can sit high in the table and still not qualify.'
 }
 
 /**
@@ -156,22 +159,6 @@ function RankingTable({
             >
               {typeof place === 'number' ? place : '--'}
             </span>
-            {player.finaleStatus === 'qualified' && (
-              <span
-                title="Qualified for the season finale"
-                className="whitespace-nowrap rounded-sm border border-up/40 px-1.5 py-0.5 text-[0.75rem] font-medium text-up"
-              >
-                Qualified
-              </span>
-            )}
-            {player.finaleStatus === 'successor' && (
-              <span
-                title="Next in line if a qualified player drops out"
-                className="whitespace-nowrap rounded-sm border border-warn/40 px-1.5 py-0.5 text-[0.75rem] font-medium text-warn"
-              >
-                Reserve
-              </span>
-            )}
           </div>
         )
       }
@@ -205,6 +192,47 @@ function RankingTable({
         )
       }
     })
+
+    if (viewMode === 'season') {
+      /*
+        Finale status is its own column rather than a badge tacked onto the rank
+        cell. Two reasons. Repeating a badge down twenty rows inside another
+        column reads as decoration, whereas repetition inside a column is just
+        what a column is. And qualification is not the top N rows: it is rank
+        order filtered by a ten-tournament minimum, so players who fall short sit
+        *above* qualified players. Anything positional - a cutoff rule, a
+        highlighted block - would state something untrue.
+      */
+      cols.push({
+        id: 'finaleStatus',
+        accessorKey: 'finaleStatus',
+        header: 'Finale',
+        cell: ({ getValue }) => {
+          const status = getValue()
+          if (status === 'qualified') {
+            return (
+              <span
+                title="Qualified for the season finale"
+                className="whitespace-nowrap rounded-sm border border-up/40 px-1.5 py-0.5 text-[0.8125rem] font-medium text-up"
+              >
+                Qualified
+              </span>
+            )
+          }
+          if (status === 'successor') {
+            return (
+              <span
+                title="Next in line if a qualified player drops out"
+                className="whitespace-nowrap rounded-sm border border-warn/40 px-1.5 py-0.5 text-[0.8125rem] font-medium text-warn"
+              >
+                Reserve
+              </span>
+            )
+          }
+          return <span className="text-fg-faint">--</span>
+        }
+      })
+    }
 
     if (viewMode === 'overall' || viewMode === 'season') {
       cols.push(
@@ -351,6 +379,7 @@ function RankingTable({
     }
 
     if (viewMode === 'overall' || viewMode === 'season') {
+      visibility.finaleStatus = viewMode === 'season'
       visibility.seasonPoints = true
       visibility.trueSkill = true
       visibility.tournaments = true
