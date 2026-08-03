@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { CalendarBlank, Percent, SoccerBall, Target, Trophy, Users, type Icon } from '@phosphor-icons/react'
 import { PlayerRecord, ViewMode } from '../types/components'
 import { Tournament } from '../types/tournament'
 import { staggerChild, staggerParent } from '../lib/motion'
@@ -7,6 +8,8 @@ interface StatItem {
   label: string
   value: string | number | undefined
   detail?: string
+  /** Marks the metric at a glance. Replaces the emoji the old design used. */
+  icon: Icon
   /** Render the headline as tabular figures. Names stay in the sans face. */
   numeric?: boolean
 }
@@ -73,23 +76,35 @@ function StatsCards({
   const stats: StatItem[] =
     viewMode === 'overall'
       ? [
-          { label: 'Players', value: totalPlayers, numeric: true },
-          { label: 'Tournaments', value: tournaments?.length || 0, numeric: true },
+          { label: 'Players', value: totalPlayers, numeric: true, icon: Users },
+          { label: 'Tournaments', value: tournaments?.length || 0, numeric: true, icon: CalendarBlank },
           {
             label: 'Season leader',
             value: players[0]?.name,
-            detail: `${players[0]?.seasonPoints || 0} pts`
+            detail: `${players[0]?.seasonPoints || 0} pts`,
+            icon: Trophy
           },
-          { label: 'Top scorer', value: topScorer?.name, detail: `${topScorer?.goalsFor} goals` }
+          {
+            label: 'Top scorer',
+            value: topScorer?.name,
+            detail: `${topScorer?.goalsFor} goals`,
+            icon: SoccerBall
+          }
         ]
       : [
-          { label: 'Players', value: totalPlayers, numeric: true },
-          { label: 'Matches', value: totalMatches, numeric: true },
-          { label: 'Top scorer', value: topScorer?.name, detail: `${topScorer?.goalsFor} goals` },
+          { label: 'Players', value: totalPlayers, numeric: true, icon: Users },
+          { label: 'Matches', value: totalMatches, numeric: true, icon: Target },
+          {
+            label: 'Top scorer',
+            value: topScorer?.name,
+            detail: `${topScorer?.goalsFor} goals`,
+            icon: SoccerBall
+          },
           {
             label: 'Best win rate',
             value: bestWinRate?.name,
-            detail: `${bestWinRate?.winRate}%`
+            detail: `${bestWinRate?.winRate}%`,
+            icon: Percent
           }
         ]
 
@@ -100,13 +115,16 @@ function StatsCards({
       animate="show"
       className="grid grid-cols-2 gap-x-6 gap-y-5 border-y border-line py-5 md:grid-cols-4 md:divide-x md:divide-line"
     >
-      {stats.map(stat => (
+      {stats.map(({ icon: StatIcon, ...stat }) => (
         <motion.div
           key={stat.label}
           variants={staggerChild}
           className="flex min-w-0 flex-col gap-1 md:px-6 md:first:pl-0 md:last:pr-0"
         >
-          <dt className="eyebrow">{stat.label}</dt>
+          <dt className="eyebrow flex items-center gap-1.5">
+            <StatIcon size={14} weight="bold" className="shrink-0" aria-hidden="true" />
+            {stat.label}
+          </dt>
           <dd
             className={`truncate text-xl font-semibold leading-tight tracking-tight text-fg ${
               stat.numeric ? 'tnum' : ''
