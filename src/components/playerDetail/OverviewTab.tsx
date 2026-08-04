@@ -1,154 +1,206 @@
 import { useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { CaretRight } from '@phosphor-icons/react'
+import { spring, springSnappy, staggerChild, staggerParent } from '../../lib/motion'
+
+/** A ranked person row - shared by partners and opponents, which are structurally identical. */
+const PersonRow = ({
+  index,
+  name,
+  record,
+  trailing,
+  tone
+}: {
+  index: number
+  name: string
+  record: string
+  trailing: string
+  tone: 'up' | 'down'
+}) => (
+  <motion.li variants={staggerChild} className="flex items-baseline gap-3 border-b border-line py-2.5">
+    <span className="tnum w-5 shrink-0 text-[0.875rem] text-fg-faint">{index + 1}</span>
+    <span className="min-w-0 flex-1">
+      <span className="block truncate text-[0.9375rem] font-medium text-fg">{name}</span>
+      <span className="tnum block text-[0.875rem] text-fg-faint">{record}</span>
+    </span>
+    <span className={`tnum shrink-0 text-sm font-semibold ${tone === 'up' ? 'text-up' : 'text-down'}`}>
+      {trailing}
+    </span>
+  </motion.li>
+)
+
+/** Small heading + empty-state wrapper for each block on this tab. */
+const Block = ({
+  title,
+  isEmpty,
+  emptyText,
+  children
+}: {
+  title: string
+  isEmpty: boolean
+  emptyText: string
+  children: React.ReactNode
+}) => (
+  <section className="flex flex-col gap-2">
+    <h3 className="eyebrow border-b border-line pb-2">{title}</h3>
+    {isEmpty ? <p className="py-6 text-[0.9375rem] text-fg-faint">{emptyText}</p> : children}
+  </section>
+)
 
 /**
- * Overview tab component showing best rankings, top partners, and opponent stats
+ * Overview: podium record, regular partners, and the opponents this player
+ * beats and loses to most.
  */
-export const OverviewTab = ({ bestRankingStats, topPartners, opponentStats, onTournamentClick  }: { bestRankingStats: any, topPartners: any, opponentStats: any, onTournamentClick: any }) => {
-  const [expandedPlaces, setExpandedPlaces] = useState(new Set())
+export const OverviewTab = ({
+  bestRankingStats,
+  topPartners,
+  opponentStats,
+  onTournamentClick
+}: {
+  bestRankingStats: any
+  topPartners: any
+  opponentStats: any
+  onTournamentClick: any
+}) => {
+  const [expandedPlaces, setExpandedPlaces] = useState<Set<any>>(new Set())
 
   const togglePlace = (place: any) => {
     setExpandedPlaces(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(place)) {
-        newSet.delete(place)
-      } else {
-        newSet.add(place)
-      }
-      return newSet
+      const next = new Set(prev)
+      if (next.has(place)) next.delete(place)
+      else next.add(place)
+      return next
     })
   }
 
-  const getMedalEmoji = (place: any) => {
-    if (place === 1) return '🥇'
-    if (place === 2) return '🥈'
-    if (place === 3) return '🥉'
-    return `#${place}`
-  }
-
-  // Get podium finishes (1st, 2nd, 3rd) with full tournament lists
   const podiumFinishes = bestRankingStats.filter((ranking: any) => ranking.place <= 3)
 
   return (
-    <div className="tab-panel">
-      {/* Best Ranking and Top Partners Section */}
-      <div className="player-insights">
-        {/* Podium Finishes */}
-        <div className="insight-box best-ranking">
-          <h3 className="insight-title">🏅 Podium Finishes</h3>
-          {podiumFinishes.length > 0 ? (
-            <div className="rankings-list">
-              {podiumFinishes.map((ranking: any) => (
-                <div key={ranking.place} className={`ranking-item rank-level-${ranking.place}`}>
-                  <div 
-                    className="ranking-header clickable" 
+    <div className="flex flex-col gap-8">
+      {/* Asymmetric split - the partner list carries more weight than the podium tally. */}
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.35fr] md:gap-10">
+        <Block title="Podium finishes" isEmpty={podiumFinishes.length === 0} emptyText="No podium finishes yet.">
+          <ul className="flex flex-col">
+            {podiumFinishes.map((ranking: any) => {
+              const isOpen = expandedPlaces.has(ranking.place)
+              return (
+                <li key={ranking.place} className="border-b border-line">
+                  <button
+                    type="button"
                     onClick={() => togglePlace(ranking.place)}
-                    title={expandedPlaces.has(ranking.place) ? "Click to collapse" : "Click to expand"}
+                    aria-expanded={isOpen}
+                    className={`tactile flex w-full items-baseline gap-3 border-l-2 py-2.5 pl-2.5 text-left ${
+                      ranking.place === 1 ? 'border-l-accent' : 'border-l-transparent'
+                    }`}
                   >
-                    <div className="ranking-badge">
-                      {getMedalEmoji(ranking.place)}
-                    </div>
-                    <div className="ranking-count">
-                      {ranking.count} time{ranking.count !== 1 ? 's' : ''}
-                    </div>
-                    <div className="expand-indicator">
-                      {expandedPlaces.has(ranking.place) ? '▼' : '▶'}
-                    </div>
-                  </div>
-                  {expandedPlaces.has(ranking.place) && (
-                    <div className="ranking-tournaments expanded">
-                      {ranking.tournaments.map((t: any, i: any) => (
-                        <div 
-                          key={i} 
-                          className="tournament-badge-clickable"
-                          onClick={() => onTournamentClick && onTournamentClick(t)}
-                          title={`Click to view ${t.tournament}`}
-                        >
-                          {t.tournament}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-data-small">No podium finishes yet</div>
-          )}
-        </div>
+                    <span
+                      className={`tnum w-5 shrink-0 text-sm ${
+                        ranking.place === 1 ? 'font-semibold text-fg' : 'text-fg-dim'
+                      }`}
+                    >
+                      {ranking.place}
+                    </span>
+                    <span className="tnum flex-1 text-[0.9375rem] text-fg-dim">
+                      {ranking.count}
+                      <span className="ml-1.5 text-fg-faint">
+                        time{ranking.count !== 1 ? 's' : ''}
+                      </span>
+                    </span>
+                    <motion.span
+                      animate={{ rotate: isOpen ? 90 : 0 }}
+                      transition={springSnappy}
+                      className="flex shrink-0 text-fg-faint"
+                    >
+                      <CaretRight size={11} weight="bold" />
+                    </motion.span>
+                  </button>
 
-        {/* Top Partners */}
-        <div className="insight-box top-partners">
-          <h3 className="insight-title">🤝 Top Partners</h3>
-          {topPartners.length > 0 ? (
-            <div className="partners-list">
-              {topPartners.map((partner: any, index: any) => (
-                <div key={partner.name} className={`partner-item rank-${index + 1}`}>
-                  <div className="partner-rank">#{index + 1}</div>
-                  <div className="partner-info">
-                    <div className="partner-name">{partner.name}</div>
-                    <div className="partner-stats">
-                      {partner.wins}W - {partner.losses}L ({partner.winRate}%)
-                    </div>
-                  </div>
-                  <div className="partner-wins">{partner.wins} wins</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-data-small">No partner data available</div>
-          )}
-        </div>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={spring}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex flex-wrap gap-1.5 pb-3 pl-7">
+                          {ranking.tournaments.map((tournament: any, index: number) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => onTournamentClick && onTournamentClick(tournament)}
+                              title={`View ${tournament.tournament}`}
+                              className="tactile rounded-xs border border-line px-2 py-1 text-[0.9375rem] text-fg-dim hover:border-accent hover:text-accent"
+                            >
+                              {tournament.tournament}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </li>
+              )
+            })}
+          </ul>
+        </Block>
+
+        <Block title="Top partners" isEmpty={topPartners.length === 0} emptyText="No partner data yet.">
+          <motion.ul variants={staggerParent} initial="hidden" animate="show" className="flex flex-col">
+            {topPartners.map((partner: any, index: number) => (
+              <PersonRow
+                key={partner.name}
+                index={index}
+                name={partner.name}
+                record={`${partner.wins}W ${partner.losses}L · ${partner.winRate}%`}
+                trailing={`${partner.wins}W`}
+                tone="up"
+              />
+            ))}
+          </motion.ul>
+        </Block>
       </div>
 
-      {/* Opponent Statistics */}
-      <div className="opponent-stats-section">
-        {/* Won Most Against */}
-        <div className="insight-box opponent-box">
-          <h3 className="insight-title">💪 Won Most Against</h3>
-          {opponentStats.wonMostAgainst.length > 0 ? (
-            <div className="opponent-list">
-              {opponentStats.wonMostAgainst.map((opponent: any, index: any) => (
-                <div key={opponent.name} className="opponent-item win-opponent">
-                  <div className="opponent-rank">#{index + 1}</div>
-                  <div className="opponent-info">
-                    <div className="opponent-name">{opponent.name}</div>
-                    <div className="opponent-record">
-                      {opponent.wins}W - {opponent.losses}L ({opponent.winRate}%)
-                    </div>
-                  </div>
-                  <div className="opponent-wins">{opponent.wins}W</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-data-small">No opponent data available</div>
-          )}
-        </div>
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-10">
+        <Block
+          title="Beats most often"
+          isEmpty={opponentStats.wonMostAgainst.length === 0}
+          emptyText="No opponent data yet."
+        >
+          <motion.ul variants={staggerParent} initial="hidden" animate="show" className="flex flex-col">
+            {opponentStats.wonMostAgainst.map((opponent: any, index: number) => (
+              <PersonRow
+                key={opponent.name}
+                index={index}
+                name={opponent.name}
+                record={`${opponent.wins}W ${opponent.losses}L · ${opponent.winRate}%`}
+                trailing={`${opponent.wins}W`}
+                tone="up"
+              />
+            ))}
+          </motion.ul>
+        </Block>
 
-        {/* Lost Most Against */}
-        <div className="insight-box opponent-box">
-          <h3 className="insight-title">😓 Lost Most Against</h3>
-          {opponentStats.lostMostAgainst.length > 0 ? (
-            <div className="opponent-list">
-              {opponentStats.lostMostAgainst.map((opponent: any, index: any) => (
-                <div key={opponent.name} className="opponent-item loss-opponent">
-                  <div className="opponent-rank">#{index + 1}</div>
-                  <div className="opponent-info">
-                    <div className="opponent-name">{opponent.name}</div>
-                    <div className="opponent-record">
-                      {opponent.wins}W - {opponent.losses}L ({opponent.winRate}%)
-                    </div>
-                  </div>
-                  <div className="opponent-losses">{opponent.losses}L</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-data-small">No opponent data available</div>
-          )}
-        </div>
+        <Block
+          title="Loses to most often"
+          isEmpty={opponentStats.lostMostAgainst.length === 0}
+          emptyText="No opponent data yet."
+        >
+          <motion.ul variants={staggerParent} initial="hidden" animate="show" className="flex flex-col">
+            {opponentStats.lostMostAgainst.map((opponent: any, index: number) => (
+              <PersonRow
+                key={opponent.name}
+                index={index}
+                name={opponent.name}
+                record={`${opponent.wins}W ${opponent.losses}L · ${opponent.winRate}%`}
+                trailing={`${opponent.losses}L`}
+                tone="down"
+              />
+            ))}
+          </motion.ul>
+        </Block>
       </div>
     </div>
   )
 }
-

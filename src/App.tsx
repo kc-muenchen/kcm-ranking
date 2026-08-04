@@ -9,6 +9,8 @@ import PlayerDetail from './components/PlayerDetail'
 import ProbabilityCalculator from './components/ProbabilityCalculator'
 import { AppLayout } from './components/AppLayout'
 import { SeasonView } from './components/SeasonView'
+import { EmptyState, ErrorState, LoadingView } from './components/ui/States'
+import { ChartBar } from '@phosphor-icons/react'
 import { useTournaments } from './hooks/useTournaments'
 import { useURLState } from './hooks/useURLState'
 import { processTournamentPlayers, processAggregatedPlayers, processSeasonPlayers } from './utils/playerProcessing'
@@ -16,7 +18,6 @@ import { getAvailableSeasons, getSeasonFinal, isTournamentInSeasonWindow } from 
 import { copySeasonTop25, copySeasonPlayers, copyPlayerStatsCSV, showClipboardHelp } from './utils/clipboardHelpers'
 import { Tournament } from './types/tournament'
 import { MatchHistoryEntry, PlayerRecord, ViewMode } from './types/components'
-import './App.css'
 
 // Expose clipboard helper functions to window for console access
 if (typeof window !== 'undefined') {
@@ -27,19 +28,19 @@ if (typeof window !== 'undefined') {
     // but this code is outside the component.
     // I'll handle this by making copyPlayerStatsCSV take the player list,
     // and exposing a wrapper function.
-    console.error('❌ Please use copyPlayerStatsCSV() inside the console while the app is running.');
+    console.error('Please use copyPlayerStatsCSV() inside the console while the app is running.');
   }
   window.showClipboardHelp = showClipboardHelp
-  
+
   // Log available functions on page load (only in development)
   if (import.meta.env.DEV) {
-    console.log('📋 Clipboard helpers loaded! Type showClipboardHelp() for more info.');
+    console.log('Clipboard helpers loaded. Type showClipboardHelp() for more info.');
   }
 }
 
 function App() {
   // Data state
-  const { tournaments, loading } = useTournaments()
+  const { tournaments, loading, error } = useTournaments()
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null)
   const [players, setPlayers] = useState<PlayerRecord[]>([])
   const [aggregatedPlayers, setAggregatedPlayers] = useState<PlayerRecord[]>([])
@@ -234,10 +235,17 @@ function App() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>Loading tournament data...</p>
-        </div>
+        <LoadingView />
+      </AppLayout>
+    )
+  }
+
+  // Both the API and the local fallback failed - say so rather than showing an
+  // empty state, which reads as "no tournaments" instead of "could not load".
+  if (error && tournaments.length === 0) {
+    return (
+      <AppLayout>
+        <ErrorState title="Could not load tournament data" detail={error} />
       </AppLayout>
     )
   }
@@ -289,65 +297,75 @@ function App() {
 
   return (
     <AppLayout>
-      <ViewToggle 
-        viewMode={viewMode} 
-        onViewModeChange={handleViewModeChange}
-      />
-
-      {viewMode === 'tournament' && (
-        <TournamentSelector
-          tournaments={tournaments}
-          selectedTournament={selectedTournament}
-          onSelectTournament={handleTournamentChange}
+      <div className="flex flex-col gap-8">
+        <ViewToggle
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
         />
-      )}
 
-      {viewMode === 'season' && (
-        <>
-          <SeasonSelector
-            seasons={getAvailableSeasons(tournaments)}
-            selectedSeason={selectedSeason}
-            onSelectSeason={handleSeasonChange}
-            showFinaleQualifiers={showFinaleQualifiers}
-            onToggleFinaleQualifiers={handleFinaleQualifiersToggle}
-          />
-          <SeasonView
+        {viewMode === 'tournament' && (
+          <TournamentSelector
             tournaments={tournaments}
-            selectedSeason={selectedSeason}
-            seasonFinal={seasonFinal}
-            onViewFinal={() => seasonFinal && handleViewSeasonFinal(seasonFinal)}
+            selectedTournament={selectedTournament}
+            onSelectTournament={handleTournamentChange}
           />
-        </>
-      )}
+        )}
 
-      {viewMode === 'probability' && (
-        <ProbabilityCalculator players={aggregatedPlayers} />
-      )}
+        {viewMode === 'season' && (
+          <>
+            <SeasonSelector
+              seasons={getAvailableSeasons(tournaments)}
+              selectedSeason={selectedSeason}
+              onSelectSeason={handleSeasonChange}
+              showFinaleQualifiers={showFinaleQualifiers}
+              onToggleFinaleQualifiers={handleFinaleQualifiersToggle}
+            />
+            <SeasonView
+              tournaments={tournaments}
+              selectedSeason={selectedSeason}
+              seasonFinal={seasonFinal}
+              onViewFinal={() => seasonFinal && handleViewSeasonFinal(seasonFinal)}
+            />
+          </>
+        )}
 
-      {viewMode !== 'probability' && currentPlayers.length > 0 && (
-        <>
-          <StatsCards 
-            players={currentPlayers}
-            viewMode={viewMode}
-            tournaments={tournamentListForStats}
-          />
-          <RankingTable 
-            players={currentPlayers}
-            viewMode={viewMode}
-            onPlayerSelect={handlePlayerSelect}
-            selectedSeason={viewMode === 'season' ? selectedSeason : null}
-          />
-          {viewMode === 'tournament' && selectedTournament && selectedTournament.data.eliminations && (
-            <EliminationBracket eliminationData={selectedTournament.data.eliminations} />
-          )}
-        </>
-      )}
+        {viewMode === 'probability' && (
+          <ProbabilityCalculator players={aggregatedPlayers} />
+        )}
+
+        {viewMode !== 'probability' && currentPlayers.length > 0 && (
+          <>
+            <StatsCards
+              players={currentPlayers}
+              viewMode={viewMode}
+              tournaments={tournamentListForStats}
+            />
+            <RankingTable
+              players={currentPlayers}
+              viewMode={viewMode}
+              onPlayerSelect={handlePlayerSelect}
+              selectedSeason={viewMode === 'season' ? selectedSeason : null}
+            />
+            {viewMode === 'tournament' && selectedTournament && selectedTournament.data.eliminations && (
+              <EliminationBracket eliminationData={selectedTournament.data.eliminations} />
+            )}
+          </>
+        )}
       
       {viewMode !== 'probability' && currentPlayers.length === 0 && (
-        <div className="no-data">
-          <p>No player data available.</p>
-        </div>
+        <EmptyState
+          icon={<ChartBar size={18} weight="bold" />}
+          title="Nothing to rank yet"
+          hint={
+            viewMode === 'season'
+              ? 'No tournaments fall inside this season window. Pick another season, or import the tournaments for it.'
+              : viewMode === 'tournament'
+                ? 'This tournament has no recorded matches. Once results are imported they will show up here.'
+                : 'Import a tournament export to build the standings.'
+          }
+        />
       )}
+      </div>
     </AppLayout>
   )
 }

@@ -1,131 +1,143 @@
-import './StatsCards.css'
+import { motion } from 'framer-motion'
+import { CalendarBlank, Percent, SoccerBall, Target, Trophy, Users, type Icon } from '@phosphor-icons/react'
 import { PlayerRecord, ViewMode } from '../types/components'
 import { Tournament } from '../types/tournament'
+import { staggerChild, staggerParent } from '../lib/motion'
 
-interface StatsCardItem {
-  title: string
+interface StatItem {
+  label: string
   value: string | number | undefined
-  subtitle?: string
-  icon: string
-  color: 'primary' | 'secondary' | 'warning' | 'success'
+  detail?: string
+  /** Marks the metric at a glance. Replaces the emoji the old design used. */
+  icon: Icon
+  /** Render the headline as tabular figures. Names stay in the sans face. */
+  numeric?: boolean
 }
 
-function StatsCards({ players, viewMode, tournaments  }: { players: PlayerRecord[], viewMode: ViewMode, tournaments: Tournament[] }) {
+/**
+ * Summary metrics.
+ *
+ * Deliberately not cards: at this density a boxed grid adds four borders and a
+ * shadow to communicate what vertical rules already do. Metrics sit in a divided
+ * row and breathe.
+ */
+function StatsCards({
+  players,
+  viewMode,
+  tournaments
+}: {
+  players: PlayerRecord[]
+  viewMode: ViewMode
+  tournaments: Tournament[]
+}) {
   const totalPlayers = players.length
 
-  // Count unique matches from tournament data
   // Matches are nested: qualifying[0].rounds[].matches and eliminations[].levels[].matches
-  const totalMatches = tournaments?.reduce((sum: number, tournament: Tournament) => {
-    let matchCount = 0
-    const tournamentData = tournament.data as any
-    
-    // Count qualifying matches (nested in rounds)
-    if (tournamentData?.qualifying?.[0]?.rounds) {
-      const qualifying = tournamentData.qualifying as any[]
-      ;(qualifying[0]?.rounds as any[]).forEach((round) => {
-        matchCount += round.matches?.length || 0
-      })
-    }
-    
-    // Count elimination matches (nested in levels)
-    if (tournamentData?.eliminations) {
-      ;(tournamentData.eliminations as any[]).forEach((elim) => {
-        if (elim.levels) {
-          ;(elim.levels as any[]).forEach((level) => {
-            matchCount += level.matches?.length || 0
-          })
-        }
-        // Count the match for the third place if there was one.
-        if (elim.thirdPlace) {
-          ++matchCount;
-        }
-      })
-    }
-    
-    return sum + matchCount
-  }, 0) || 0
-  const topScorer = players.reduce((max: PlayerRecord, p: PlayerRecord) => 
-    p.goalsFor > max.goalsFor ? p : max
-  , players[0])
-  const bestWinRate = players
-    .filter((p) => p.matches >= 3)
-    .reduce((max: PlayerRecord, p: PlayerRecord) => 
-      parseFloat(String(p.winRate)) > parseFloat(String(max.winRate)) ? p : max
-    , players[0])
+  const totalMatches =
+    tournaments?.reduce((sum: number, tournament: Tournament) => {
+      let matchCount = 0
+      const tournamentData = tournament.data as any
 
-  const cards: StatsCardItem[] = viewMode === 'overall' ? [
-    {
-      title: 'Total Players',
-      value: totalPlayers,
-      icon: '👥',
-      color: 'primary'
-    },
-    {
-      title: 'Tournaments',
-      value: tournaments?.length || 0,
-      icon: '📅',
-      color: 'secondary'
-    },
-    {
-      title: 'Season Leader',
-      value: players[0]?.name,
-      subtitle: `${players[0]?.seasonPoints || 0} points`,
-      icon: '🏆',
-      color: 'warning'
-    },
-    {
-      title: 'Top Scorer',
-      value: topScorer?.name,
-      subtitle: `${topScorer?.goalsFor} goals`,
-      icon: '⚽',
-      color: 'success'
-    }
-  ] : [
-    {
-      title: 'Total Players',
-      value: totalPlayers,
-      icon: '👥',
-      color: 'primary'
-    },
-    {
-      title: 'Total Matches',
-      value: totalMatches,
-      icon: '🎯',
-      color: 'secondary'
-    },
-    {
-      title: 'Top Scorer',
-      value: topScorer?.name,
-      subtitle: `${topScorer?.goalsFor} goals`,
-      icon: '⚽',
-      color: 'success'
-    },
-    {
-      title: 'Best Win Rate',
-      value: bestWinRate?.name,
-      subtitle: `${bestWinRate?.winRate}%`,
-      icon: '🏆',
-      color: 'warning'
-    }
-  ]
+      if (tournamentData?.qualifying?.[0]?.rounds) {
+        const qualifying = tournamentData.qualifying as any[]
+        ;(qualifying[0]?.rounds as any[]).forEach(round => {
+          matchCount += round.matches?.length || 0
+        })
+      }
+
+      if (tournamentData?.eliminations) {
+        ;(tournamentData.eliminations as any[]).forEach(elim => {
+          if (elim.levels) {
+            ;(elim.levels as any[]).forEach(level => {
+              matchCount += level.matches?.length || 0
+            })
+          }
+          if (elim.thirdPlace) {
+            ++matchCount
+          }
+        })
+      }
+
+      return sum + matchCount
+    }, 0) || 0
+
+  const topScorer = players.reduce(
+    (max: PlayerRecord, p: PlayerRecord) => (p.goalsFor > max.goalsFor ? p : max),
+    players[0]
+  )
+  const bestWinRate = players
+    .filter(p => p.matches >= 3)
+    .reduce(
+      (max: PlayerRecord, p: PlayerRecord) =>
+        parseFloat(String(p.winRate)) > parseFloat(String(max.winRate)) ? p : max,
+      players[0]
+    )
+
+  const stats: StatItem[] =
+    viewMode === 'overall'
+      ? [
+          { label: 'Players', value: totalPlayers, numeric: true, icon: Users },
+          { label: 'Tournaments', value: tournaments?.length || 0, numeric: true, icon: CalendarBlank },
+          {
+            label: 'Season leader',
+            value: players[0]?.name,
+            detail: `${players[0]?.seasonPoints || 0} pts`,
+            icon: Trophy
+          },
+          {
+            label: 'Top scorer',
+            value: topScorer?.name,
+            detail: `${topScorer?.goalsFor} goals`,
+            icon: SoccerBall
+          }
+        ]
+      : [
+          { label: 'Players', value: totalPlayers, numeric: true, icon: Users },
+          { label: 'Matches', value: totalMatches, numeric: true, icon: Target },
+          {
+            label: 'Top scorer',
+            value: topScorer?.name,
+            detail: `${topScorer?.goalsFor} goals`,
+            icon: SoccerBall
+          },
+          {
+            label: 'Best win rate',
+            value: bestWinRate?.name,
+            detail: `${bestWinRate?.winRate}%`,
+            icon: Percent
+          }
+        ]
 
   return (
-    <div className="stats-cards">
-      {cards.map((card, index) => (
-        <div key={index} className={`stat-card ${card.color}`}>
-          <div className="stat-icon">{card.icon}</div>
-          <div className="stat-content">
-            <div className="stat-title">{card.title}</div>
-            <div className="stat-value">{card.value}</div>
-            {card.subtitle && (
-              <div className="stat-subtitle">{card.subtitle}</div>
-            )}
-          </div>
-        </div>
+    <motion.dl
+      variants={staggerParent}
+      initial="hidden"
+      animate="show"
+      className="grid grid-cols-2 gap-x-6 gap-y-5 border-y border-line py-5 md:grid-cols-4 md:divide-x md:divide-line"
+    >
+      {stats.map(({ icon: StatIcon, ...stat }) => (
+        <motion.div
+          key={stat.label}
+          variants={staggerChild}
+          className="flex min-w-0 flex-col gap-1 md:px-6 md:first:pl-0 md:last:pr-0"
+        >
+          <dt className="eyebrow flex items-center gap-1.5">
+            <StatIcon size={14} weight="bold" className="shrink-0" aria-hidden="true" />
+            {stat.label}
+          </dt>
+          <dd
+            className={`truncate text-xl font-semibold leading-tight tracking-tight text-fg ${
+              stat.numeric ? 'tnum' : ''
+            }`}
+            title={typeof stat.value === 'string' ? stat.value : undefined}
+          >
+            {stat.value ?? '--'}
+          </dd>
+          {stat.detail && <dd className="tnum text-[0.875rem] text-fg-dim">{stat.detail}</dd>}
+        </motion.div>
       ))}
-    </div>
+    </motion.dl>
   )
 }
 
 export default StatsCards
-

@@ -7,7 +7,9 @@ import { PerformanceTab } from './playerDetail/PerformanceTab'
 import { TournamentsTab } from './playerDetail/TournamentsTab'
 import { ComparisonTab } from './playerDetail/ComparisonTab'
 import { AchievementsDisplay } from './playerDetail/AchievementsDisplay'
-import './PlayerDetail.css'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ArrowLeft } from '@phosphor-icons/react'
+import { panelIn } from '../lib/motion'
 
 function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayers, onBack, onTournamentSelect  }: { playerName: any, playerHistory: any, tournaments: any, aggregatedPlayers: any, onBack: any, onTournamentSelect: any }) {
   const [selectedComparePlayer, setSelectedComparePlayer] = useState('')
@@ -47,9 +49,18 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
   )
 
   return (
-    <div className="player-detail">
-      <button className="back-button" onClick={onBack}>
-        ← Back to Rankings
+    <div className="flex flex-col gap-6">
+      <button
+        type="button"
+        onClick={onBack}
+        className="tactile group inline-flex w-fit items-center gap-1.5 text-[0.9375rem] text-fg-dim hover:text-accent"
+      >
+        <ArrowLeft
+          size={13}
+          weight="bold"
+          className="transition-transform duration-200 group-hover:-translate-x-0.5"
+        />
+        Back to rankings
       </button>
 
       <PlayerHeader
@@ -65,53 +76,58 @@ function PlayerDetail({ playerName, playerHistory, tournaments, aggregatedPlayer
       {/* Tabs */}
       <PlayerTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Tab Content */}
-      <div className="tab-content">
-        {activeTab === 'overview' && (
-          <OverviewTab
-            bestRankingStats={bestRankingStats}
-            topPartners={topPartners}
-            opponentStats={opponentStats}
-            onTournamentClick={handleTournamentClick}
-          />
-        )}
+      {/* Tab content. Keyed so each panel animates in on switch. */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          variants={panelIn}
+          initial="hidden"
+          animate="show"
+          exit="exit"
+          role="tabpanel"
+        >
+          {activeTab === 'overview' && (
+            <OverviewTab
+              bestRankingStats={bestRankingStats}
+              topPartners={topPartners}
+              opponentStats={opponentStats}
+              onTournamentClick={handleTournamentClick}
+            />
+          )}
 
-        {activeTab === 'achievements' && (
-          <div className="tab-panel">
-            <div className="achievements-section">
-              <h2>🏆 Achievements</h2>
+          {activeTab === 'achievements' && (
+            <div className="flex flex-col gap-4">
+              <span className="eyebrow">Achievements</span>
               <AchievementsDisplay achievements={achievements} />
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'performance' && (
-          <PerformanceTab
-            history={history}
-            playerName={playerName}
-            matchHistory={matchHistory}
-            initialSkill={summaryStats.initialSkill}
-            playerHistory={playerHistory}
-            allPlayers={allPlayers}
-          />
-        )}
+          {activeTab === 'performance' && (
+            <PerformanceTab
+              history={history}
+              playerName={playerName}
+              matchHistory={matchHistory}
+              initialSkill={summaryStats.initialSkill}
+              playerHistory={playerHistory}
+              allPlayers={allPlayers}
+            />
+          )}
 
-        {activeTab === 'tournaments' && (
-          <TournamentsTab tournamentList={tournamentList} />
-        )}
+          {activeTab === 'tournaments' && <TournamentsTab tournamentList={tournamentList} />}
 
-        {activeTab === 'comparison' && (
-          <ComparisonTab
-            playerName={playerName}
-            currentPlayer={playerAggregated}
-            allPlayers={allPlayers}
-            selectedComparePlayer={selectedComparePlayer}
-            onPlayerSelect={setSelectedComparePlayer}
-            headToHeadStats={headToHeadStats}
-            teammateStats={teammateStats}
-          />
-        )}
-      </div>
+          {activeTab === 'comparison' && (
+            <ComparisonTab
+              playerName={playerName}
+              currentPlayer={playerAggregated}
+              allPlayers={allPlayers}
+              selectedComparePlayer={selectedComparePlayer}
+              onPlayerSelect={setSelectedComparePlayer}
+              headToHeadStats={headToHeadStats}
+              teammateStats={teammateStats}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }
